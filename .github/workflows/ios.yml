@@ -43,7 +43,20 @@ jobs:
           echo "launch exit: $code"
           xcrun simctl spawn "$DEV" log show --last 3m --style compact --predicate 'process == "Afterlight" OR eventMessage CONTAINS[c] "afterlight" OR eventMessage CONTAINS[c] "jetsam"' 2>/dev/null | grep -viE "UIKit|CFNetwork|BackBoard" | tail -60 > syslog.txt || true
           cat syslog.txt | tail -60
-          find ~/Library/Logs/DiagnosticReports -mmin -10 -name "*.ips" -exec head -60 {} \; | head -120
+          for f in $(find ~/Library/Logs/DiagnosticReports -mmin -10 -name "Afterlight*.ips"); do
+            python3 - "$f" <<'PY'
+          import json,sys
+          raw=open(sys.argv[1]).read().split("\n",1)[1]
+          j=json.loads(raw)
+          print("EXC", j.get("exception"), j.get("termination",{}).get("indicator"))
+          imgs=j.get("usedImages",[])
+          for t in j.get("threads",[]):
+              if t.get("triggered"):
+                  for fr in t.get("frames",[])[:25]:
+                      im=imgs[fr.get("imageIndex",0)].get("name","?") if imgs else "?"
+                      print("  ", im, fr.get("symbol","?"), fr.get("sourceFile",""), fr.get("sourceLine",""))
+          PY
+          done
           cp syslog.txt shots/ 2>/dev/null || true
           if [ "$code" != "142" ] && [ "$code" != "0" ]; then echo "::error::The app exited or crashed during the smoke test"; \
             find ~/Library/Logs/DiagnosticReports -name "Afterlight*" -mmin -5 -exec head -80 {} \; ; exit 1; fi
