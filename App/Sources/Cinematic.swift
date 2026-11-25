@@ -19,9 +19,9 @@ struct CinematicView: View {
     var body: some View {
         GeometryReader { geo in
             let pull = max(0, drag)
-            let k = min(1, pull / 400)
+            let k: CGFloat = min(1, pull / 400)
             ZStack {
-                Color.black.opacity(1 - k * 0.6).ignoresSafeArea()
+                Color.black.opacity(Double(1 - k * 0.6)).ignoresSafeArea()
                 story(geo)
                     .clipShape(RoundedRectangle(cornerRadius: pull > 0 ? 28 : 0, style: .continuous))
                     .scaleEffect(1 - k * 0.18)
