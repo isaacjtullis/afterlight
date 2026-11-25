@@ -1,5 +1,7 @@
 name: iOS build
 on: [push, pull_request]
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: macos-15
@@ -35,15 +37,17 @@ jobs:
             sleep 6;  xcrun simctl io "$DEV" screenshot shots/3-digging.png
             sleep 6;  xcrun simctl io "$DEV" screenshot shots/4-later.png ) &
           set +e
-          timeout 22 xcrun simctl launch --console-pty "$DEV" com.isaactullis.afterlight -smoketest | tee launch.log
+          perl -e 'alarm 22; exec @ARGV' xcrun simctl launch --console-pty "$DEV" com.isaactullis.afterlight -smoketest | tee launch.log
           code=${PIPESTATUS[0]}
           wait
           echo "launch exit: $code"
-          if [ "$code" != "124" ]; then echo "::error::The app exited or crashed during the smoke test"; \
+          if [ "$code" != "142" ]; then echo "::error::The app exited or crashed during the smoke test"; \
             find ~/Library/Logs/DiagnosticReports -name "Afterlight*" -mmin -5 -exec head -80 {} \; ; exit 1; fi
           grep -q "SMOKE: walked and dug" launch.log || { echo "::error::Smoke test did not finish"; exit 1; }
-      - uses: actions/upload-artifact@v4
+      - name: Publish screenshots to the smoke-shots branch
         if: always()
-        with:
-          name: simulator-screens
-          path: shots/
+        run: |
+          cp launch.log shots/ 2>/dev/null || true
+          cd shots && git init -q && git checkout -q -b smoke-shots
+          git -c user.name=ci -c user.email=ci@local add -A && git -c user.name=ci -c user.email=ci@local commit -qm "Simulator screenshots ${GITHUB_SHA}"
+          git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" smoke-shots
