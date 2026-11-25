@@ -13,8 +13,7 @@ jobs:
         run: |
           xcodebuild -project Afterlight.xcodeproj -scheme Afterlight \
             -destination 'generic/platform=iOS Simulator' \
-            -skipPackagePluginValidation CODE_SIGNING_ALLOWED=NO build > build.log 2>&1
-          status=$?
+            -skipPackagePluginValidation CODE_SIGNING_ALLOWED=NO build > build.log 2>&1 && status=0 || status=$?
           grep -E "(error|warning: unreachable):" build.log | sort -u | head -150 || true
           tail -30 build.log
           exit $status
