@@ -18,11 +18,14 @@ struct CinematicView: View {
 
     var body: some View {
         GeometryReader { geo in
+            // The proxy is the safe area; the story itself runs edge to edge behind the status bar.
+            let full = CGSize(width: geo.size.width + geo.safeAreaInsets.leading + geo.safeAreaInsets.trailing,
+                              height: geo.size.height + geo.safeAreaInsets.top + geo.safeAreaInsets.bottom)
             let pull = max(0, drag)
             let k: CGFloat = min(1, pull / 400)
             ZStack {
                 Color.black.opacity(Double(1 - k * 0.6)).ignoresSafeArea()
-                story(geo)
+                story(full: full, safeTop: geo.safeAreaInsets.top, safeBottom: geo.safeAreaInsets.bottom)
                     .clipShape(RoundedRectangle(cornerRadius: pull > 0 ? 28 : 0, style: .continuous))
                     .scaleEffect(1 - k * 0.18)
                     .offset(y: pull * 0.9)
@@ -30,7 +33,7 @@ struct CinematicView: View {
             }
             .ignoresSafeArea()
             .contentShape(Rectangle())
-            .gesture(storyGesture(width: geo.size.width))
+            .gesture(storyGesture(width: full.width))
         }
         .onReceive(timer) { now in
             let dt = min(0.1, now.timeIntervalSince(lastTick))
@@ -44,15 +47,13 @@ struct CinematicView: View {
             tapHaptic.prepare()
             if model.smokeSkipIntro { DispatchQueue.main.asyncAfter(deadline: .now() + 3) { player.skip() } }
         }
-        .statusBarHidden(true)
     }
 
-    private func story(_ geo: GeometryProxy) -> some View {
-        let safeTop = geo.safeAreaInsets.top, safeBottom = geo.safeAreaInsets.bottom
+    private func story(full: CGSize, safeTop: CGFloat, safeBottom: CGFloat) -> some View {
         let chrome = !player.held && drag == 0
         return ZStack {
             Color.black
-            IntroArt(scene: player.scene, index: player.index, size: geo.size)
+            IntroArt(scene: player.scene, index: player.index, size: full)
                 .scaleEffect(reduceMotion ? 1 : 1.04 + 0.06 * player.progress)
                 .offset(x: reduceMotion ? 0 : CGFloat(player.index % 2 == 0 ? -1 : 1) * 12 * CGFloat(player.progress - 0.5),
                         y: reduceMotion ? 0 : -10 * CGFloat(player.progress))
@@ -67,7 +68,7 @@ struct CinematicView: View {
                     progressBar
                     header
                 }
-                .padding(.top, safeTop + 8).padding(.horizontal, 10)
+                .padding(.top, safeTop + 6).padding(.horizontal, 10)
                 .opacity(chrome ? 1 : 0)
                 if player.scene.bubble == .top { caption.padding(.top, 14) }
                 Spacer(minLength: 0)
@@ -94,7 +95,7 @@ struct CinematicView: View {
             .animation(.spring(response: 0.45, dampingFraction: 0.85), value: player.waitingForCandle)
             .animation(.easeOut(duration: 0.2), value: chrome)
         }
-        .frame(width: geo.size.width, height: geo.size.height)
+        .frame(width: full.width, height: full.height)
     }
 
     private var header: some View {

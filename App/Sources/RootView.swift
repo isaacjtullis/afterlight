@@ -37,7 +37,7 @@ struct RootView: View {
                 }
                 if let b = model.banner { ChapterBanner(text: b).transition(.opacity) }
                 if model.showTitle { TitleView().transition(.opacity) }
-                if model.showIntro { CinematicView().transition(.opacity) }
+                if model.showIntro { CinematicView().transition(.opacity) }   // fills the screen itself
                 if ProcessInfo.processInfo.arguments.contains("-uitest") {
                     Text(model.debugState).font(.system(size: 6)).opacity(0.02)
                         .accessibilityIdentifier("debug.state").accessibilityLabel(model.debugState)

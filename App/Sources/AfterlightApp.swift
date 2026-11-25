@@ -10,7 +10,8 @@ struct AfterlightApp: App {
             RootView()
                 .environmentObject(model)
                 .preferredColorScheme(.dark)
-                .statusBarHidden(true)
+                // The story shows the time like Instagram; play is full screen.
+                .statusBarHidden(!model.showIntro)
                 .persistentSystemOverlays(.hidden)
         }
         .onChange(of: phase) { _, p in
