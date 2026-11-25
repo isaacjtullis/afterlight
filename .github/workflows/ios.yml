@@ -34,13 +34,14 @@ jobs:
           sleep 8
           mkdir -p shots
           ( for i in 1 2 3 4 5 6; do
-              until grep -q "SMOKE: title shown" launch.log 2>/dev/null; do sleep 0.5; done
+              until xcrun simctl spawn "$DEV" launchctl list 2>/dev/null | grep -q afterlight; do sleep 0.5; done; sleep 2.5
               break; done
             xcrun simctl io "$DEV" screenshot shots/1-title.png
-            sleep 5;  xcrun simctl io "$DEV" screenshot shots/2-candle.png
-            sleep 3;  xcrun simctl io "$DEV" screenshot shots/3-walking.png
-            sleep 5;  xcrun simctl io "$DEV" screenshot shots/4-digging.png
-            sleep 6;  xcrun simctl io "$DEV" screenshot shots/5-later.png ) &
+            sleep 2;  xcrun simctl io "$DEV" screenshot shots/2-intro.png
+            sleep 3;  xcrun simctl io "$DEV" screenshot shots/3-candle-prompt.png
+            sleep 5;  xcrun simctl io "$DEV" screenshot shots/4-workshop.png
+            sleep 4;  xcrun simctl io "$DEV" screenshot shots/5-walking.png
+            sleep 5;  xcrun simctl io "$DEV" screenshot shots/6-digging.png ) &
           set +e
           perl -e 'alarm 50; exec @ARGV' xcrun simctl launch --console-pty "$DEV" com.isaactullis.afterlight -smoketest | tee launch.log
           code=${PIPESTATUS[0]}
@@ -52,7 +53,7 @@ jobs:
           cp syslog.txt shots/ 2>/dev/null || true
           if [ "$code" != "142" ]; then echo "::error::The app exited or crashed during the smoke test"; \
             find ~/Library/Logs/DiagnosticReports -name "Afterlight*" -mmin -5 -exec head -80 {} \; ; exit 1; fi
-          grep -q "SMOKE t=19" launch.log || { echo "::error::The app stopped before 20 seconds"; exit 1; }
+          grep -q "SMOKE t=2[0-9]" launch.log || { echo "::error::The app stopped before 20 seconds"; exit 1; }
           grep -q "SMOKE: walked and dug" launch.log || { echo "::error::Smoke test did not finish"; exit 1; }
       - name: Publish screenshots to the smoke-shots branch
         if: always()

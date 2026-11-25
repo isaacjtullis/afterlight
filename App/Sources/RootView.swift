@@ -37,6 +37,7 @@ struct RootView: View {
                 }
                 if let b = model.banner { ChapterBanner(text: b).transition(.opacity) }
                 if model.showTitle { TitleView().transition(.opacity) }
+                if model.showIntro { CinematicView().transition(.opacity) }
             }
             .onAppear {
                 if scene == nil {
@@ -101,10 +102,10 @@ struct TitleView: View {
                 Text("214 miles below the surface, the power has just gone out.")
                     .font(.avenir(17)).foregroundStyle(.white.opacity(0.75)).multilineTextAlignment(.center).padding(.top, 14).frame(maxWidth: 300)
                 VStack(spacing: 12) {
-                    Button(model.hasSave ? "Continue" : "Light the candle") { model.start() }
+                    Button(model.hasSave ? "Continue" : "Begin") { if model.hasSave { model.start() } else { model.beginIntro() } }
                         .buttonStyle(PillStyle(prominent: true))
                     if model.hasSave {
-                        Button("Start over") { model.newGame() }.buttonStyle(PillStyle(prominent: false))
+                        Button("Start over") { model.resetForNewGame(); model.beginIntro() }.buttonStyle(PillStyle(prominent: false))
                     }
                 }
                 .padding(.top, 34)

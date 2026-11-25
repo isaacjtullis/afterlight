@@ -32,6 +32,8 @@ struct UIState: Equatable {
 final class GameModel: ObservableObject {
     @Published var ui = UIState()
     @Published var showTitle = true
+    @Published var showIntro = false
+    var smokeSkipIntro = false
     @Published var sheet: Sheet? = nil
     @Published var conversation: Conversation? = nil
     @Published var lineIndex = 0
@@ -85,7 +87,12 @@ final class GameModel: ObservableObject {
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(2))
             print("SMOKE: title shown"); fflush(stdout)
-            self.start()
+            self.smokeSkipIntro = true
+            self.beginIntro()
+            try? await Task.sleep(for: .seconds(4))
+            print("SMOKE: intro playing, skipped to the candle"); fflush(stdout)
+            try? await Task.sleep(for: .seconds(2))
+            self.finishIntro()
             try? await Task.sleep(for: .seconds(4))
             print("SMOKE: candle lit"); fflush(stdout)
             self.input = GameInput(dx: 1)
@@ -104,6 +111,23 @@ final class GameModel: ObservableObject {
         audio.start()
         withAnimation(.easeOut(duration: 1.2)) { showTitle = false }
         Task { await syncFromCloud() }
+    }
+
+    /// New players see the story first; it ends on Max at the grave, waiting for the candle.
+    func beginIntro() {
+        audio.start()
+        withAnimation(.easeInOut(duration: 0.8)) { showIntro = true }
+    }
+
+    func finishIntro() {
+        withAnimation(.easeInOut(duration: 0.8)) { showIntro = false }
+        start()
+    }
+
+    func resetForNewGame() {
+        local.erase()
+        game = Game()
+        scene?.reset(game)
     }
 
     func newGame() {
