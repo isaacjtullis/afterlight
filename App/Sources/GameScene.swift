@@ -47,7 +47,7 @@ final class GameScene: SKScene {
 
     private var planTarget: Int? = nil
     /// CI smoke test: trace the first few game frames step by step.
-    static var profiling = ProcessInfo.processInfo.arguments.contains("-smoketest")
+    static let profiling = ProcessInfo.processInfo.arguments.contains("-smoketest")
     static var profiledFrames = 0
 
     init(game: Game, size: CGSize) {
@@ -136,7 +136,15 @@ final class GameScene: SKScene {
 
     // MARK: frame
 
+    nonisolated(unsafe) static var updateCalls = 0
+    nonisolated(unsafe) static var updateDone = 0
+    nonisolated(unsafe) static var lastStep = ""
+    nonisolated(unsafe) static var onMain = true
+
     override func update(_ currentTime: TimeInterval) {
+        GameScene.updateCalls += 1
+        GameScene.onMain = Thread.isMainThread
+        defer { GameScene.updateDone += 1 }
         let dt = lastTime == 0 ? 1.0 / 60 : min(1.0 / 20, currentTime - lastTime)
         lastTime = currentTime
         var target: Int? = nil
@@ -156,13 +164,13 @@ final class GameScene: SKScene {
         for (name, f) in steps {
             if GameScene.profiling {
                 let t0 = CACurrentMediaTime()
-                print("FRAME begin \(name)"); fflush(stdout)
+                GameScene.lastStep = name
                 f()
                 let ms = (CACurrentMediaTime() - t0) * 1000
                 if ms > 30 { print("FRAME slow \(name) \(Int(ms))ms"); fflush(stdout) }
             } else { f() }
         }
-        if GameScene.profiling && game.started { GameScene.profiledFrames += 1; if GameScene.profiledFrames > 4 { GameScene.profiling = false } }
+
     }
 
     // MARK: camera
