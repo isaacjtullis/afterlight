@@ -33,12 +33,16 @@ jobs:
           xcrun simctl install "$DEV" "$APP"
           sleep 8
           mkdir -p shots
-          ( sleep 1.5; xcrun simctl io "$DEV" screenshot shots/1-title.png
+          ( for i in 1 2 3 4 5 6; do
+              until grep -q "SMOKE: title shown" launch.log 2>/dev/null; do sleep 0.5; done
+              break; done
+            xcrun simctl io "$DEV" screenshot shots/1-title.png
             sleep 5;  xcrun simctl io "$DEV" screenshot shots/2-candle.png
-            sleep 6;  xcrun simctl io "$DEV" screenshot shots/3-digging.png
-            sleep 6;  xcrun simctl io "$DEV" screenshot shots/4-later.png ) &
+            sleep 3;  xcrun simctl io "$DEV" screenshot shots/3-walking.png
+            sleep 5;  xcrun simctl io "$DEV" screenshot shots/4-digging.png
+            sleep 6;  xcrun simctl io "$DEV" screenshot shots/5-later.png ) &
           set +e
-          perl -e 'alarm 22; exec @ARGV' xcrun simctl launch --console-pty "$DEV" com.isaactullis.afterlight -smoketest | tee launch.log
+          perl -e 'alarm 50; exec @ARGV' xcrun simctl launch --console-pty "$DEV" com.isaactullis.afterlight -smoketest | tee launch.log
           code=${PIPESTATUS[0]}
           wait
           echo "launch exit: $code"
@@ -46,7 +50,7 @@ jobs:
           cat syslog.txt | tail -60
           sleep 3; python3 ci/crash.py || true
           cp syslog.txt shots/ 2>/dev/null || true
-          if [ "$code" != "142" ] && [ "$code" != "0" ]; then echo "::error::The app exited or crashed during the smoke test"; \
+          if [ "$code" != "142" ]; then echo "::error::The app exited or crashed during the smoke test"; \
             find ~/Library/Logs/DiagnosticReports -name "Afterlight*" -mmin -5 -exec head -80 {} \; ; exit 1; fi
           grep -q "SMOKE t=19" launch.log || { echo "::error::The app stopped before 20 seconds"; exit 1; }
           grep -q "SMOKE: walked and dug" launch.log || { echo "::error::Smoke test did not finish"; exit 1; }

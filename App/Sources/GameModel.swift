@@ -76,9 +76,9 @@ final class GameModel: ObservableObject {
 
     private func runSmokeTest() {
         Task { @MainActor in
-            for i in 0..<40 {
+            for i in 0..<70 {
                 try? await Task.sleep(for: .seconds(0.5))
-                print("SMOKE t=\(Double(i) * 0.5)s frames=\(self.frames) updates=\(GameScene.updateCalls)/\(GameScene.updateDone) main=\(GameScene.onMain) step=\(GameScene.lastStep) scenePaused=\(self.scene?.isPaused ?? true) viewPaused=\(self.scene?.view?.isPaused ?? true) mem=\(GameModel.memoryMB())MB")
+                print("SMOKE t=\(Double(i) * 0.5)s max=(\(Int(self.game.max.pos.x * 10)), \(Int(self.game.max.pos.y * 10))) stamina=\(Int(self.game.max.stamina)) frames=\(self.frames) updates=\(GameScene.updateCalls)/\(GameScene.updateDone) main=\(GameScene.onMain) step=\(GameScene.lastStep) scenePaused=\(self.scene?.isPaused ?? true) viewPaused=\(self.scene?.view?.isPaused ?? true) mem=\(GameModel.memoryMB())MB")
                 fflush(stdout)
             }
         }
