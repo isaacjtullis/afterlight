@@ -141,8 +141,12 @@ extension Game {
         // The hatch seam: once it's open, the rungs continue up into the room.
         if !story.flags.contains("hatchOpen") {
             var open = true
-            for r in Landmarks.hatchRows where world.m(25, r).solid || world.m(26, r).solid { open = false }
+            // The bottom three rows are what the climber can reach; the lip at the room's floor
+            // crumbles once the plug beneath it is gone.
+            for r in (Landmarks.hatchRows.lowerBound + 1)...Landmarks.hatchRows.upperBound where world.m(25, r).solid || world.m(26, r).solid { open = false }
             if open {
+                _ = world.carve(center: V2(26, 9.6), radius: 1.05, tool: .pick)
+                for c in 25...26 where world.m(c, 9).solid { world.set(c, 9, .dug, back: .shaft) }
                 story.flags.insert("hatchOpen")
                 if let i = world.climbs.firstIndex(where: { $0.id == Landmarks.shaftRungsID }) { world.climbs[i].top = 9.0 }
                 story.step("ascent", "seam")

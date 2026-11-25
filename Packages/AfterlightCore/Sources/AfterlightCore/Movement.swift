@@ -112,7 +112,7 @@ extension Game {
             if let b = buriedBelow() { c = V2(b.pos.x, Swift.max(c.y, b.pos.y - 0.2)) }
         case .up:
             c = V2(max.pos.x, max.pos.y - 2.0)
-            R = 0.62
+            R = 0.9
             tool = .pick
         }
         var near = false
@@ -210,8 +210,10 @@ extension Game {
                 if abs(max.vx) > 4.6 && g > pred + 0.045 {
                     max.ground = false; max.vy = max.vyG
                 } else {
-                    max.vyG = clampD((g - max.pos.y) / dt, -14, 14)
-                    max.pos.y = g
+                    // While cutting sideways the floor is held level: uncut crumbs never lift Max.
+                    let gg = (max.swingOn && max.swingKind == .side) ? Swift.max(g, max.digFloor - 0.04) : g
+                    max.vyG = clampD((gg - max.pos.y) / dt, -14, 14)
+                    max.pos.y = gg
                 }
             } else {
                 max.ground = false; max.vy = max.vyG

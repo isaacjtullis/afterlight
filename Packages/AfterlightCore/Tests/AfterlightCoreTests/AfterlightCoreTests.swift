@@ -77,7 +77,7 @@ final class ChapterTests: XCTestCase {
         XCTAssertEqual(g.inv.count(.chargeCrystal), 1, "digging down beside the glint should pop the crystal")
 
         walk(g, to: 26.2, timeout: 30)
-        XCTAssertEqual(g.context?.id, "repair")
+        XCTAssertEqual(g.context?.id, "repair", "max at \(g.max.pos) mode \(g.max.mode) ground \(g.max.ground)")
         g.performContext()
         sim(g, GameInput(), 2)
         XCTAssertTrue(g.inv.has(.flashlight))
@@ -121,7 +121,7 @@ final class ChapterTests: XCTestCase {
             sim(g, GameInput(up: true), 1.0)
             if g.story.flags.contains("hatchOpen") { break }
         }
-        XCTAssertTrue(g.story.flags.contains("hatchOpen"))
+        XCTAssertTrue(g.story.flags.contains("hatchOpen"), "max at \(g.max.pos); seam \((9...12).map { "\(g.world.m(25, $0))/\(g.world.m(26, $0))" })")
         sim(g, GameInput(up: true), 6)
         XCTAssertEqual(g.max.mode, .walk)
         sim(g, GameInput(), 1)

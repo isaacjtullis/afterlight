@@ -344,7 +344,13 @@ final class GameScene: SKScene {
 
     private func resetScarf() {
         let p = game.max.pos
-        scarf = (0..<9).map { i in (x: p.x - Double(i) * 0.1, y: p.y - 1.1, px: p.x - Double(i) * 0.1, py: p.y - 1.1) }
+        var pts: [(x: Double, y: Double, px: Double, py: Double)] = []
+        for i in 0..<9 {
+            let x: Double = p.x - Double(i) * 0.1
+            let y: Double = p.y - 1.1
+            pts.append((x: x, y: y, px: x, py: y))
+        }
+        scarf = pts
     }
 
     private func updateScarf(_ dt: Double) {
