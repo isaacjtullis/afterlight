@@ -46,6 +46,9 @@ final class GameScene: SKScene {
     private var lastTime: TimeInterval = 0
 
     private var planTarget: Int? = nil
+    /// CI smoke test: trace the first few game frames step by step.
+    static var profiling = ProcessInfo.processInfo.arguments.contains("-smoketest")
+    static var profiledFrames = 0
 
     init(game: Game, size: CGSize) {
         self.game = game
@@ -145,18 +148,21 @@ final class GameScene: SKScene {
         }
         planTarget = target
         if let latest, latest !== game { reset(latest) }
-        updateCamera(dt)
-        updateChunks()
-        updateProps()
-        updateClimbs()
-        updateParallax()
-        updateScarf(dt)
-        drawActors()
-        updateParticles(dt)
-        updateLights()
-        updatePlan()
-        updateBubble()
-        updateMarker()
+        let steps: [(String, () -> Void)] = [
+            ("camera", { self.updateCamera(dt) }), ("chunks", updateChunks), ("props", updateProps), ("climbs", updateClimbs),
+            ("parallax", updateParallax), ("scarf", { self.updateScarf(dt) }), ("actors", drawActors), ("particles", { self.updateParticles(dt) }),
+            ("lights", updateLights), ("plan", updatePlan), ("bubble", updateBubble), ("marker", updateMarker),
+        ]
+        for (name, f) in steps {
+            if GameScene.profiling {
+                let t0 = CACurrentMediaTime()
+                print("FRAME begin \(name)"); fflush(stdout)
+                f()
+                let ms = (CACurrentMediaTime() - t0) * 1000
+                if ms > 30 { print("FRAME slow \(name) \(Int(ms))ms"); fflush(stdout) }
+            } else { f() }
+        }
+        if GameScene.profiling && game.started { GameScene.profiledFrames += 1; if GameScene.profiledFrames > 4 { GameScene.profiling = false } }
     }
 
     // MARK: camera
