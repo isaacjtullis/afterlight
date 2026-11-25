@@ -114,10 +114,18 @@ extension Game {
             R = 1.05
             tool = .pick
         }
-        var near = false
-        for o in [V2(0, 0), V2(0.3, 0), V2(-0.3, 0), V2(0, 0.3), V2(0, -0.3)] {
-            let p = c + o
-            if world.solid(p.x, p.y) && tool.cuts(world.m(Int(p.x.rounded(.down)), Int(p.y.rounded(.down)))) { near = true }
+        func hasEarth(_ c: V2) -> Bool {
+            for o in [V2(0, 0), V2(0.3, 0), V2(-0.3, 0), V2(0, 0.3), V2(0, -0.3)] {
+                let p = c + o
+                if world.solid(p.x, p.y) && tool.cuts(world.m(Int(p.x.rounded(.down)), Int(p.y.rounded(.down)))) { return true }
+            }
+            return false
+        }
+        var near = hasEarth(c)
+        if !near && kind == .side {
+            // A thin sliver right against Max: swing shorter so it doesn't stall him.
+            let close = V2(max.pos.x + Double(max.face) * (Tuning.halfWidth + 0.12), c.y)
+            if hasEarth(close) { c = close; near = true }
         }
         if !near {
             if kind == .up && world.solid(c.x, c.y) && !world.hardAt(c.x, c.y) {
@@ -386,11 +394,14 @@ extension Game {
         }
         // step off at the top onto whichever side has floor
         if max.pos.y <= c.top + 0.01 && input.up {
-            for side in [max.face, -max.face] {
-                let x = c.x + Double(side) * 1.05
-                if let g = world.groundY(x, from: c.top - 0.6, to: c.top + 0.4), !wallHit(x, g) {
-                    max.pos = V2(x, g); max.face = side
-                    exitClimb(); return
+            // The edge of an opening is rounded; reach a little further for flat floor if needed.
+            for reach in [1.05, 1.5, 2.0] {
+                for side in [max.face, -max.face] {
+                    let x = c.x + Double(side) * reach
+                    if let g = world.groundY(x, from: c.top - 0.6, to: c.top + 0.6), !wallHit(x, g) {
+                        max.pos = V2(x, g); max.face = side
+                        exitClimb(); return
+                    }
                 }
             }
         }
