@@ -1,0 +1,8 @@
+*.xcodeproj/
+.build/
+.swiftpm/
+DerivedData/
+xcuserdata/
+Config/Secrets.xcconfig
+.DS_Store
+supabase/.temp/

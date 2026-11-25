@@ -1,0 +1,5 @@
+// Shared settings. Real values live in Secrets.xcconfig (git-ignored).
+SUPABASE_HOST =
+SUPABASE_ANON_KEY =
+DEVELOPMENT_TEAM =
+#include? "Secrets.xcconfig"

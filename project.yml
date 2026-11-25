@@ -1,0 +1,53 @@
+name: Afterlight
+options:
+  bundleIdPrefix: com.isaactullis
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+configFiles:
+  Debug: Config/App.xcconfig
+  Release: Config/App.xcconfig
+packages:
+  AfterlightCore:
+    path: Packages/AfterlightCore
+  Supabase:
+    url: https://github.com/supabase/supabase-swift
+    from: 2.20.0
+targets:
+  Afterlight:
+    type: application
+    platform: iOS
+    sources:
+      - App/Sources
+    dependencies:
+      - package: AfterlightCore
+      - package: Supabase
+        product: Supabase
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: Afterlight
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UILaunchScreen:
+          UIColorName: ""
+        UIRequiresFullScreen: true
+        UIStatusBarHidden: true
+        UIViewControllerBasedStatusBarAppearance: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        ITSAppUsesNonExemptEncryption: false
+        SUPABASE_URL: https://$(SUPABASE_HOST)
+        SUPABASE_ANON_KEY: $(SUPABASE_ANON_KEY)
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.isaactullis.afterlight
+        MARKETING_VERSION: 0.3.0
+        CURRENT_PROJECT_VERSION: 1
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_VERSION: "5.0"
+        ENABLE_PREVIEWS: NO
+    scheme:
+      testTargets: []

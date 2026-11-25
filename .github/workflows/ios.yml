@@ -1,0 +1,17 @@
+name: iOS build
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate project
+        run: xcodegen generate
+      - name: Build for the simulator
+        run: |
+          xcodebuild -project Afterlight.xcodeproj -scheme Afterlight \
+            -destination 'generic/platform=iOS Simulator' \
+            -skipPackagePluginValidation CODE_SIGNING_ALLOWED=NO build | tail -80
+          exit ${PIPESTATUS[0]}
