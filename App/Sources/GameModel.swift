@@ -66,13 +66,28 @@ final class GameModel: ObservableObject {
     }
 
     /// CI only: plays the opening hands-free so a simulator run can prove the app starts, walks and digs.
+    var frames = 0
+    static func memoryMB() -> Int {
+        var info = mach_task_basic_info()
+        var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size) / 4
+        let r = withUnsafeMutablePointer(to: &info) { $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) { task_info(mach_task_self_, task_flavor_t(MACH_TASK_BASIC_INFO), $0, &count) } }
+        return r == KERN_SUCCESS ? Int(info.resident_size / 1_048_576) : -1
+    }
+
     private func runSmokeTest() {
         Task { @MainActor in
+            for i in 0..<40 {
+                try? await Task.sleep(for: .seconds(0.5))
+                print("SMOKE t=\(Double(i) * 0.5)s frames=\(self.frames) mem=\(GameModel.memoryMB())MB")
+                fflush(stdout)
+            }
+        }
+        Task { @MainActor in
             try? await Task.sleep(for: .seconds(2))
-            print("SMOKE: title shown")
+            print("SMOKE: title shown"); fflush(stdout)
             self.start()
             try? await Task.sleep(for: .seconds(4))
-            print("SMOKE: candle lit")
+            print("SMOKE: candle lit"); fflush(stdout)
             self.input = GameInput(dx: 1)
             try? await Task.sleep(for: .seconds(2.5))
             self.input = GameInput(dx: 1, dig: true)
@@ -103,6 +118,7 @@ final class GameModel: ObservableObject {
 
     func tick(_ dt: Double) {
         clock += dt
+        frames += 1
         guard !showTitle else { return }
         let paused = conversation != nil || sheet != nil || banner != nil || game.activeJob != nil || panel != nil
         game.update(dt: dt, input: paused ? GameInput() : input)

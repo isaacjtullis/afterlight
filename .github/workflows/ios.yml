@@ -41,8 +41,13 @@ jobs:
           code=${PIPESTATUS[0]}
           wait
           echo "launch exit: $code"
-          if [ "$code" != "142" ]; then echo "::error::The app exited or crashed during the smoke test"; \
+          xcrun simctl spawn "$DEV" log show --last 3m --style compact --predicate 'process == "Afterlight" OR eventMessage CONTAINS[c] "afterlight" OR eventMessage CONTAINS[c] "jetsam"' 2>/dev/null | grep -viE "UIKit|CFNetwork|BackBoard" | tail -60 > syslog.txt || true
+          cat syslog.txt | tail -60
+          find ~/Library/Logs/DiagnosticReports -mmin -10 -name "*.ips" -exec head -60 {} \; | head -120
+          cp syslog.txt shots/ 2>/dev/null || true
+          if [ "$code" != "142" ] && [ "$code" != "0" ]; then echo "::error::The app exited or crashed during the smoke test"; \
             find ~/Library/Logs/DiagnosticReports -name "Afterlight*" -mmin -5 -exec head -80 {} \; ; exit 1; fi
+          grep -q "SMOKE t=19" launch.log || { echo "::error::The app stopped before 20 seconds"; exit 1; }
           grep -q "SMOKE: walked and dug" launch.log || { echo "::error::Smoke test did not finish"; exit 1; }
       - name: Publish screenshots to the smoke-shots branch
         if: always()
