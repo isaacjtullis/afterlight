@@ -40,7 +40,8 @@ jobs:
             -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
             -skipPackagePluginValidation \
             CURRENT_PROJECT_VERSION=${{ github.run_number }} \
-            archive | tail -120
+            archive > archive.log 2>&1 || { grep -E "error:" archive.log | sort -u | head -150; tail -40 archive.log; exit 1; }
+          tail -20 archive.log
       - name: Upload to TestFlight
         run: |
           set -o pipefail

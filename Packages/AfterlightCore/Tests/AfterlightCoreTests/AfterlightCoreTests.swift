@@ -5,7 +5,7 @@ final class FixedClock {
     var now = Date(timeIntervalSince1970: 1_800_000_000)
 }
 
-func run(_ g: Game, _ input: GameInput, _ seconds: Double) {
+func sim(_ g: Game, _ input: GameInput, _ seconds: Double) {
     var t = 0.0
     while t < seconds {
         g.update(dt: 1.0 / 60.0, input: input)
@@ -22,14 +22,14 @@ func walk(_ g: Game, to x: Double, timeout: Double = 20) {
         _ = g.drainEvents()
         t += 1.0 / 60.0
     }
-    run(g, GameInput(), 0.5)
+    sim(g, GameInput(), 0.5)
 }
 
 final class WorldTests: XCTestCase {
     func testMaxStartsOnTheWorkshopFloor() {
         let g = Game()
         g.begin()
-        run(g, GameInput(), 1)
+        sim(g, GameInput(), 1)
         XCTAssertEqual(g.max.pos.y, 30, accuracy: 0.08)
         XCTAssertTrue(g.max.ground)
     }
@@ -39,7 +39,7 @@ final class WorldTests: XCTestCase {
         g.begin()
         walk(g, to: 31.3)
         let startStamina = g.max.stamina
-        run(g, GameInput(dig: true), 6)
+        sim(g, GameInput(dig: true), 6)
         XCTAssertGreaterThan(g.max.pos.x, 33.5, "Max should creep forward as he carves")
         XCTAssertEqual(g.max.pos.y, 30, accuracy: 0.15, "the tunnel floor should stay level")
         XCTAssertLessThan(g.max.stamina, startStamina)
@@ -72,23 +72,23 @@ final class ChapterTests: XCTestCase {
         var t = 0.0
         while g.max.pos.x < 37.1 && t < 30 { g.update(dt: 1 / 60, input: GameInput(dig: true)); _ = g.drainEvents(); t += 1 / 60 }
         walk(g, to: 37.5)
-        run(g, GameInput(down: true), 1.2)
-        run(g, GameInput(), 1.5)
+        sim(g, GameInput(down: true), 1.2)
+        sim(g, GameInput(), 1.5)
         XCTAssertEqual(g.inv.count(.chargeCrystal), 1, "digging down beside the glint should pop the crystal")
 
         walk(g, to: 26.2, timeout: 30)
         XCTAssertEqual(g.context?.id, "repair")
         g.performContext()
-        run(g, GameInput(), 2)
+        sim(g, GameInput(), 2)
         XCTAssertTrue(g.inv.has(.flashlight))
         XCTAssertEqual(g.context?.id, "switchOn")
         g.performContext()
-        run(g, GameInput(), 9.5)
+        sim(g, GameInput(), 9.5)
         XCTAssertTrue(g.story.flags.contains("sawShaft"))
         walk(g, to: 26.0)
         XCTAssertEqual(g.context?.id, "tryUp")
         g.performContext()
-        run(g, GameInput(), 10)
+        sim(g, GameInput(), 10)
         XCTAssertEqual(g.story.chapter, 2)
         XCTAssertTrue(g.story.flags.contains("ordersOK"))
     }
@@ -108,23 +108,23 @@ final class ChapterTests: XCTestCase {
         XCTAssertTrue(g.inv.has(.shortPick))
         XCTAssertEqual(g.inv.count(.ladderSection), 1)
         walk(g, to: 26.0)
-        run(g, GameInput(), 0.2)
+        sim(g, GameInput(), 0.2)
         XCTAssertEqual(g.context?.id, "placeLadder")
         g.performContext()
         // climb up the ladder, onto the rungs, as far as the seam
-        run(g, GameInput(up: true), 8)
+        sim(g, GameInput(up: true), 8)
         XCTAssertEqual(g.max.mode, .climb)
         XCTAssertLessThan(g.max.pos.y, 16)
         // pick the seam open while climbing
         for _ in 0..<12 {
-            run(g, GameInput(up: true, dig: true), 1.5)
-            run(g, GameInput(up: true), 1.0)
+            sim(g, GameInput(up: true, dig: true), 1.5)
+            sim(g, GameInput(up: true), 1.0)
             if g.story.flags.contains("hatchOpen") { break }
         }
         XCTAssertTrue(g.story.flags.contains("hatchOpen"))
-        run(g, GameInput(up: true), 6)
+        sim(g, GameInput(up: true), 6)
         XCTAssertEqual(g.max.mode, .walk)
-        run(g, GameInput(), 1)
+        sim(g, GameInput(), 1)
         XCTAssertEqual(g.story.chapter, 3, "stepping into the maintenance room completes chapter 2")
     }
 
@@ -147,7 +147,7 @@ final class ChapterTests: XCTestCase {
         }
         for x in [40.0, 50.0, 60.0, 70.0] { g.world.props.append(Prop(id: "lamp.\(x)", kind: .lamp, pos: V2(x, 9))) }
         g.max.pos = V2(30, 9)
-        run(g, GameInput(), 0.5)
+        sim(g, GameInput(), 0.5)
         XCTAssertTrue(g.story.flags.contains("passageLit"))
         XCTAssertEqual(g.story.chapter, 4)
     }
@@ -198,7 +198,7 @@ final class SaveTests: XCTestCase {
         let g = Game()
         g.begin()
         walk(g, to: 31.3)
-        run(g, GameInput(dig: true), 4)
+        sim(g, GameInput(dig: true), 4)
         g.story.flags.insert("custom")
         g.inv.add(.wire, 3)
         let data = try g.encodeSave()
