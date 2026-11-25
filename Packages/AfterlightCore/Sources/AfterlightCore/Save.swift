@@ -22,6 +22,7 @@ public struct SaveGame: Codable, Sendable {
     public var appliedJobs: [String]
     public var activeJob: JobRecord?
     public var pinnedRecipe: String?
+    public var mara: NPCState?
 }
 
 enum RLE {
@@ -60,12 +61,13 @@ extension Game {
                         inventory: inv, storage: storage, story: story, odi: odi,
                         mat: RLE.encode(matBytes), dens: RLE.encode(densBytes),
                         buried: world.buried, props: world.props, climbs: world.climbs,
-                        appliedJobs: Array(appliedJobs).sorted(), activeJob: activeJob, pinnedRecipe: pinnedRecipe)
+                        appliedJobs: Array(appliedJobs).sorted(), activeJob: activeJob, pinnedRecipe: pinnedRecipe, mara: mara)
     }
 
     /// Restore a saved game on top of a freshly generated world.
-    public static func load(_ s: SaveGame) -> Game {
+    public static func load(_ s: SaveGame, clock: @escaping () -> Date = { Date() }) -> Game {
         let g = Game()
+        g.clock = clock
         let w = g.world
         if let m = RLE.decode(s.mat, count: w.w * w.h) {
             for i in m.indices { w.mat[i] = Mat(rawValue: m[i]) ?? .dirt }
@@ -88,11 +90,14 @@ extension Game {
         g.appliedJobs = Set(s.appliedJobs)
         g.activeJob = s.activeJob
         g.pinnedRecipe = s.pinnedRecipe
+        if let m = s.mara { g.mara = m }
         g.time = s.playSeconds
         g.started = true
         g.candle = 1
         if g.story.flags.contains("broke") { g.ambient = 1 }
         if g.inv.has(.flashlight) && g.story.flags.contains("flashOn") { g.max.flashI = 1 }
+        // Work that continued while the game was closed.
+        g.advanceSharedJobs(to: g.clock())
         return g
     }
 

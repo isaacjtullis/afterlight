@@ -4,6 +4,7 @@ public enum ItemID: String, Codable, CaseIterable, Sendable {
     case chargeCrystal, liftTooth, spareGrip, fasteners, pipe, wire, lampCell
     case seedTin, pressureGauge, batteryCell, greens, trailMeal
     case lamp, ladderSection, waterTank
+    case pressureValve, rope
 
     public var name: String {
         switch self {
@@ -22,6 +23,8 @@ public enum ItemID: String, Codable, CaseIterable, Sendable {
         case .lamp: return "Lamp"
         case .ladderSection: return "Ladder section"
         case .waterTank: return "Water tank"
+        case .pressureValve: return "Pressure valve"
+        case .rope: return "Rope"
         }
     }
 
@@ -42,6 +45,8 @@ public enum ItemID: String, Codable, CaseIterable, Sendable {
         case .lamp: return "Place it to light the way home."
         case .ladderSection: return "Place under an opening to climb it."
         case .waterTank: return "Place it in the workshop to store water."
+        case .pressureValve: return "Brass, heavy, threaded both ends. A pump won't hold pressure without one."
+        case .rope: return "Old climbing line. Two lengths and an anchor will get you up a chimney."
         }
     }
 
@@ -164,5 +169,7 @@ public enum Recipes {
                note: "Stores what the pump sends home.", unlockFlag: "sawPump"),
         Recipe(id: "meal", name: "Trail meal", inputs: [ItemStack(.greens, 2)], output: .item(.trailMeal, 1),
                note: "Eat it on a dig to get your strength back.", unlockFlag: "harvested"),
+        Recipe(id: "rope", name: "Rope", inputs: [ItemStack(.wire, 2)], output: .item(.rope, 1),
+               note: "Braid wire into a climbing line.", unlockFlag: "sawChimney"),
     ]
 }

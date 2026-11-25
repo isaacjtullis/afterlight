@@ -57,7 +57,9 @@ public struct Story: Codable, Sendable {
     public var flags: Set<String> = []
     public var quests: [Quest] = []
     public var counters: [String: Int] = [:]
-    public var waterTo: String? = nil      // "home", "share", "odi"
+    public var waterTo: String? = nil      // where the home pump sends its water: "home" for now
+    /// Shared jobs, agreements, ownership and water routing with other survivors.
+    public var coop = Coop()
 
     public init() {}
 
@@ -223,18 +225,9 @@ extension Game {
             if let bank = world.prop("battery"), abs(p.x - bank.pos.x) < 2, p.y < 9.5, !f.contains("power") {
                 once("bank") { story.addQuest(.power); think("A battery bank. Dead. One good cell could wake it.", 3.2) }
             }
-            if p.x > 36 && p.x < 73 && p.y < 10.5 && !odi.met {
-                story.step("home", "pipe")
-                let beat = Int(time / 9)
-                if p.x > 50 && story.counters["knock"] != beat {
-                    story.counters["knock"] = beat
-                    emit(.knock)
-                    once("knock") { think("Knocking. Three, then two. Someone’s on the other side.", 3.4) }
-                }
-            }
             if inv.count(.batteryCell) > 0 { story.step("power", "cell") }
             checkPassageLit()
-            checkChapter3()
+            maraBeats()
         }
     }
 
@@ -243,9 +236,9 @@ extension Game {
         story.step("ascent", "maint")
         story.chapter = 3
         story.flags.insert("ch2Done")
-        story.addQuest(.placeToReturn)
+        story.addQuest(.dryTaps)
         story.addQuest(.lights)
-        emit(.chapter(3, "A Place to Come Back To"))
+        emit(.chapter(3, "Dry Taps"))
         emit(.saveNow)
     }
 
@@ -262,25 +255,16 @@ extension Game {
             story.flags.insert("passageLit")
             story.step("lights", "place")
             story.step("home", "light")
-            think("A light every few steps, all the way to Odi’s.", 3)
-            emit(.saveNow)
-        }
-    }
-
-    func checkChapter3() {
-        guard story.chapter == 3 else { return }
-        let f = story.flags
-        if odi.met && f.contains("pumpFixed") && story.waterTo != nil && f.contains("passageLit") {
-            story.chapter = 4
-            emit(.chapter(4, "The Buried Network"))
-            later(2) { $0.think("Tamsin knows the lift. Odi said she’d send word.", 4) }
+            think("A light every few steps, all the way to the outpost.", 3)
             emit(.saveNow)
         }
     }
 
     // MARK: Odi
 
+    /// Odi now belongs to a later chapter; until then she isn't in the world.
     func odiTick(_ dt: Double) {
+        guard story.chapter >= 5 else { return }
         let homeX = 81.0, visitX = 34.0
         if story.flags.contains("passageLit") && odi.met {
             // She uses the lit passage: walks to the maintenance room, lingers, walks home.
@@ -306,7 +290,7 @@ extension Game {
         }
     }
 
-    public var nearOdi: Bool { abs(odi.pos.x - max.pos.x) < 1.8 && abs(odi.pos.y - max.pos.y) < 1.2 }
+    public var nearOdi: Bool { story.chapter >= 5 && abs(odi.pos.x - max.pos.x) < 1.8 && abs(odi.pos.y - max.pos.y) < 1.2 }
 
     // MARK: conversations
 
@@ -414,6 +398,7 @@ extension Game {
         func act(_ id: String, _ label: String, _ at: V2, _ big: Bool = false) -> ContextAction { ContextAction(id: id, label: label, anchor: at, prominent: big) }
 
         if max.stamina < 25 && inv.count(.trailMeal) > 0 { return act("eat", "Eat a trail meal", V2(p.x, p.y - 2.4), true) }
+        if let c = maraContext() { return c }
         if nearOdi { return act("talk", odi.met ? "Talk to Odi" : "Say hello", V2(odi.pos.x, odi.pos.y - 2.4), !odi.met) }
         if underShaft && f.contains("sawShaft") && !f.contains("triedUp") { return act("tryUp", "Dig up", V2(p.x, p.y - 2.4)) }
         if underShaft && available(.ladderSection) > 0 && !world.climbs.contains(where: { $0.id == "ladder.shaft" }) {
@@ -439,6 +424,7 @@ extension Game {
             case .locker where !pr.stock.isEmpty: return act("search:\(pr.id)", "Search locker", V2(pr.pos.x, pr.pos.y - 2.2))
             case .buckledLocker: return act("buckled", "Buckled shut", V2(pr.pos.x, pr.pos.y - 2.2))
             case .liftCar, .drillRig, .gantry: if !pr.stock.isEmpty { return act("salvage:\(pr.id)", "Salvage", V2(pr.pos.x, pr.pos.y - 2.4)) }
+            case .sunkValve: if !pr.stock.isEmpty { return act("salvage:\(pr.id)", "Take the valve", V2(pr.pos.x, pr.pos.y - 1.8), true) }
             case .storage: return act("storage", "Storage", V2(pr.pos.x, pr.pos.y - 2.0))
             case .pump:
                 if !f.contains("pumpFixed") && available(.pressureGauge) > 0 && available(.fasteners) >= 2 { return act("fixPump", "Repair pump", V2(pr.pos.x, pr.pos.y - 2.2), true) }
@@ -507,10 +493,11 @@ extension Game {
             for i in 0..<5 { later(Double(i) * 0.25) { $0.emit(.spark(at: V2(31, 8))) } }
             later(1.5) { g in
                 g.think("It catches. Water.", 2.4)
-                if !g.odi.met { g.story.waterTo = "home"; g.later(2.6) { $0.hint("The water runs home for now.", 4) } }
+                if g.story.waterTo == nil { g.story.waterTo = "home"; g.later(2.6) { $0.hint("The home pump fills your tank.", 4) } }
             }
             emit(.saveNow)
         case "amend": emit(.conversation("odi.amend"))
+        case "clearIntake": clearIntake()
         case "power":
             consume(.batteryCell, 1); consume(.wire, 1)
             story.flags.insert("power")
@@ -560,7 +547,9 @@ extension Game {
         case "buckled":
             think("Buckled shut. A pry bar would open it.", 2.6)
         default:
-            if a.id.hasPrefix("search:") || a.id.hasPrefix("salvage:") {
+            if a.id.hasPrefix("panel:") {
+                emit(.panel(String(a.id.dropFirst("panel:".count))))
+            } else if a.id.hasPrefix("search:") || a.id.hasPrefix("salvage:") {
                 let id = String(a.id.split(separator: ":")[1])
                 takeFrom(propID: id)
             }
@@ -592,13 +581,13 @@ extension Game {
     // MARK: crops
 
     public var cropConditions: String {
-        let water = story.flags.contains("pumpFixed") && !world.props(of: .waterTank).isEmpty && story.waterTo != "odi"
-        if !water { return "They’ll need water from the pump and a tank at home." }
+        let water = homeWater && !world.props(of: .waterTank).isEmpty
+        if !water { return "They’ll need water from a pump and a tank at home." }
         return ""
     }
 
     func cropMinutes(_ bed: Prop) -> Double? {
-        let water = story.flags.contains("pumpFixed") && !world.props(of: .waterTank).isEmpty && story.waterTo != "odi"
+        let water = homeWater && !world.props(of: .waterTank).isEmpty
         guard water else { return nil }
         let lit = story.flags.contains("power") || world.props(of: .lamp).contains { $0.pos.dist(bed.pos) < 4.5 }
         guard lit else { return nil }

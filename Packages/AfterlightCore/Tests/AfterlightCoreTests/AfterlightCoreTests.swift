@@ -137,19 +137,12 @@ final class ChapterTests: XCTestCase {
         XCTAssertEqual(g.story.chapter, 3, "stepping into the maintenance room completes chapter 2")
     }
 
-    func testChapterThreeChoicesComplete() {
+    func testLightingThePassageToTheOutpost() {
         let g = Game()
         g.begin()
         g.story.chapter = 3
         g.story.flags.formUnion(["ordersOK", "ch2Done", "hatchOpen"])
-        g.story.addQuest(.placeToReturn); g.story.addQuest(.lights)
-        g.choose("odi.meet", "help")
-        _ = g.drainEvents()
-        XCTAssertTrue(g.odi.met)
-        g.story.flags.insert("pumpFixed")
-        g.choose("odi.water", "share")
-        XCTAssertEqual(g.story.waterTo, "share")
-        // carve the passage and light it
+        g.story.addQuest(.dryTaps); g.story.addQuest(.lights)
         for x in stride(from: 35.5, through: 72.5, by: 1.0) {
             _ = g.world.carve(center: V2(x, 7.6), radius: 0.9, floorY: 9, tool: .shovel)
             _ = g.world.carve(center: V2(x, 8.45), radius: 0.9, floorY: 9, tool: .shovel)
@@ -158,7 +151,7 @@ final class ChapterTests: XCTestCase {
         g.max.pos = V2(30, 9)
         sim(g, GameInput(), 0.5)
         XCTAssertTrue(g.story.flags.contains("passageLit"))
-        XCTAssertEqual(g.story.chapter, 4)
+        XCTAssertEqual(g.story.chapter, 3, "lighting the way is a side quest; the chapter ends by going up")
     }
 }
 

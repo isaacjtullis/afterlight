@@ -22,7 +22,9 @@ public enum Backdrop: UInt8, Codable, Sendable {
     case room       // workshop panels
     case shaft      // lift shaft lining
     case maint      // maintenance room panels
-    case outpost    // the grower's outpost
+    case outpost    // Mara's outpost
+    case sump       // the flooded sump under the outpost
+    case transit    // the old transit level, one level up
 }
 
 public enum DigTool: String, Codable, Sendable {
@@ -45,7 +47,7 @@ public struct Buried: Codable, Identifiable, Equatable, Sendable {
 
 /// A vertical climbable: rungs, a ladder Max placed, or footholds he cut.
 public struct Climb: Codable, Identifiable, Equatable, Sendable {
-    public enum Kind: String, Codable, Sendable { case rungs, ladder, foothold }
+    public enum Kind: String, Codable, Sendable { case rungs, ladder, foothold, rope }
     public var id: String
     public var x: Double
     public var top: Double      // smaller y: highest point feet can reach
@@ -59,6 +61,8 @@ public enum PropKind: String, Codable, Sendable {
     case pump, batteryBank, warmPipe         // maintenance room
     case lamp, planter, waterTank            // placed by the player
     case outpostDoor, odiStall
+    // Mara's outpost (chapter 3)
+    case maraTap, maraPump, maraLift, maraShelf, sumpHatch, intake, sunkValve, chimney, transitLift
 }
 
 public struct Prop: Codable, Identifiable, Equatable, Sendable {
@@ -249,6 +253,19 @@ public final class World {
         }
         markDirty(x0: center.x - R - 0.5, y0: center.y - R - 0.5, x1: center.x + R + 0.5, y1: center.y + R + 0.5)
         return res
+    }
+
+    /// Open or close one built tile (a hatch), reshaping only the fine field inside it.
+    public func setHatch(_ c: Int, _ r: Int, open: Bool) {
+        set(c, r, open ? .air : .metal)
+        let K = World.K
+        for j in (r * K)...((r + 1) * K) {
+            for i in (c * K + 1)...((c + 1) * K - 1) {
+                let edge = j == r * K || j == (r + 1) * K
+                dens[j * dw + i] = open ? 0 : (edge ? 0.5 : 1)
+            }
+        }
+        markDirty(x0: Double(c) - 1, y0: Double(r) - 1, x1: Double(c) + 2, y1: Double(r) + 2)
     }
 
     // MARK: dirty tracking

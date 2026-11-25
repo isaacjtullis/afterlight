@@ -31,6 +31,7 @@ public enum GameEvent: Equatable, Sendable {
     case openSheet(Sheet)
     case conversation(String)
     case placed(String)
+    case panel(String)
     case saveNow
 }
 
@@ -81,7 +82,9 @@ public final class Game {
     public var inv = Inventory()
     public var storage = Storage()
     public var story = Story()
-    public var odi = NPCState(id: "odi", pos: V2(81, 9))
+    /// Odi waits for a later chapter, far along the cavern.
+    public var odi = NPCState(id: "odi", pos: V2(140, 41))
+    public var mara = NPCState(id: "mara", pos: Landmarks.maraHome)
     public var drops: [Drop] = []
 
     public internal(set) var time = 0.0
@@ -92,6 +95,8 @@ public final class Game {
 
     public var thoughtText = "", thoughtT = 0.0
     public var hintText = "", hintT = 0.0
+    public var speechWho = "", speechText = "", speechT = 0.0
+    var jobTickT = 0.0
 
     public var order: DigOrder? = nil
     public var planning: OrderPreview? = nil
@@ -145,6 +150,9 @@ public final class Game {
         for t in due { t.fn(self) }
         if thoughtT > 0 { thoughtT -= dt }
         if hintT > 0 { hintT -= dt }
+        if speechT > 0 { speechT -= dt }
+        jobTickT += dt
+        if jobTickT >= 0.5 { jobTickT = 0; if !story.coop.jobs.isEmpty { advanceSharedJobs(to: clock()) } }
         if started { candle = Swift.min(1, candle + dt * 0.8) }
         flicker = Swift.max(0, flicker - dt * 0.5)
         if story.flags.contains("broke") { ambient = Swift.min(1, ambient + dt * 0.25) }
@@ -210,6 +218,7 @@ public final class Game {
         pickupsTick(dt)
         aimTick(dt, lookUp: input.up && max.mode == .walk && !inv.has(.shortPick))
         odiTick(dt)
+        maraTick(dt)
         storyTick(dt)
         context = computeContext()
     }
