@@ -169,7 +169,7 @@ extension Game {
             if !story.flags.contains("sawChimney") { story.flags.insert("sawChimney"); think("An old maintenance chimney. Rungs rusted off. Rope could do it.", 3.6) }
         }
         // Up: either way counts.
-        if story.chapter == 3 && p.y < 3.6 && p.x > Double(Landmarks.transit.x0) && p.x < Double(Landmarks.transit.x1) && max.mode == .walk {
+        if story.chapter == 3 && p.y < 4.0 && p.x > Double(Landmarks.transit.x0) && p.x < Double(Landmarks.transit.x1) && max.mode == .walk {
             finishChapter3()
         }
     }

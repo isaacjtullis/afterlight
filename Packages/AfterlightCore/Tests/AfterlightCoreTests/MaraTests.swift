@@ -180,7 +180,7 @@ final class MaraTests: XCTestCase {
         sim(g, GameInput(up: true), 6)
         sim(g, GameInput(), 1)
         XCTAssertEqual(g.max.mode, .walk)
-        XCTAssertLessThan(g.max.pos.y, 3.6, "at \(g.max.pos)")
+        XCTAssertLessThan(g.max.pos.y, 4.0, "on the platform at \(g.max.pos)")
         XCTAssertEqual(g.story.chapter, 4)
         XCTAssertTrue(g.story.flags.contains("up.chimney"))
     }
