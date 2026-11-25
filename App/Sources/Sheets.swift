@@ -228,3 +228,88 @@ struct ReportCard: View {
         }
     }
 }
+
+
+/// A small panel that opens at the person or object it belongs to.
+struct PanelCard: View {
+    @EnvironmentObject var model: GameModel
+    let panel: Panel
+    private let width: CGFloat = 300
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .topLeading) {
+                Color.black.opacity(0.001).ignoresSafeArea().onTapGesture { model.closePanel() }
+                card
+                    .frame(width: min(width, geo.size.width - 16))
+                    .alignmentGuide(.leading) { d in
+                        let left = min(max(8, model.panelPoint.x - d.width / 2), geo.size.width - d.width - 8)
+                        return -left
+                    }
+                    .alignmentGuide(.top) { d in
+                        // Sit just above the thing it's about; never off the top of the screen.
+                        let top = min(max(56, model.panelPoint.y - d.height - 14), geo.size.height - d.height - 8)
+                        return -top
+                    }
+            }
+        }
+        .transition(.opacity.combined(with: .scale(scale: 0.96)))
+    }
+
+    private var card: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(panel.speaker ?? panel.title).font(.avenir(13, "DemiBold")).foregroundStyle(Color.amber)
+                Spacer()
+                Button { model.closePanel() } label: {
+                    Image(systemName: "xmark").font(.system(size: 12, weight: .semibold)).foregroundStyle(Color.cream.opacity(0.7))
+                        .frame(width: 30, height: 30)
+                }
+            }
+            ForEach(panel.lines, id: \.self) { l in
+                Text(l).font(.avenir(15)).foregroundStyle(Color.cream).fixedSize(horizontal: false, vertical: true)
+            }
+            if let c = model.confirming {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(c.confirm ?? "").font(.avenir(14)).foregroundStyle(Color.cream).fixedSize(horizontal: false, vertical: true)
+                    HStack {
+                        Button("Back") { model.confirming = nil }.buttonStyle(PillStyle(prominent: false))
+                        Button("Do it") { model.tapRow(c) }.buttonStyle(PillStyle(prominent: true))
+                    }
+                }
+                .padding(12)
+                .background(RoundedRectangle(cornerRadius: 14).fill(Color(red: 0.4, green: 0.12, blue: 0.1).opacity(0.5)))
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 6) {
+                        ForEach(panel.rows) { r in row(r) }
+                    }
+                }
+                .frame(maxHeight: 300)
+            }
+        }
+        .padding(14)
+        .background(RoundedRectangle(cornerRadius: 20).fill(Color(red: 0.1, green: 0.06, blue: 0.08).opacity(0.95)))
+        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.white.opacity(0.12), lineWidth: 1))
+    }
+
+    @ViewBuilder private func row(_ r: PanelRow) -> some View {
+        switch r.style {
+        case .info, .done:
+            Text(r.label).font(.avenir(13)).foregroundStyle(Color.cream.opacity(r.style == .done ? 0.55 : 0.8))
+                .fixedSize(horizontal: false, vertical: true)
+        case .action, .primary:
+            Button { model.tapRow(r) } label: {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(r.label).font(.avenir(15, "DemiBold")).foregroundStyle(Color.cream)
+                    if let d = r.detail { Text(d).font(.avenir(12)).foregroundStyle(Color.cream.opacity(0.7)).fixedSize(horizontal: false, vertical: true) }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 12).padding(.vertical, 9)
+                .background(RoundedRectangle(cornerRadius: 12).fill(r.style == .primary ? Color(red: 1, green: 0.67, blue: 0.4).opacity(0.25) : Color.white.opacity(0.08)))
+            }
+            .disabled(!r.enabled)
+            .opacity(r.enabled ? 1 : 0.45)
+        }
+    }
+}

@@ -18,6 +18,8 @@ final class GameScene: SKScene {
     private var climbKey = ""
     private let maxNode = SKSpriteNode()
     private let odiNode = SKSpriteNode()
+    private let maraNode = SKSpriteNode()
+    private let waterNode = SKShapeNode()
     private let darkNode = SKSpriteNode()
     private let skyNode = SKSpriteNode()
     private var layerNodes: [(TerrainArt.Layer, SKSpriteNode)] = []
@@ -74,6 +76,8 @@ final class GameScene: SKScene {
         darkNode.zPosition = 50; darkNode.anchorPoint = CGPoint(x: 0.5, y: 0.5); cam.addChild(darkNode)
         maxNode.zPosition = 25; addChild(maxNode)
         odiNode.zPosition = 24; addChild(odiNode)
+        maraNode.zPosition = 24; addChild(maraNode)
+        waterNode.zPosition = 45; waterNode.lineWidth = 0; addChild(waterNode)
         climbNode.zPosition = 15; addChild(climbNode)
         beamNode.zPosition = 60; beamNode.blendMode = .add; beamNode.strokeColor = .clear; addChild(beamNode)
         candleGlow.zPosition = 61; candleGlow.blendMode = .add; candleGlow.color = UIColor(red: 1, green: 0.63, blue: 0.27, alpha: 1); candleGlow.colorBlendFactor = 1; addChild(candleGlow)
@@ -122,6 +126,10 @@ final class GameScene: SKScene {
     private func sp(_ x: Double, _ y: Double) -> CGPoint { CGPoint(x: CGFloat(x) * S, y: -CGFloat(y) * S) }
 
     func worldX(fromScreenX x: CGFloat) -> Double { camX + Double((x - size.width / 2) / sc) }
+    /// Where a world point sits on screen, in SwiftUI's top-left coordinates.
+    func viewPoint(_ p: V2) -> CGPoint {
+        CGPoint(x: size.width / 2 + CGFloat(p.x - camX) * sc, y: size.height / 2 + CGFloat(p.y - camY) * sc)
+    }
 
     // MARK: frame
 
@@ -247,6 +255,7 @@ final class GameScene: SKScene {
             var p = p0
             if p.kind == .workbench && !g.inv.has(.flashlight) { p.flags.insert("flashlight") }
             if p.kind == .pump && g.story.flags.contains("pumpFixed") { p.flags.insert("fixed") }
+            if p.kind == .maraTap && g.story.coop.water.outpostTapFlow > 0 { p.flags.insert("flowing") }
             let crop = p.kind == .planter ? (p.planted == nil ? 0 : max(0.08, g.cropProgress(p))) : 0
             let key = "\(p.kind.rawValue)|\(p.stock.isEmpty)|\(p.flags.sorted().joined())|\(Int(crop * 10))|\(g.story.flags.contains("power"))|\(S)"
             alive.insert(p.id)
@@ -284,6 +293,10 @@ final class GameScene: SKScene {
                 }
                 var y = c.bottom - 0.4
                 while y > top { path.move(to: sp(c.x - 0.7, y)); path.addLine(to: sp(c.x + 0.7, y)); y -= 0.7 }
+            case .rope:
+                path.move(to: sp(c.x, c.top - 0.2)); path.addLine(to: sp(c.x + 0.05, c.bottom))
+                var y = c.bottom - 0.6
+                while y > c.top { path.move(to: sp(c.x - 0.12, y)); path.addLine(to: sp(c.x + 0.14, y)); y -= 0.9 }
             case .foothold:
                 var y = c.bottom - 0.5
                 while y > c.top { path.move(to: sp(c.x - 0.15, y)); path.addLine(to: sp(c.x + 0.2, y + 0.05)); y -= 0.55 }
@@ -414,10 +427,30 @@ final class GameScene: SKScene {
         maxNode.position = sp(m.pos.x, m.pos.y)
         maxNode.isHidden = !g.started
 
-        // Odi
-        let o = g.odi
+        // Mara
         let (vx0, _, vx1, _) = visibleTileRect(margin: 3)
-        if o.pos.x > Double(vx0) && o.pos.x < Double(vx1) {
+        let mr = g.mara
+        if g.story.chapter >= 3 && mr.pos.x > Double(vx0) && mr.pos.x < Double(vx1) {
+            maraNode.isHidden = false
+            let working = g.activeJobID(for: "mara").flatMap { g.job($0) }?.status == .working && !mr.walking
+            if let img = Art.image(widthTiles: 1.8, heightTiles: 2.0, ppt: ppt, originX: 0.9, originY: 1.9, { ctx in
+                ActorArt.drawMara(ctx, face: mr.face, walking: mr.walking, working: working, time: g.time)
+            }) { maraNode.texture = SKTexture(cgImage: img) }
+            maraNode.size = CGSize(width: 1.8 * S, height: 2.0 * S)
+            maraNode.anchorPoint = CGPoint(x: 0.5, y: 1 - 1.9 / 2.0)
+            maraNode.position = sp(mr.pos.x, mr.pos.y)
+        } else {
+            maraNode.isHidden = true
+        }
+        // Cold water in the sump, and the line out of it while the pump runs.
+        let wp = CGMutablePath()
+        wp.addRect(CGRect(origin: sp(80, 14), size: CGSize(width: 7 * S, height: 1.7 * S)))
+        waterNode.path = wp
+        waterNode.fillColor = UIColor(red: 0.3, green: 0.55, blue: 0.68, alpha: 0.38 + 0.04 * CGFloat(sin(g.time * 1.7)))
+
+        // Odi (a later chapter)
+        let o = g.odi
+        if g.story.chapter >= 5 && o.pos.x > Double(vx0) && o.pos.x < Double(vx1) {
             odiNode.isHidden = false
             if let img = Art.image(widthTiles: 1.6, heightTiles: 2.0, ppt: ppt, originX: 0.8, originY: 1.9, { ctx in
                 ActorArt.drawOdi(ctx, face: o.face, walking: o.walking, time: g.time)

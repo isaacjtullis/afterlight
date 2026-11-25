@@ -45,6 +45,12 @@ enum TerrainArt {
                 case .outpost:
                     ctx.setFillColor(color((c + r) % 2 == 0 ? 0x5a4636 : 0x5e4939)); ctx.fill(rect)
                     ctx.setFillColor(color(0x000000, 0.18)); ctx.fill(CGRect(x: CGFloat(c), y: CGFloat(r) + 0.95, width: 1, height: 0.05))
+                case .sump:
+                    ctx.setFillColor(color(0x2c3438)); ctx.fill(rect)
+                    ctx.setFillColor(color(0x000000, 0.2)); ctx.fill(CGRect(x: CGFloat(c), y: CGFloat(r) + 0.95, width: 1, height: 0.05))
+                case .transit:
+                    ctx.setFillColor(color(c % 6 == 0 ? 0x33302e : 0x3a3633)); ctx.fill(rect)
+                    if r == 1 && c % 6 == 3 { ctx.setFillColor(color(0xffdcb4, 0.08)); ctx.fill(CGRect(x: CGFloat(c), y: CGFloat(r), width: 1.2, height: 0.25)) }
                 case .shaft:
                     ctx.setFillColor(color(0x2e2c34)); ctx.fill(rect)
                     ctx.setFillColor(color(0xffdcb4, 0.06)); ctx.fill(CGRect(x: CGFloat(c), y: CGFloat(r) + 0.82, width: 1, height: 0.1))
@@ -82,7 +88,7 @@ enum TerrainArt {
                     let a = w.d(i, j), b = w.d(i + 1, j), d = w.d(i + 1, j + 1), e = w.d(i, j + 1)
                     if t == .metal { continue }
                     if a < 0.5 && b < 0.5 && d < 0.5 && e < 0.5 { continue }
-                    if t == .air || t == .dug, [Backdrop.room, .shaft, .maint, .outpost].contains(w.bd(tc, tr)) { continue }
+                    if t == .air || t == .dug, [Backdrop.room, .shaft, .maint, .outpost, .sump, .transit].contains(w.bd(tc, tr)) { continue }
                     let x = CGFloat(i) / k, y = CGFloat(j) / k, s = 1 / k
                     let p = path(cellColor(tc, tr))
                     if a >= 0.5 && b >= 0.5 && d >= 0.5 && e >= 0.5 {

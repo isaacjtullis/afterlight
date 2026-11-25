@@ -111,6 +111,45 @@ enum Art {
             rect(-0.6, -1.6, 1.2, 1.6, 0x55606a); rect(-0.6, -1.6, 1.2, 0.12, 0x6b7682); rect(-0.5, -0.9, 1.0, 0.6, 0x3f7fa0, 0.55)
         case .outpostDoor:
             break
+        case .maraTap:
+            rect(-0.08, -1.6, 0.16, 1.1, 0x55606a); rect(-0.08, -1.6, 0.45, 0.14, 0x6b7682); rect(0.28, -1.6, 0.1, 0.25, 0x6b7682)
+            ActorArt.dot(ctx, 0.0, -1.0, 0.12, c(0xb08a4a))
+            rect(-0.45, -0.32, 0.95, 0.32, 0x3f3a36); rect(-0.4, -0.3, 0.85, 0.06, 0x2a2622)
+            if p.flags.contains("flowing") { rect(0.3, -1.35, 0.06, 1.0, 0x8fc7e0, 0.7); rect(-0.38, -0.25, 0.8, 0.12, 0x5fa0c0, 0.6) }
+        case .maraPump:
+            rect(-0.5, -1.4, 1.0, 1.4, 0x4f4a44); rect(-0.42, -1.32, 0.84, 0.2, 0x6b625a)
+            rect(0.5, -0.9, 1.4, 0.18, 0x55606a)
+            ActorArt.line(ctx, [CGPoint(x: -0.1, y: -1.4), CGPoint(x: -0.1, y: -2.0), CGPoint(x: 0.5, y: -2.25)], c(0x8a6440), 0.08)
+            ActorArt.dot(ctx, 0.15, -0.75, 0.17, c(p.flags.contains("running") ? 0xf2efe6 : 0x6a6e72))
+            ActorArt.dot(ctx, 0.15, -0.75, 0.05, c(p.flags.contains("running") ? 0x3f7fa0 : 0x3a1a1a))
+        case .maraShelf:
+            rect(-0.9, -2.0, 1.8, 0.08, 0x6b4f3a); rect(-0.9, -1.2, 1.8, 0.08, 0x6b4f3a)
+            rect(-0.85, -2.0, 0.06, 2.0, 0x4f392d); rect(0.8, -2.0, 0.06, 2.0, 0x4f392d)
+            rect(-0.6, -1.45, 0.3, 0.25, 0x55606a); rect(0.25, -2.3, 0.4, 0.3, 0x8a6440)
+            if !p.stock.isEmpty { ActorArt.dot(ctx, -0.05, -1.32, 0.14, c(0xc9a24a)); rect(-0.2, -1.36, 0.3, 0.08, 0xa8842e) }
+        case .maraLift:
+            rect(-1.3, -4.9, 0.12, 4.9, 0x3b3640); rect(1.2, -4.9, 0.12, 4.9, 0x3b3640)
+            rect(-1.1, -2.5, 2.2, 2.5, p.flags.contains("repaired") ? 0x4a4a52 : 0x3a3540, 0.9)
+            for i in 0..<4 { rect(-1.1 + CGFloat(i) * 0.7, -2.5, 0.06, 2.5, 0x58505c) }
+            rect(-1.3, -5.0, 2.6, 0.2, 0x4a4450)
+            ActorArt.dot(ctx, 1.0, -2.9, 0.09, c(p.flags.contains("repaired") ? 0x9cff9c : 0xff6a4a))
+        case .transitLift:
+            rect(-1.3, -1.9, 0.12, 1.9, 0x3b3640); rect(1.2, -1.9, 0.12, 1.9, 0x3b3640); rect(-1.3, -1.95, 2.6, 0.15, 0x4a4450)
+            ActorArt.dot(ctx, 1.0, -1.4, 0.08, c(p.flags.contains("repaired") ? 0x9cff9c : 0x6a6e72))
+        case .sumpHatch:
+            if p.flags.contains("open") {
+                rect(-0.5, -0.06, 0.12, 0.06, 0x8a8f96); rect(0.38, -0.06, 0.12, 0.06, 0x8a8f96)
+                rect(0.5, -0.95, 0.08, 0.9, 0x6b7076)
+            } else {
+                rect(-0.5, -0.1, 1.0, 0.1, 0x6b7076); rect(-0.1, -0.16, 0.2, 0.08, 0xc9a24a)
+            }
+        case .intake:
+            rect(-0.6, -0.7, 1.2, 0.7, 0x45505a); rect(-0.5, -0.6, 1.0, 0.45, 0x2a2e33)
+            if p.flags.contains("clogged") { for i in 0..<5 { ActorArt.dot(ctx, -0.4 + CGFloat(i) * 0.2, -0.35, 0.12, c(0x5a4232)) } }
+        case .sunkValve:
+            if !p.stock.isEmpty { ActorArt.dot(ctx, 0, -0.18, 0.2, c(0xc9a24a)); rect(-0.32, -0.22, 0.64, 0.1, 0xa8842e) }
+        case .chimney:
+            rect(-0.9, -2.2, 0.08, 0.5, 0x5a4a3a); rect(0.82, -2.2, 0.08, 0.5, 0x5a4a3a)
         case .odiStall:
             rect(-1.6, -0.9, 3.2, 0.12, 0x6b4f3a); rect(-1.5, -0.78, 0.1, 0.78, 0x4f392d); rect(1.4, -0.78, 0.1, 0.78, 0x4f392d)
             for i in 0..<5 { ActorArt.dot(ctx, -1.2 + CGFloat(i) * 0.6, -1.05, 0.18, c(i % 2 == 0 ? 0x6f9a52 : 0x8cc46a)) }
@@ -128,6 +167,10 @@ enum Art {
         case .warmPipe: return (0, -0.3, 44, 0.5)
         case .odiStall: return (-2.8, -1.4, 5.6, 1.5)
         case .bed: return (-1.2, -0.9, 2.5, 1.0)
+        case .maraLift: return (-1.5, -5.2, 3.0, 5.3)
+        case .maraPump: return (-0.7, -2.4, 2.8, 2.5)
+        case .maraShelf: return (-1.0, -2.4, 2.0, 2.5)
+        case .transitLift: return (-1.5, -2.1, 3.0, 2.2)
         default: return (-1.0, -2.2, 2.0, 2.3)
         }
     }

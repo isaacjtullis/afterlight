@@ -23,6 +23,9 @@ struct UIState: Equatable {
     var packUsed = 0
     var pulseDown = false
     var ordersOK = false
+    var speech: String? = nil
+    var speaker = ""
+    var coopStatus: String? = nil
 }
 
 @MainActor
@@ -34,6 +37,9 @@ final class GameModel: ObservableObject {
     @Published var lineIndex = 0
     @Published var banner: String? = nil
     @Published var report: JobReport? = nil
+    @Published var panel: Panel? = nil
+    @Published var confirming: PanelRow? = nil
+    @Published var panelPoint: CGPoint = .zero
 
     private(set) var game: Game
     var input = GameInput()
@@ -80,10 +86,11 @@ final class GameModel: ObservableObject {
     func tick(_ dt: Double) {
         clock += dt
         guard !showTitle else { return }
-        let paused = conversation != nil || sheet != nil || banner != nil || game.activeJob != nil
+        let paused = conversation != nil || sheet != nil || banner != nil || game.activeJob != nil || panel != nil
         game.update(dt: dt, input: paused ? GameInput() : input)
         for e in game.drainEvents() { handle(e) }
         if let d = saveDue, clock >= d { saveDue = nil; saveNow(cloud: false) }
+        if let p = panel, let pt = scene?.viewPoint(p.anchor), abs(pt.x - panelPoint.x) + abs(pt.y - panelPoint.y) > 2 { panelPoint = pt }
         if let d = cloudDue, clock >= d { cloudDue = nil; pushCloud() }
         refreshUI()
     }
@@ -120,6 +127,11 @@ final class GameModel: ObservableObject {
             u.jobDone = JobResolver.completedSteps(j.plan, elapsed: Date().timeIntervalSince(j.startedAt))
         }
         u.packUsed = Inventory.capacity - g.inv.freeSlots
+        if g.speechT > 0 && !g.speechText.isEmpty { u.speech = g.speechText; u.speaker = g.speechWho == "mara" ? "Mara" : g.speechWho }
+        if let id = g.activeJobID(for: "mara"), let j = g.job(id), j.status == .working {
+            let s = Int(j.secondsLeft.rounded(.up))
+            u.coopStatus = "Mara · \(j.title) · \(s / 60):\(String(format: "%02d", s % 60))"
+        }
         u.pulseDown = g.world.buried.contains { !$0.revealed && abs($0.pos.x - g.max.pos.x) < 1.5 } && g.story.flags.contains("said.glint")
         if u != ui { ui = u }
     }
@@ -157,7 +169,44 @@ final class GameModel: ObservableObject {
         case .conversation(let id):
             if let c = game.conversation(id) { lineIndex = 0; conversation = c }
         case .placed: audio.play(.scoop); haptics.bite()
+        case .panel(let id):
+            confirming = nil
+            if let p = game.panel(id) { panelPoint = scene?.viewPoint(p.anchor) ?? .zero; panel = p }
         case .saveNow: if saveDue == nil { saveDue = clock + 1.5 }
+        }
+    }
+
+    // MARK: panels
+
+    /// Taps a panel row. Rows that break a deal, move water, or take someone's things ask once first.
+    func tapRow(_ row: PanelRow) {
+        guard let p = panel, row.enabled else { return }
+        if row.confirm != nil && confirming?.id != row.id { confirming = row; haptics.tap(); return }
+        confirming = nil
+        game.choosePanel(p.id, row.id)
+        haptics.tap()
+        for e in game.drainEvents() { handle(e) }
+        scheduleCoopNotifications()
+        if ["ride.up", "ride.down", "chimney.rig"].contains(row.id) { closePanel() } else { panel = game.panel(p.id) }
+    }
+
+    func closePanel() {
+        if let p = panel { game.panelClosed(p.id) }
+        panel = nil
+        confirming = nil
+    }
+
+    /// Lets the player know when someone finishes work for them while the game is closed.
+    private func scheduleCoopNotifications() {
+        let center = UNUserNotificationCenter.current()
+        for j in game.story.coop.jobs {
+            let id = "coop." + j.id
+            center.removePendingNotificationRequests(withIdentifiers: [id])
+            guard j.status == .working, j.secondsLeft > 20 else { continue }
+            let c = UNMutableNotificationContent()
+            c.title = j.worker == "mara" ? "Mara’s done" : "Work finished"
+            c.body = j.effect == "waterOn" ? "The outpost’s water is running." : j.effect == "liftOn" ? "The lift works. It goes up to the transit level." : j.title
+            center.add(UNNotificationRequest(identifier: id, content: c, trigger: UNTimeIntervalNotificationTrigger(timeInterval: j.secondsLeft, repeats: false)))
         }
     }
 

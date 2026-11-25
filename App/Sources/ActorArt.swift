@@ -140,6 +140,39 @@ enum ActorArt {
         ctx.restoreGState()
     }
 
+    /// Mara: the outpost's mechanic. Rust overalls, a teal headscarf, a wrench on her hip.
+    static func drawMara(_ ctx: CGContext, face: Int, walking: Bool, working: Bool, time: Double) {
+        ctx.saveGState()
+        ctx.scaleBy(x: CGFloat(face), y: 1)
+        let ph = time * (walking ? 7 : 0)
+        let bob = walking ? CGFloat(-abs(sin(ph)) * 0.06) : CGFloat(sin(time * 2.0) * 0.01)
+        let hipY: CGFloat = -0.66, shY = -1.18 + bob, headY = -1.48 + bob
+        for i in [1, 0] {
+            let sw = walking ? CGFloat(sin(ph + Double(i) * .pi)) : 0
+            let fx = CGFloat(i == 1 ? -0.08 : 0.08) + sw * 0.22
+            line(ctx, [CGPoint(x: 0, y: hipY), CGPoint(x: fx, y: -0.05)], c(i == 1 ? 0x5a3524 : 0x6b4030), 0.13)
+            ctx.setFillColor(c(0x1e1a18)); rr(ctx, fx - 0.09, -0.11, 0.22, 0.11, 0.05); ctx.fillPath()
+        }
+        ctx.setFillColor(c(0x8a5a3c))
+        ctx.addLines(between: [CGPoint(x: -0.18, y: shY), CGPoint(x: 0.18, y: shY), CGPoint(x: 0.22, y: hipY + 0.06), CGPoint(x: -0.22, y: hipY + 0.06)])
+        ctx.closePath(); ctx.fillPath()
+        ctx.setFillColor(c(0x5c3a28)); ctx.fill(CGRect(x: -0.13, y: shY + 0.06, width: 0.26, height: 0.2))
+        ctx.setFillColor(c(0x2a2420)); ctx.fill(CGRect(x: -0.22, y: hipY + 0.02, width: 0.44, height: 0.06))
+        // wrench on the hip
+        line(ctx, [CGPoint(x: -0.2, y: hipY + 0.02), CGPoint(x: -0.26, y: hipY + 0.3)], c(0x9aa0a6), 0.05)
+        dot(ctx, 0.02, headY, 0.21, c(0x9c6b4e))
+        ctx.setFillColor(c(0x2f7a78))
+        ctx.addArc(center: CGPoint(x: 0, y: headY - 0.02), radius: 0.225, startAngle: .pi * 0.95, endAngle: .pi * 2.02, clockwise: false); ctx.fillPath()
+        line(ctx, [CGPoint(x: -0.2, y: headY - 0.02), CGPoint(x: -0.32, y: headY + 0.12)], c(0x2f7a78), 0.06)
+        ctx.setFillColor(c(0x1a1214)); ctx.fillEllipse(in: CGRect(x: 0.1, y: headY - 0.03, width: 0.045, height: 0.065))
+        // arm: working swings a wrench, otherwise rests
+        let a = working ? CGFloat(sin(time * 9)) * 0.4 : 0
+        let hand = CGPoint(x: 0.3 + a * 0.1, y: shY + 0.36 - a * 0.25)
+        line(ctx, [CGPoint(x: 0.08, y: shY + 0.08), hand], c(0x8a5a3c), 0.1)
+        if working { line(ctx, [hand, CGPoint(x: hand.x + 0.22, y: hand.y - 0.1)], c(0x9aa0a6), 0.06) }
+        ctx.restoreGState()
+    }
+
     /// The lantern hanging off Max's pack, in world space.
     static func drawLantern(_ ctx: CGContext, hook: CGPoint, lamp: CGPoint, swing: Double, flicker: Double) {
         line(ctx, [hook, CGPoint(x: lamp.x, y: lamp.y - 0.08)], c(0x2a2623), 0.025)

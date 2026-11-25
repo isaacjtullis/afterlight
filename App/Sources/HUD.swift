@@ -70,11 +70,25 @@ struct HUDView: View {
                         .frame(maxWidth: 420)
                         .transition(.opacity)
                 }
+                if let s = ui.speech {
+                    (Text(ui.speaker + "  ").font(.avenir(14, "DemiBold")).foregroundColor(Color.amber) + Text(s).font(.avenir(15)).foregroundColor(Color.cream))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 16).padding(.vertical, 9)
+                        .background(RoundedRectangle(cornerRadius: 14).fill(Color(red: 0.12, green: 0.18, blue: 0.18).opacity(0.78)))
+                        .frame(maxWidth: 440)
+                        .transition(.opacity)
+                }
+                if let c = ui.coopStatus {
+                    Text(c).font(.avenir(13, "DemiBold")).foregroundStyle(Color.cream.opacity(0.9))
+                        .padding(.horizontal, 12).frame(height: 30)
+                        .background(Capsule().fill(Color.black.opacity(0.4)))
+                }
                 Spacer()
             }
             .padding(.horizontal, 14)
             .padding(.top, 8)
             .animation(.easeInOut(duration: 0.3), value: ui.hint)
+            .animation(.easeInOut(duration: 0.3), value: ui.speech)
 
             if ui.jobTitle == nil && ui.planning == nil && !ui.cinematic {
                 controls(ui)
@@ -82,6 +96,7 @@ struct HUDView: View {
             if let text = ui.planning { planBar(text, ready: ui.planReady) }
             if let t = ui.jobTitle { jobBanner(t, ui) }
             if let c = model.conversation { ConversationCard(convo: c) }
+            if let p = model.panel { PanelCard(panel: p) }
             if let s = model.sheet { SheetHost(sheet: s) }
             if let r = model.report { ReportCard(report: r) }
         }
