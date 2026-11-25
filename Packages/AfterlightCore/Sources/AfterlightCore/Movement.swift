@@ -77,8 +77,13 @@ extension Game {
 
     /// Continuous digging: rhythmic swings, a bite at each strike, creeping forward.
     func swingTick(_ dt: Double, kind: SwingKind) -> Int {
-        if !max.swingOn { max.swingOn = true; max.swing = 0.04; max.digFloor = max.pos.y }
-        if abs(max.pos.y - max.digFloor) > 0.7 || kind != .side { max.digFloor = max.pos.y }
+        func floorRef() -> Double {
+            // Standing on the rounded foot of a wall reads a little high; cut to the true floor line.
+            let r = max.pos.y.rounded()
+            return abs(max.pos.y - r) < 0.25 ? r : max.pos.y
+        }
+        if !max.swingOn { max.swingOn = true; max.swing = 0.04; max.digFloor = floorRef() }
+        if abs(max.pos.y - max.digFloor) > 0.7 || kind != .side { max.digFloor = floorRef() }
         max.swingKind = kind
         var dir = 0
         if kind == .side, let pr = frontProbe(max.face), pr.d > 0.14 {
@@ -111,7 +116,7 @@ extension Game {
             R = 0.55
             if let b = buriedBelow() { c = V2(b.pos.x, Swift.max(c.y, b.pos.y - 0.2)) }
         case .up:
-            c = V2(max.pos.x, max.pos.y - 2.0)
+            c = V2(max.pos.x, max.pos.y - (max.mode == .climb ? 2.4 : 2.0))
             R = 0.9
             tool = .pick
         }
@@ -196,9 +201,20 @@ extension Game {
         if max.vx != 0 {
             let nx = max.pos.x + max.vx * dt
             let sgn: Double = max.vx > 0 ? 1 : -1
-            if wallHit(nx + sgn * Tuning.halfWidth, max.pos.y) {
-                if abs(max.vx) > 4.5 { emit(.land(speed: 3)) }
-                max.vx = 0
+            let fx = nx + sgn * Tuning.halfWidth
+            if wallHit(fx, max.pos.y) {
+                // A knee-high lip (the rim of a hole he dug) is stepped over, not a wall.
+                if max.ground && !max.swingOn,
+                   let top = world.groundY(fx, from: max.pos.y - 1.0, to: max.pos.y),
+                   max.pos.y - top < 0.95, !wallHit(fx, top), !world.solid(nx, top - Tuning.height) {
+                    max.pos.x = nx
+                    max.pos.y = top
+                    max.vx *= 0.6
+                    max.squash = Swift.max(max.squash, 0.06)
+                } else {
+                    if abs(max.vx) > 4.5 { emit(.land(speed: 3)) }
+                    max.vx = 0
+                }
             } else {
                 max.pos.x = nx
             }
