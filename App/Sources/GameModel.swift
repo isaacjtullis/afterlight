@@ -62,6 +62,24 @@ final class GameModel: ObservableObject {
         } else {
             game = Game()
         }
+        if ProcessInfo.processInfo.arguments.contains("-smoketest") { runSmokeTest() }
+    }
+
+    /// CI only: plays the opening hands-free so a simulator run can prove the app starts, walks and digs.
+    private func runSmokeTest() {
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(2))
+            print("SMOKE: title shown")
+            self.start()
+            try? await Task.sleep(for: .seconds(4))
+            print("SMOKE: candle lit")
+            self.input = GameInput(dx: 1)
+            try? await Task.sleep(for: .seconds(2.5))
+            self.input = GameInput(dx: 1, dig: true)
+            try? await Task.sleep(for: .seconds(6))
+            self.input = GameInput()
+            print("SMOKE: walked and dug, Max at \(self.game.max.pos)")
+        }
     }
 
     var hasSave: Bool { game.started }

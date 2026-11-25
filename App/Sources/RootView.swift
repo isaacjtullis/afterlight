@@ -60,7 +60,7 @@ struct TitleView: View {
             RadialGradient(colors: [Color(red: 1, green: 0.93, blue: 0.78), Color(red: 1, green: 0.77, blue: 0.55).opacity(0.5), .clear], center: UnitPoint(x: 0.5, y: 0.64), startRadius: 0, endRadius: 260)
             VStack(spacing: 0) {
                 Spacer()
-                Text("AFTERLIGHT").font(.avenir(46, "UltraLight")).tracking(14).foregroundStyle(Color(red: 1, green: 0.95, blue: 0.89))
+                Text("AFTERLIGHT").font(.avenir(40, "UltraLight")).tracking(9).lineLimit(1).minimumScaleFactor(0.5).foregroundStyle(Color(red: 1, green: 0.95, blue: 0.89))
                 Text("214 miles below the surface, the power has just gone out.")
                     .font(.avenir(17)).foregroundStyle(.white.opacity(0.85)).multilineTextAlignment(.center).padding(.top, 14).frame(maxWidth: 300)
                 VStack(spacing: 12) {

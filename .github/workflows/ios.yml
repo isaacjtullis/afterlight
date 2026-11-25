@@ -17,8 +17,33 @@ jobs:
       - name: Build for the simulator
         run: |
           xcodebuild -project Afterlight.xcodeproj -scheme Afterlight \
-            -destination 'generic/platform=iOS Simulator' \
+            -destination 'generic/platform=iOS Simulator' -derivedDataPath build \
             -skipPackagePluginValidation CODE_SIGNING_ALLOWED=NO build > build.log 2>&1 && status=0 || status=$?
           grep -E "(error|warning: unreachable):" build.log | sort -u | head -150 || true
           tail -30 build.log
           exit $status
+      - name: Launch in a simulator and play the opening
+        run: |
+          DEV=$(xcrun simctl list devices available | grep -E "iPhone 1[5-9]|iPhone 2" | head -1 | grep -oE "[0-9A-F-]{36}")
+          echo "Simulator $DEV"
+          xcrun simctl boot "$DEV" && xcrun simctl bootstatus "$DEV" -b
+          APP=$(find build/Build/Products -name "Afterlight.app" -path "*iphonesimulator*" | head -1)
+          xcrun simctl install "$DEV" "$APP"
+          mkdir -p shots
+          ( sleep 1.5; xcrun simctl io "$DEV" screenshot shots/1-title.png
+            sleep 5;  xcrun simctl io "$DEV" screenshot shots/2-candle.png
+            sleep 6;  xcrun simctl io "$DEV" screenshot shots/3-digging.png
+            sleep 6;  xcrun simctl io "$DEV" screenshot shots/4-later.png ) &
+          set +e
+          timeout 22 xcrun simctl launch --console-pty "$DEV" com.isaactullis.afterlight -smoketest | tee launch.log
+          code=${PIPESTATUS[0]}
+          wait
+          echo "launch exit: $code"
+          if [ "$code" != "124" ]; then echo "::error::The app exited or crashed during the smoke test"; \
+            find ~/Library/Logs/DiagnosticReports -name "Afterlight*" -mmin -5 -exec head -80 {} \; ; exit 1; fi
+          grep -q "SMOKE: walked and dug" launch.log || { echo "::error::Smoke test did not finish"; exit 1; }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: simulator-screens
+          path: shots/

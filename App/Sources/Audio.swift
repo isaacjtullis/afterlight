@@ -7,6 +7,7 @@ final class AudioEngine {
 
     private let engine = AVAudioEngine()
     private let reverb = AVAudioUnitReverb()
+    private let submix = AVAudioMixerNode()
     private var players: [AVAudioPlayerNode] = []
     private var buffers: [Sfx: [AVAudioPCMBuffer]] = [:]
     private var next = 0
@@ -22,18 +23,24 @@ final class AudioEngine {
         try? AVAudioSession.sharedInstance().setActive(true)
         reverb.loadFactoryPreset(.mediumChamber)
         reverb.wetDryMix = 18
+        // Every player feeds a mixer (which takes many inputs), the mixer feeds the reverb, the reverb the output.
+        // A reverb has a single input: wiring several players straight into it leaves all but one unconnected,
+        // and starting an unconnected player crashes.
+        engine.attach(submix)
         engine.attach(reverb)
-        engine.connect(reverb, to: engine.mainMixerNode, format: format)
+        engine.connect(submix, to: reverb, format: nil)
+        engine.connect(reverb, to: engine.mainMixerNode, format: nil)
         for _ in 0..<10 {
             let p = AVAudioPlayerNode()
             engine.attach(p)
-            engine.connect(p, to: reverb, format: format)
+            engine.connect(p, to: submix, format: format)
             players.append(p)
         }
         engine.attach(ambientNode); engine.connect(ambientNode, to: engine.mainMixerNode, format: format)
-        engine.attach(windNode); engine.connect(windNode, to: reverb, format: format)
+        engine.attach(windNode); engine.connect(windNode, to: submix, format: format)
         for s in Sfx.allCases { buffers[s] = (0..<3).map { v in synth(s, variant: v) } }
-        do { try engine.start() } catch { return }
+        engine.prepare()
+        do { try engine.start() } catch { started = false; return }
         players.forEach { $0.play() }
         ambientNode.scheduleBuffer(ambientBuffer(), at: nil, options: .loops)
         ambientNode.volume = 0.5
@@ -44,7 +51,7 @@ final class AudioEngine {
     }
 
     func play(_ s: Sfx) {
-        guard started, let bs = buffers[s], !bs.isEmpty else { return }
+        guard started, engine.isRunning, let bs = buffers[s], !bs.isEmpty else { return }
         let p = players[next % players.count]
         next += 1
         p.scheduleBuffer(bs[Int.random(in: 0..<bs.count)], at: nil, options: .interrupts)
