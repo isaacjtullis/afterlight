@@ -16,7 +16,7 @@ final class MaraTests: XCTestCase {
             _ = g.world.carve(center: V2(x, 7.6), radius: 0.9, floorY: 9, tool: .shovel)
             _ = g.world.carve(center: V2(x, 8.45), radius: 0.9, floorY: 9, tool: .shovel)
         }
-        place(g, V2(76.5, 9))
+        place(g, V2(60, 9))
         return g
     }
 
@@ -169,7 +169,7 @@ final class MaraTests: XCTestCase {
         g.choosePanel("mara", "offer.decline")
         XCTAssertTrue(g.story.coop.agreements.isEmpty)
 
-        place(g, V2(70.5, 9))
+        place(g, V2(71.0, 9))
         XCTAssertEqual(g.context?.id, "panel:chimney")
         XCTAssertEqual(row(g, "chimney", "chimney.rig")?.enabled, false, "can't commit without the rope")
         g.inv.add(.rope, 2); g.inv.add(.fasteners, 2)

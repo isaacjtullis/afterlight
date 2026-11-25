@@ -165,7 +165,7 @@ extension Game {
             if p.x > 81.5 && story.flags.contains("said.tap") && !liftRepaired { once("lift") { think("And a lift. Stalled. That goes up.", 3) } }
             if !maraMet && p.x > 76.5 { once("maraHi") { say("mara", "Careful by the hatch. Who sent you down my line?") } }
         }
-        if (abs(p.x - (Double(Landmarks.chimney) + 0.5)) < 2.5 && p.y < 9.5 && p.y > 6) {
+        if (abs(p.x - (Double(Landmarks.chimney) + 1.0)) < 2.5 && p.y < 9.5 && p.y > 6) {
             if !story.flags.contains("sawChimney") { story.flags.insert("sawChimney"); think("An old maintenance chimney. Rungs rusted off. Rope could do it.", 3.6) }
         }
         // Up: either way counts.
@@ -263,13 +263,13 @@ extension Game {
         let chimneyText = MaraDeal.chimneyCost.map { "\($0.id.name) ×\($0.count)" }.joined(separator: ", ")
         let water = job(MaraDeal.waterJob), lift = job(MaraDeal.liftJob)
 
-        if !maraMet {
-            lines = ["You followed the knocking. That’s my pump, running dry.",
-                     "I’m Mara. The valve blew a week back and the intake’s choked with silt. No water, and no lift: I won’t run that drive dry."]
-        } else if story.coop.evidence.contains(where: { $0.id == "saw.spare" }) && holding("mara", .pressureValve) > 0 {
+        if story.coop.evidence.contains(where: { $0.id == "saw.spare" }) && holding("mara", .pressureValve) > 0 {
             lines = ["I watched you take my spare valve off that shelf. Put it back, or bring me another."]
         } else if story.flags.contains("mara.missingSpare") && holding("mara", .pressureValve) > 0 {
             lines = ["My spare valve’s gone from the shelf. I’m not saying it was you. I’m saying it’s gone."]
+        } else if !maraMet {
+            lines = ["You followed the knocking. That’s my pump, running dry.",
+                     "I’m Mara. The valve blew a week back and the intake’s choked with silt. No water, and no lift: I won’t run that drive dry."]
         } else if waterOn && story.coop.water.route != .outpost {
             lines = ["My tap’s dry again and the line valve’s turned toward your place. I can see it from here."]
         } else if let w = water, w.status == .working || w.status == .paused {
@@ -625,7 +625,7 @@ extension Game {
         guard !world.climbs.contains(where: { $0.id == "rope.chimney" }),
               MaraDeal.chimneyCost.allSatisfy({ available($0.id) >= $0.count }) else { return }
         for c in MaraDeal.chimneyCost { consume(c.id, c.count) }
-        world.climbs.append(Climb(id: "rope.chimney", x: Double(Landmarks.chimney) + 0.5, top: Double(Landmarks.transit.floor),
+        world.climbs.append(Climb(id: "rope.chimney", x: Double(Landmarks.chimney) + 1.0, top: Double(Landmarks.transit.floor),
                                   bottom: 9.0, kind: .rope))
         story.flags.insert("chimneyRigged")
         max.busy = 1.2

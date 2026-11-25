@@ -133,8 +133,10 @@ public enum WorldGen {
         }
         w.set(tr.x0 - 1, 1, .metal, back: .transit); w.set(tr.x0 - 1, 2, .metal, back: .transit)
         w.set(tr.x1 + 1, 1, .metal, back: .transit); w.set(tr.x1 + 1, 2, .metal, back: .transit)
-        // The old maintenance chimney: from the warm passage's ceiling up through the platform.
-        for r in 3...6 { w.set(Landmarks.chimney, r, .air, back: .shaft) }
+        // The old maintenance chimney: two tiles wide, from the warm passage's ceiling up through the platform.
+        for r in 3...6 { for c in Landmarks.chimney...(Landmarks.chimney + 1) { w.set(c, r, .air, back: .shaft) } }
+        // Mara dug the last stretch of the warm passage from her side, up to her door.
+        for c in (Landmarks.chimney - 1)...(op.door - 1) { for r in 7...8 { w.set(c, r, .dug, back: .earth) } }
 
         w.rebuildDensity()
 
@@ -167,7 +169,7 @@ public enum WorldGen {
             Prop(id: "sump.hatch", kind: .sumpHatch, pos: V2(Double(Landmarks.hatch.c) + 0.5, 9)),
             Prop(id: "sump.intake", kind: .intake, pos: V2(81.2, Double(Landmarks.sump.floor))),
             Prop(id: "sump.valve", kind: .sunkValve, pos: V2(84.4, Double(Landmarks.sump.floor)), stock: [ItemStack(.pressureValve)]),
-            Prop(id: "chimney", kind: .chimney, pos: V2(Double(Landmarks.chimney) + 0.5, 9)),
+            Prop(id: "chimney", kind: .chimney, pos: V2(Double(Landmarks.chimney) + 1.0, 9)),
             Prop(id: "transit.lift", kind: .transitLift, pos: V2(Landmarks.liftX, Double(Landmarks.transit.floor))),
         ]
         if let i = w.propIndex("sump.intake") { w.props[i].flags = ["clogged"] }
