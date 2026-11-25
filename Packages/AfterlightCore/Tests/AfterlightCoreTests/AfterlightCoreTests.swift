@@ -97,7 +97,7 @@ final class ChapterTests: XCTestCase {
         let g = Game()
         g.begin()
         g.story.chapter = 2
-        g.story.flags.formUnion(["needPick", "needLadder", "ordersOK", "inspected", "sawShaft", "triedUp"])
+        g.story.flags.formUnion(["needPick", "needLadder", "ordersOK", "inspected", "sawShaft", "triedUp", "flashOn"])
         g.story.addQuest(.firstAscent)
         g.inv.belt.append(.flashlight)
         g.inv.add(.liftTooth); g.inv.add(.spareGrip)

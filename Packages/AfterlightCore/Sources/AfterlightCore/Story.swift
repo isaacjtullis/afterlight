@@ -411,16 +411,16 @@ extension Game {
 
         if max.stamina < 25 && inv.count(.trailMeal) > 0 { return act("eat", "Eat a trail meal", V2(p.x, p.y - 2.4), true) }
         if nearOdi { return act("talk", odi.met ? "Talk to Odi" : "Say hello", V2(odi.pos.x, odi.pos.y - 2.4), !odi.met) }
+        if underShaft && f.contains("sawShaft") && !f.contains("triedUp") { return act("tryUp", "Dig up", V2(p.x, p.y - 2.4)) }
+        if underShaft && available(.ladderSection) > 0 && !world.climbs.contains(where: { $0.id == "ladder.shaft" }) {
+            return act("placeLadder", "Place ladder", V2(26, 27.5), true)
+        }
         if nearBench {
             let at = V2(Landmarks.bench.x, 28.2)
             if !f.contains("inspected") && !inv.has(.flashlight) { return act("inspect", "Look at flashlight", at) }
             if !inv.has(.flashlight) && available(.chargeCrystal) > 0 { return act("repair", "Repair flashlight", at, true) }
             if inv.has(.flashlight) && !f.contains("flashOn") { return act("switchOn", "Switch on", at, true) }
             if f.contains("inspected") { return act("bench", "Workbench", at) }
-        }
-        if underShaft && f.contains("sawShaft") && !f.contains("triedUp") { return act("tryUp", "Dig up", V2(p.x, p.y - 2.4)) }
-        if underShaft && available(.ladderSection) > 0 && !world.climbs.contains(where: { $0.id == "ladder.shaft" }) {
-            return act("placeLadder", "Place ladder", V2(26, 27.5), true)
         }
         if abs(p.y - 30) < 0.5 && p.x > 32 && p.x < 47 {
             if let bed = world.props(of: .planter).first(where: { near($0, 1.2) }) {
