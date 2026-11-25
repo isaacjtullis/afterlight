@@ -76,31 +76,38 @@ final class GameModel: ObservableObject {
         return r == KERN_SUCCESS ? Int(info.resident_size / 1_048_576) : -1
     }
 
+    /// CI smoke log: stdout plus a file in the app's Documents the test harness can read back.
+    static func smoke(_ line: String) {
+        print(line); fflush(stdout)
+        let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("smoke.log")
+        if let h = try? FileHandle(forWritingTo: url) { h.seekToEndOfFile(); h.write(Data((line + "\n").utf8)); try? h.close() }
+        else { try? Data((line + "\n").utf8).write(to: url) }
+    }
+
     private func runSmokeTest() {
         Task { @MainActor in
             for i in 0..<70 {
                 try? await Task.sleep(for: .seconds(0.5))
-                print("SMOKE t=\(Double(i) * 0.5)s max=(\(Int(self.game.max.pos.x * 10)), \(Int(self.game.max.pos.y * 10))) stamina=\(Int(self.game.max.stamina)) frames=\(self.frames) updates=\(GameScene.updateCalls)/\(GameScene.updateDone) main=\(GameScene.onMain) step=\(GameScene.lastStep) scenePaused=\(self.scene?.isPaused ?? true) viewPaused=\(self.scene?.view?.isPaused ?? true) mem=\(GameModel.memoryMB())MB")
-                fflush(stdout)
+                GameModel.smoke("SMOKE t=\(Double(i) * 0.5)s max=(\(Int(self.game.max.pos.x * 10)), \(Int(self.game.max.pos.y * 10))) stamina=\(Int(self.game.max.stamina)) frames=\(self.frames) updates=\(GameScene.updateCalls)/\(GameScene.updateDone) main=\(GameScene.onMain) step=\(GameScene.lastStep) scenePaused=\(self.scene?.isPaused ?? true) viewPaused=\(self.scene?.view?.isPaused ?? true) mem=\(GameModel.memoryMB())MB")
             }
         }
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(2))
-            print("SMOKE: title shown"); fflush(stdout)
+            GameModel.smoke("SMOKE: title shown")
             self.smokeSkipIntro = true
             self.beginIntro()
             try? await Task.sleep(for: .seconds(4))
-            print("SMOKE: intro playing, skipped to the candle"); fflush(stdout)
+            GameModel.smoke("SMOKE: intro playing, skipped to the candle")
             try? await Task.sleep(for: .seconds(2))
             self.finishIntro()
             try? await Task.sleep(for: .seconds(4))
-            print("SMOKE: candle lit"); fflush(stdout)
+            GameModel.smoke("SMOKE: candle lit")
             self.input = GameInput(dx: 1)
             try? await Task.sleep(for: .seconds(2.5))
             self.input = GameInput(dx: 1, dig: true)
             try? await Task.sleep(for: .seconds(6))
             self.input = GameInput()
-            print("SMOKE: walked and dug, Max at \(self.game.max.pos)")
+            GameModel.smoke("SMOKE: walked and dug, Max at \(self.game.max.pos)")
         }
     }
 
