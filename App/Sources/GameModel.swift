@@ -104,7 +104,6 @@ final class GameModel: ObservableObject {
         audio.start()
         withAnimation(.easeOut(duration: 1.2)) { showTitle = false }
         Task { await syncFromCloud() }
-        requestNotifications()
     }
 
     func newGame() {
@@ -232,6 +231,8 @@ final class GameModel: ObservableObject {
 
     /// Lets the player know when someone finishes work for them while the game is closed.
     private func scheduleCoopNotifications() {
+        // Ask only once there's something worth being told about, never on first launch.
+        if game.story.coop.jobs.contains(where: { $0.status == .working }) { requestNotifications() }
         let center = UNUserNotificationCenter.current()
         for j in game.story.coop.jobs {
             let id = "coop." + j.id
@@ -281,6 +282,7 @@ final class GameModel: ObservableObject {
 
     func startJob(_ plan: JobPlan) {
         sheet = nil
+        requestNotifications()
         Task {
             let serverStart = await cloud.startJob(plan)
             game.startJob(plan, startedAt: serverStart ?? Date(), serverID: serverStart == nil ? nil : plan.id)
@@ -305,6 +307,9 @@ final class GameModel: ObservableObject {
     }
 
     func didBecomeActive() {
+        // SpriteKit pauses while the app is inactive (a system prompt, a call); make sure it always resumes.
+        scene?.isPaused = false
+        scene?.view?.isPaused = false
         guard !showTitle, let j = game.activeJob else { return }
         let done = JobResolver.completedSteps(j.plan, elapsed: Date().timeIntervalSince(j.startedAt))
         if done >= min(j.plan.pauseIndex ?? j.plan.steps.count, j.plan.staminaLimitedSteps) { collectJob(recalled: false) }
