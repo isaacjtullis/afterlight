@@ -76,8 +76,17 @@ final class ChapterTests: XCTestCase {
         sim(g, GameInput(), 1.5)
         XCTAssertEqual(g.inv.count(.chargeCrystal), 1, "digging down beside the glint should pop the crystal")
 
-        walk(g, to: 26.2, timeout: 30)
-        XCTAssertEqual(g.context?.id, "repair", "max at \(g.max.pos) mode \(g.max.mode) ground \(g.max.ground)")
+        var trail: [String] = []
+        var tt = 0.0
+        while abs(g.max.pos.x - 26.2) > 0.25 && tt < 30 {
+            let y0 = g.max.pos.y, m0 = g.max.mode
+            g.update(dt: 1.0 / 60.0, input: GameInput(dx: g.max.pos.x < 26.2 ? 1 : -1))
+            _ = g.drainEvents()
+            if abs(g.max.pos.y - y0) > 0.3 || g.max.mode != m0 { trail.append(String(format: "t%.2f x%.2f y%.2f->%.2f %@", tt, g.max.pos.x, y0, g.max.pos.y, "\(g.max.mode)")) }
+            tt += 1.0 / 60.0
+        }
+        sim(g, GameInput(), 0.5)
+        XCTAssertEqual(g.context?.id, "repair", "max at \(g.max.pos) mode \(g.max.mode) trail \(trail.prefix(12))")
         g.performContext()
         sim(g, GameInput(), 2)
         XCTAssertTrue(g.inv.has(.flashlight))

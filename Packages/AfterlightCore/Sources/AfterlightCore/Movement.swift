@@ -110,8 +110,8 @@ extension Game {
             R = 0.55
             if let b = buriedBelow() { c = V2(b.pos.x, Swift.max(c.y, b.pos.y - 0.2)) }
         case .up:
-            c = V2(max.pos.x, max.pos.y - (max.mode == .climb ? (max.biteHigh ? 2.55 : 1.95) : 2.0))
-            R = 0.9
+            c = V2(max.pos.x, max.pos.y - (max.mode == .climb ? (max.biteHigh ? 2.55 : 1.9) : 2.0))
+            R = 1.05
             tool = .pick
         }
         var near = false
