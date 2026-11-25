@@ -200,7 +200,10 @@ extension Game {
                 // A knee-high lip (the rim of a hole he dug) is stepped over, not a wall.
                 if max.ground && !max.swingOn,
                    let top = world.groundY(fx, from: max.pos.y - 1.0, to: max.pos.y),
-                   max.pos.y - top < 0.95, !wallHit(fx, top), !world.solid(nx, top - Tuning.height) {
+                   max.pos.y - top > 0.12, max.pos.y - top < 0.95,
+                   !world.solid(fx, top - 0.1), !wallHit(fx, top),
+                   !world.solid(nx, top - 0.4), !world.solid(nx, top - 1.0), !world.solid(nx, top - Tuning.height),
+                   world.groundY(nx, from: max.pos.y - 1.2, to: max.pos.y + 0.2).map({ $0 >= top - 0.05 }) ?? true {
                     max.pos.x = nx
                     max.pos.y = top
                     max.vx *= 0.6
