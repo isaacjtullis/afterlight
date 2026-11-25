@@ -218,7 +218,10 @@ extension Game {
         }
 
         if max.ground {
-            if let g = world.groundY(max.pos.x, from: max.pos.y - 0.95, to: max.pos.y + 0.75) {
+            // Follow the floor within a step of the feet; never snap up onto earth hanging overhead.
+            let overhang = world.solid(max.pos.x, max.pos.y - 0.45) && !world.solid(max.pos.x, max.pos.y - 0.05)
+            let from = overhang ? max.pos.y - 0.05 : max.pos.y - 0.45
+            if let g = world.groundY(max.pos.x, from: from, to: max.pos.y + 0.75) {
                 let pred = max.pos.y + max.vyG * dt + 0.5 * Tuning.airGravity * dt * dt
                 if abs(max.vx) > 4.6 && g > pred + 0.045 {
                     max.ground = false; max.vy = max.vyG
