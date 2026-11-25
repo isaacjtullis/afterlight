@@ -34,7 +34,7 @@ final class GameModel: ObservableObject {
     @Published var showTitle = true
     @Published var showIntro = false
     /// UI tests read Max's state through an invisible label.
-    @Published var debugState = 
+    @Published var debugState = ""
     var smokeSkipIntro = false
     @Published var sheet: Sheet? = nil
     @Published var conversation: Conversation? = nil
