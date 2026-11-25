@@ -421,8 +421,8 @@ extension Game {
         }
         if nearBench {
             let at = V2(Landmarks.bench.x, 28.2)
-            if !f.contains("inspected") && !inv.has(.flashlight) { return act("inspect", "Look at flashlight", at) }
             if !inv.has(.flashlight) && available(.chargeCrystal) > 0 { return act("repair", "Repair flashlight", at, true) }
+            if !f.contains("inspected") && !inv.has(.flashlight) { return act("inspect", "Look at flashlight", at) }
             if inv.has(.flashlight) && !f.contains("flashOn") { return act("switchOn", "Switch on", at, true) }
             if f.contains("inspected") { return act("bench", "Workbench", at) }
         }

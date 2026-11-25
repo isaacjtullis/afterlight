@@ -86,13 +86,7 @@ extension Game {
         if abs(max.pos.y - max.digFloor) > 0.7 || kind != .side { max.digFloor = floorRef() }
         max.swingKind = kind
         var dir = 0
-        if kind == .side, let pr = frontProbe(max.face), pr.d > 0.14 {
-            // Wait for the low bite to clear any lip at the foot of the face before stepping in,
-            // so the tunnel floor stays level instead of Max climbing onto uncut earth.
-            let fx = max.pos.x + Double(max.face) * (Tuning.halfWidth + 0.12)
-            let lip = world.groundY(fx, from: max.digFloor - 0.9, to: max.digFloor + 0.3)
-            if lip == nil || lip! >= max.digFloor - 0.08 { dir = max.face }
-        }
+        if kind == .side, let pr = frontProbe(max.face), pr.d > 0.14 { dir = max.face }
         let prevS = max.swing
         let period = (max.stamina <= 0.5 && order == nil) ? Tuning.tiredSwingPeriod : Tuning.swingPeriod
         max.swing += dt / period
@@ -116,7 +110,7 @@ extension Game {
             R = 0.55
             if let b = buriedBelow() { c = V2(b.pos.x, Swift.max(c.y, b.pos.y - 0.2)) }
         case .up:
-            c = V2(max.pos.x, max.pos.y - (max.mode == .climb ? 2.4 : 2.0))
+            c = V2(max.pos.x, max.pos.y - (max.mode == .climb ? (max.biteHigh ? 2.55 : 1.95) : 2.0))
             R = 0.9
             tool = .pick
         }
