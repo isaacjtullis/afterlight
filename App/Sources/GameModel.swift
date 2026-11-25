@@ -33,6 +33,8 @@ final class GameModel: ObservableObject {
     @Published var ui = UIState()
     @Published var showTitle = true
     @Published var showIntro = false
+    /// UI tests read Max's state through an invisible label.
+    @Published var debugState = 
     var smokeSkipIntro = false
     @Published var sheet: Sheet? = nil
     @Published var conversation: Conversation? = nil
@@ -58,6 +60,7 @@ final class GameModel: ObservableObject {
     private var clock = 0.0
 
     init() {
+        if ProcessInfo.processInfo.arguments.contains("-uitest") { LocalStore().erase() }
         if let s = LocalStore().load() {
             game = Game.load(s)
             showTitle = true
@@ -157,7 +160,12 @@ final class GameModel: ObservableObject {
         if let p = panel, let pt = scene?.viewPoint(p.anchor), abs(pt.x - panelPoint.x) + abs(pt.y - panelPoint.y) > 2 { panelPoint = pt }
         if let d = cloudDue, clock >= d { cloudDue = nil; pushCloud() }
         refreshUI()
+        if uiTesting, Int(clock * 10) % 3 == 0 {
+            let s = "x=\(String(format: "%.2f", game.max.pos.x)) y=\(String(format: "%.2f", game.max.pos.y)) started=\(game.started) dug=\(game.story.flags.contains("dug"))"
+            if s != debugState { debugState = s }
+        }
     }
+    let uiTesting = ProcessInfo.processInfo.arguments.contains("-uitest")
 
     private func refreshUI() {
         var u = UIState()

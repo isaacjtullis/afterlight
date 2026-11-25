@@ -3,6 +3,7 @@ import AfterlightCore
 
 /// A button you hold. Several can be held at once (walk + dig).
 struct HoldButton<Label: View>: View {
+    var id = ""
     var onChange: (Bool) -> Void
     @ViewBuilder var label: (Bool) -> Label
     @State private var down = false
@@ -12,6 +13,10 @@ struct HoldButton<Label: View>: View {
             .gesture(DragGesture(minimumDistance: 0)
                 .onChanged { _ in if !down { down = true; onChange(true) } }
                 .onEnded { _ in down = false; onChange(false) })
+            .accessibilityElement(children: .ignore)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityIdentifier(id)
+            .accessibilityLabel(id)
     }
 }
 
@@ -157,18 +162,18 @@ struct HUDView: View {
                         }
                     }
                     if ui.canClimb || ui.hasPick {
-                        HoldButton(onChange: { model.input.up = $0 }) { p in
+                        HoldButton(id: "climb", onChange: { model.input.up = $0 }) { p in
                             GlassCircle(size: 56, pressed: p, icon: AnyView(Image(systemName: "chevron.up").font(.system(size: 20, weight: .medium))))
                         }
                         .padding(.leading, 52)
                     }
                     HStack(spacing: 0) {
-                        HoldButton(onChange: { v in model.input.dx = v ? -1 : (model.input.dx == -1 ? 0 : model.input.dx) }) { p in
+                        HoldButton(id: "move.left", onChange: { v in model.input.dx = v ? -1 : (model.input.dx == -1 ? 0 : model.input.dx) }) { p in
                             Image(systemName: "chevron.left").font(.system(size: 22, weight: .light)).foregroundStyle(Color.cream)
                                 .frame(width: 82, height: 72).background(p ? Color.white.opacity(0.14) : .clear)
                         }
                         Rectangle().fill(Color.white.opacity(0.18)).frame(width: 1, height: 36)
-                        HoldButton(onChange: { v in model.input.dx = v ? 1 : (model.input.dx == 1 ? 0 : model.input.dx) }) { p in
+                        HoldButton(id: "move.right", onChange: { v in model.input.dx = v ? 1 : (model.input.dx == 1 ? 0 : model.input.dx) }) { p in
                             Image(systemName: "chevron.right").font(.system(size: 22, weight: .light)).foregroundStyle(Color.cream)
                                 .frame(width: 82, height: 72).background(p ? Color.white.opacity(0.14) : .clear)
                         }
@@ -189,11 +194,11 @@ struct HUDView: View {
                         .transition(.scale.combined(with: .opacity))
                     }
                     HStack(alignment: .bottom, spacing: 14) {
-                        HoldButton(onChange: { model.input.down = $0 }) { p in
+                        HoldButton(id: "dig.down", onChange: { model.input.down = $0 }) { p in
                             GlassCircle(size: 64, pressed: p, pulse: ui.pulseDown, icon: AnyView(ShovelIcon(down: true).frame(width: 30, height: 30)))
                         }
                         .padding(.bottom, 40)
-                        HoldButton(onChange: { model.input.dig = $0 }) { p in
+                        HoldButton(id: "dig", onChange: { model.input.dig = $0 }) { p in
                             GlassCircle(size: 88, pressed: p, icon: AnyView(ShovelIcon().frame(width: 44, height: 44).scaleEffect(x: CGFloat(ui.facing), y: 1)))
                         }
                     }

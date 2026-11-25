@@ -2,72 +2,35 @@ import SwiftUI
 import UIKit
 import AfterlightCore
 
-/// The opening cinematic: Stories-style segmented progress, tap right/left to move, hold to pause.
+/// The opening story. Behaves like an Instagram story: segmented progress, tap right/left, hold to pause,
+/// swipe down to close.
 struct CinematicView: View {
     @EnvironmentObject var model: GameModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var phase
     @State private var player = IntroPlayer()
     @State private var lastTick = Date()
-    private let timer = Timer.publish(every: 1.0 / 30, on: .main, in: .common).autoconnect()
+    @State private var drag: CGFloat = 0
+    @State private var touchStart: Date? = nil
+    @State private var closing = false
+    private let timer = Timer.publish(every: 1.0 / 60, on: .main, in: .common).autoconnect()
+    private let tapHaptic = UIImpactFeedbackGenerator(style: .light)
 
     var body: some View {
         GeometryReader { geo in
+            let pull = max(0, drag)
+            let k = min(1, pull / 400)
             ZStack {
-                Color.black
-                // Artwork, edge to edge, crossfading, with a slow camera drift.
-                ZStack {
-                    IntroArt(scene: player.scene, index: player.index, size: geo.size)
-                        .scaleEffect(reduceMotion ? 1 : 1.06 + 0.05 * player.progress)
-                        .offset(x: reduceMotion ? 0 : CGFloat(player.index % 2 == 0 ? -1 : 1) * 14 * CGFloat(player.progress - 0.5),
-                                y: reduceMotion ? 0 : -8 * CGFloat(player.progress))
-                        .id(player.index)
-                        .transition(.opacity)
-                }
-                .frame(width: geo.size.width, height: geo.size.height)
-                .clipped()
-                .animation(.easeInOut(duration: reduceMotion ? 0.2 : 0.7), value: player.index)
-
-                // Tap zones and hold-to-pause.
-                HStack(spacing: 0) {
-                    Color.clear.contentShape(Rectangle())
-                        .gesture(tapOrHold { player.back() })
-                    Color.clear.contentShape(Rectangle())
-                        .gesture(tapOrHold { player.next() })
-                }
-
-                VStack(spacing: 0) {
-                    progressBar.padding(.top, geo.safeAreaInsets.top + 10).padding(.horizontal, 12)
-                    HStack {
-                        Spacer()
-                        Button { player.paused.toggle() } label: {
-                            Image(systemName: player.paused ? "play.fill" : "pause.fill").font(.system(size: 14, weight: .semibold))
-                                .frame(width: 44, height: 44)
-                        }
-                        .accessibilityLabel(player.paused ? "Play intro" : "Pause intro")
-                        Button("Skip intro") { withAnimation { player.skip() } }
-                            .font(.avenir(14, "DemiBold")).frame(minHeight: 44).padding(.horizontal, 6)
-                            .opacity(player.waitingForCandle ? 0 : 1)
-                            .accessibilityHint("Jumps to the end of the story")
-                    }
-                    .foregroundStyle(Color.cream.opacity(0.9))
-                    .padding(.horizontal, 8)
-                    if player.scene.bubble == .top { bubble.padding(.top, 8) }
-                    Spacer()
-                    if player.scene.bubble == .middle { bubble; Spacer() }
-                    if player.scene.bubble == .bottom { bubble }
-                    if player.waitingForCandle {
-                        Button("Light the candle") { model.finishIntro() }
-                            .buttonStyle(PillStyle(prominent: true))
-                            .padding(.top, 18)
-                            .transition(.opacity)
-                            .accessibilityHint("Begins the game")
-                    }
-                    Spacer().frame(height: geo.safeAreaInsets.bottom + 28)
-                }
-                .animation(.easeInOut(duration: 0.4), value: player.waitingForCandle)
+                Color.black.opacity(1 - k * 0.6).ignoresSafeArea()
+                story(geo)
+                    .clipShape(RoundedRectangle(cornerRadius: pull > 0 ? 28 : 0, style: .continuous))
+                    .scaleEffect(1 - k * 0.18)
+                    .offset(y: pull * 0.9)
+                    .opacity(closing ? 0 : 1)
             }
             .ignoresSafeArea()
+            .contentShape(Rectangle())
+            .gesture(storyGesture(width: geo.size.width))
         }
         .onReceive(timer) { now in
             let dt = min(0.1, now.timeIntervalSince(lastTick))
@@ -75,62 +38,160 @@ struct CinematicView: View {
             player.tick(dt)
         }
         .onChange(of: phase) { _, p in player.backgrounded = p != .active }
-        .onAppear { lastTick = Date(); if model.smokeSkipIntro { DispatchQueue.main.asyncAfter(deadline: .now() + 3) { player.skip() } } }
+        .onChange(of: player.index) { _, _ in tapHaptic.impactOccurred(intensity: 0.6) }
+        .onAppear {
+            lastTick = Date()
+            tapHaptic.prepare()
+            if model.smokeSkipIntro { DispatchQueue.main.asyncAfter(deadline: .now() + 3) { player.skip() } }
+        }
         .statusBarHidden(true)
     }
 
-    @State private var pressStart: Date? = nil
-
-    /// A tap moves; a press pauses until it's released, then resumes on the same scene.
-    private func tapOrHold(_ tap: @escaping () -> Void) -> some Gesture {
-        DragGesture(minimumDistance: 0)
-            .onChanged { _ in
-                guard pressStart == nil else { return }
-                let start = Date()
-                pressStart = start
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                    if pressStart == start { player.held = true }
+    private func story(_ geo: GeometryProxy) -> some View {
+        let safeTop = geo.safeAreaInsets.top, safeBottom = geo.safeAreaInsets.bottom
+        let chrome = !player.held && drag == 0
+        return ZStack {
+            Color.black
+            IntroArt(scene: player.scene, index: player.index, size: geo.size)
+                .scaleEffect(reduceMotion ? 1 : 1.04 + 0.06 * player.progress)
+                .offset(x: reduceMotion ? 0 : CGFloat(player.index % 2 == 0 ? -1 : 1) * 12 * CGFloat(player.progress - 0.5),
+                        y: reduceMotion ? 0 : -10 * CGFloat(player.progress))
+                .id(player.index)
+                .transition(.opacity)
+                .animation(.easeInOut(duration: reduceMotion ? 0.15 : 0.6), value: player.index)
+            // soft shade where the words sit, like Stories
+            LinearGradient(colors: [.black.opacity(0.55), .clear, .clear, .black.opacity(0.6)], startPoint: .top, endPoint: .bottom)
+                .allowsHitTesting(false)
+            VStack(spacing: 0) {
+                VStack(spacing: 10) {
+                    progressBar
+                    header
                 }
+                .padding(.top, safeTop + 8).padding(.horizontal, 10)
+                .opacity(chrome ? 1 : 0)
+                if player.scene.bubble == .top { caption.padding(.top, 14) }
+                Spacer(minLength: 0)
+                if player.scene.bubble == .bottom { caption }
+                if player.waitingForCandle {
+                    Button { close() } label: {
+                        Label("Light the candle", systemImage: "flame.fill")
+                            .font(.avenir(18, "DemiBold"))
+                            .padding(.horizontal, 26).frame(height: 54)
+                            .background(Capsule().fill(Color(red: 1, green: 0.72, blue: 0.42).opacity(0.9)))
+                            .foregroundStyle(Color(red: 0.16, green: 0.08, blue: 0.06))
+                            .shadow(color: Color(red: 1, green: 0.7, blue: 0.4).opacity(0.6), radius: 18)
+                    }
+                    .padding(.top, 18)
+                    .transition(.scale(scale: 0.9).combined(with: .opacity))
+                    .accessibilityIdentifier("intro.candle")
+                }
+                Text(player.waitingForCandle ? " " : "Swipe down to close")
+                    .font(.avenir(12)).foregroundStyle(.white.opacity(0.5))
+                    .padding(.top, 10)
+                    .padding(.bottom, safeBottom + 14)
+                    .opacity(chrome ? 1 : 0)
             }
-            .onEnded { _ in
-                let wasHeld = player.held
-                player.held = false
-                pressStart = nil
-                if !wasHeld { withAnimation { tap() } }
+            .animation(.spring(response: 0.45, dampingFraction: 0.85), value: player.waitingForCandle)
+            .animation(.easeOut(duration: 0.2), value: chrome)
+        }
+        .frame(width: geo.size.width, height: geo.size.height)
+    }
+
+    private var header: some View {
+        HStack(spacing: 10) {
+            ZStack {
+                Circle().fill(LinearGradient(colors: [Color(red: 1, green: 0.75, blue: 0.45), Color(red: 0.75, green: 0.35, blue: 0.3)], startPoint: .top, endPoint: .bottom))
+                Image(systemName: "flame.fill").font(.system(size: 14)).foregroundStyle(.white)
             }
+            .frame(width: 32, height: 32)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Afterlight").font(.avenir(14, "DemiBold"))
+                Text("How the surface fell · \(player.index + 1) of \(player.scenes.count)").font(.avenir(11)).opacity(0.75)
+            }
+            Spacer()
+            Button { player.paused.toggle() } label: {
+                Image(systemName: player.paused ? "play.fill" : "pause.fill").font(.system(size: 15, weight: .semibold)).frame(width: 40, height: 40)
+            }
+            .accessibilityLabel(player.paused ? "Play story" : "Pause story")
+            Button { close() } label: {
+                Image(systemName: "xmark").font(.system(size: 17, weight: .semibold)).frame(width: 40, height: 40)
+            }
+            .accessibilityLabel("Close story")
+            .accessibilityIdentifier("intro.close")
+        }
+        .foregroundStyle(.white)
     }
 
     private var progressBar: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 3) {
             ForEach(0..<player.scenes.count, id: \.self) { i in
                 GeometryReader { g in
                     ZStack(alignment: .leading) {
-                        Capsule().fill(Color.white.opacity(0.28))
-                        Capsule().fill(Color.white.opacity(0.92))
+                        Capsule().fill(Color.white.opacity(0.3))
+                        Capsule().fill(Color.white)
                             .frame(width: g.size.width * CGFloat(i < player.index ? 1 : (i == player.index ? player.progress : 0)))
                     }
                 }
-                .frame(height: 3)
+                .frame(height: 2.5)
             }
         }
         .accessibilityElement()
         .accessibilityLabel("Scene \(player.index + 1) of \(player.scenes.count)")
     }
 
-    private var bubble: some View {
+    private var caption: some View {
         Text(player.scene.text)
-            .font(.avenir(player.index == 0 ? 26 : 19, player.index == 0 ? "Regular" : "Medium"))
-            .foregroundStyle(Color.cream)
+            .font(.avenir(player.index == 0 ? 30 : 20, player.index == 0 ? "Regular" : "Medium"))
+            .foregroundStyle(.white)
             .multilineTextAlignment(.leading)
-            .lineSpacing(3)
+            .lineSpacing(4)
             .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 18).padding(.vertical, 14)
-            .background(RoundedRectangle(cornerRadius: 18).fill(Color.black.opacity(0.5)))
-            .padding(.horizontal, 18)
-            .id("bubble\(player.index)")
-            .transition(.opacity)
-            .animation(.easeInOut(duration: 0.4), value: player.index)
-            .accessibilityAddTraits(.updatesFrequently)
+            .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.ultraThinMaterial.opacity(0.55)))
+            .environment(\.colorScheme, .dark)
+            .padding(.horizontal, 16)
+            .id("caption\(player.index)")
+            .transition(.asymmetric(insertion: .opacity.combined(with: .offset(y: 14)), removal: .opacity))
+            .animation(.easeOut(duration: 0.45), value: player.index)
+            .accessibilityIdentifier("intro.caption")
+    }
+
+    /// One gesture for everything a thumb does on a story: tap left/right, hold to pause, swipe down to close.
+    private func storyGesture(width: CGFloat) -> some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { v in
+                if touchStart == nil {
+                    let start = Date()
+                    touchStart = start
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) { if touchStart == start && drag == 0 { player.held = true } }
+                }
+                if v.translation.height > 8 && abs(v.translation.height) > abs(v.translation.width) {
+                    drag = v.translation.height
+                    player.held = true
+                }
+            }
+            .onEnded { v in
+                let wasHeld = player.held
+                let dragged = drag
+                touchStart = nil
+                player.held = false
+                if dragged > 0 {
+                    if dragged > 120 || v.predictedEndTranslation.height > 260 { close() }
+                    else { withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { drag = 0 } }
+                    return
+                }
+                guard !wasHeld, abs(v.translation.width) < 12 else { return }
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    if v.location.x < width * 0.33 { player.back() } else { player.next() }
+                }
+            }
+    }
+
+    private func close() {
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        withAnimation(.easeIn(duration: 0.3)) { drag = 900; closing = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { model.finishIntro() }
     }
 }
 

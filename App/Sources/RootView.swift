@@ -31,13 +31,19 @@ struct RootView: View {
                             if model.ui.ordersOK && model.game.planning == nil && model.game.order == nil { model.beginPlan() }
                         })
                 }
-                if !model.showTitle {
+                if !model.showTitle && !model.showIntro {
                     HUDView()
                         .transition(.opacity)
                 }
                 if let b = model.banner { ChapterBanner(text: b).transition(.opacity) }
                 if model.showTitle { TitleView().transition(.opacity) }
                 if model.showIntro { CinematicView().transition(.opacity) }
+                if ProcessInfo.processInfo.arguments.contains("-uitest") {
+                    Text(model.debugState).font(.system(size: 6)).opacity(0.02)
+                        .accessibilityIdentifier("debug.state").accessibilityLabel(model.debugState)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                        .allowsHitTesting(false)
+                }
             }
             .onAppear {
                 if scene == nil {
@@ -48,7 +54,6 @@ struct RootView: View {
                 }
             }
         }
-        .ignoresSafeArea()
     }
 }
 

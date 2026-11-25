@@ -101,7 +101,8 @@ final class GameScene: SKScene {
     override func didChangeSize(_ oldSize: CGSize) { layout() }
 
     private func layout() {
-        S = max(22, min(46, min(size.width / 11.5, size.height / 10.5)))
+        // Portrait phones: about 8 tiles across so Max and his room fill the frame. Landscape keeps the wide view.
+        S = size.height > size.width ? max(30, min(64, size.width / 8)) : max(22, min(46, min(size.width / 11.5, size.height / 10.5)))
         for n in chunks.values { n.removeFromParent() }
         chunks.removeAll()
         for n in propNodes.values { n.node.removeFromParent() }
@@ -191,7 +192,8 @@ final class GameScene: SKScene {
         if let c = game.cine, c.t > 2.4 { z = 0.92 }
         zoom = damp(zoom, z, 1.4, dt)
         look = damp(look, (abs(m.vx) > 0.3 ? m.vx * 0.45 + Double(m.face) * 0.3 : Double(m.face) * 0.8) + ((game.cine?.t ?? 9) < 2.4 ? 2.5 : 0), 1.5, dt)
-        var tx = m.pos.x + look, ty = m.pos.y - 1.4 - m.lookUp * 3.2
+        let portrait = size.height > size.width
+        var tx = m.pos.x + look * (portrait ? 0.45 : 1), ty = m.pos.y - (portrait ? 0.9 : 1.4) - m.lookUp * 3.2
         if game.story.flags.contains("broke") && m.pos.x > Double(Landmarks.caveStart) - 1 && m.pos.y > 12 { ty -= 3 }
         if let p = game.planning { tx = (m.pos.x + Double(planTarget ?? p.reach)) / 2 }
         if let c = game.cine, let f = c.focus { tx = lerpD(tx, f.x, c.focusWeight); ty = lerpD(ty, f.y, c.focusWeight) }
