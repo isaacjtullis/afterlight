@@ -208,6 +208,16 @@ final class PlaythroughTests: XCTestCase {
     func testFreshGameToALitHome() {
         let g = Game()
         let b = Bot(g)
+        b.playToMaintenance(self)
+        XCTAssertNil(g.talk)
+    }
+}
+
+extension Bot {
+    /// From the candle to the maintenance room, playing only with the controls.
+    func playToMaintenance(_ t: XCTestCase) {
+        let g = self.g
+        let b = self
 
         XCTAssertTrue(b.playChapterOne(), b.trail)
         XCTAssertTrue(b.playDrumRepair(), b.trail)
@@ -263,6 +273,6 @@ final class PlaythroughTests: XCTestCase {
         b.hold(GameInput(up: true), until: { g.max.mode == .walk && g.max.pos.y < 9.5 }, timeout: 8, "climb into maintenance")
         b.idle(1)
         XCTAssertEqual(g.story.chapter, 3, "into the maintenance room\n" + b.trail)
-        XCTAssertNil(g.talk)
     }
 }
+
