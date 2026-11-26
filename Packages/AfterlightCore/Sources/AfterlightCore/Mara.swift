@@ -108,12 +108,19 @@ extension Game {
         }
         // Before they've met, with the water off: she's at her dead tap, holding a can under it.
         if !maraMet && !waterOn { return Self.maraTapSpot }
+        // Her routine shows what happened. Water running: she fills cans at the tap and carries them to her beds.
+        if waterOn && story.coop.water.outpostTapFlow > 0 { return Int(time / 16) % 2 == 0 ? Self.maraTapSpot : Self.maraBeds }
+        // Still dry: now and then she goes back to the tap and waits under it anyway.
+        if Int(time / 40) % 3 == 0 { return Self.maraTapSpot }
         return Landmarks.maraHome
     }
 
     static let maraTapSpot = V2(76.5, 9)
-    /// Mara standing at the dry tap with a can, waiting for water that doesn't come.
-    public var maraAtTap: Bool { !maraMet && !waterOn && mara.pos.dist(Self.maraTapSpot) < 0.3 }
+    static let maraBeds = V2(82.6, 9)
+    /// Mara standing at the tap with a can.
+    public var maraAtTap: Bool { !mara.walking && mara.pos.dist(Self.maraTapSpot) < 0.3 }
+    /// Mara carrying a full can from the tap to her beds.
+    public var maraCarrying: Bool { waterOn && story.coop.water.outpostTapFlow > 0 && mara.walking && mara.face > 0 }
 
     func maraTick(_ dt: Double) {
         guard story.chapter >= 3 else { return }
@@ -161,7 +168,7 @@ extension Game {
             story.step("outpost", "knock")
             if !waterOn && p.x > 74.5 {
                 once("tap") {
-                    if maraAtTap {
+                    if maraAtTap && !maraMet {
                         // Max believed he was the last one. He isn't.
                         think("…Someone. A person. Holding a can under a dry tap.", 3.6)
                         later(3.8) { $0.say("mara", "…Hello? Who’s there?", 3) }
