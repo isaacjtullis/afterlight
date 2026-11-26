@@ -165,6 +165,7 @@ final class CampaignBuild2Tests: XCTestCase {
         XCTAssertTrue(g.maraCansFull)
         // Meet her on the way and take a can.
         place(g, V2(g.mara.pos.x + 0.6, 9))
+        XCTAssertEqual(g.context?.id, "can.carry", "Max \(g.max.pos) Mara \(g.mara.pos) cans \(g.maraCans) room \(g.inv.room(for: .fullCan)) busy \(g.max.busy) mode \(g.max.mode)")
         if g.context?.id == "can.carry" { g.performContext() }
         XCTAssertEqual(g.inv.count(.fullCan), 1)
         XCTAssertTrue(g.remembers("mara", "carriedCan"))
