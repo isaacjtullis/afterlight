@@ -146,10 +146,13 @@ final class HomeGroundTests: XCTestCase {
         g.begin()
         g.max.pos = V2(23.5, 30)
         sim(g, GameInput(), 0.3)
-        g.update(dt: 1 / 60, input: GameInput(up: true)); _ = g.drainEvents()
         var peak = 30.0
-        for _ in 0..<60 { g.update(dt: 1 / 60, input: GameInput()); _ = g.drainEvents(); peak = min(peak, g.max.pos.y) }
-        XCTAssertLessThan(peak, 29.0, "a jump clears about a tile")
+        for i in 0..<70 { g.update(dt: 1 / 60, input: GameInput(up: i < 25)); _ = g.drainEvents(); peak = min(peak, g.max.pos.y) }
+        XCTAssertLessThan(peak, 29.0, "a held jump clears about a tile")
+        // A quick tap is only a hop.
+        var hop = 30.0
+        for i in 0..<70 { g.update(dt: 1 / 60, input: GameInput(up: i < 2)); _ = g.drainEvents(); hop = min(hop, g.max.pos.y) }
+        XCTAssertGreaterThan(hop, peak + 0.3, "a tap is a smaller hop than a held jump")
         XCTAssertEqual(g.max.pos.y, 30, accuracy: 0.1)
         XCTAssertTrue(g.max.ground)
     }
@@ -208,5 +211,20 @@ final class HomeGroundTests: XCTestCase {
         g.performContext()
         XCTAssertEqual(g.inv.count(.wire), 2)
         XCTAssertTrue(g.world.props(of: .pile).isEmpty)
+    }
+
+    /// One more jump in mid-air, and only one.
+    func testDoubleJump() {
+        let g = Game()
+        g.begin()
+        g.max.pos = V2(23.5, 30)
+        sim(g, GameInput(), 0.3)
+        var peak = 30.0
+        for i in 0..<90 {
+            let up = i < 12 || (i >= 16 && i < 28) || (i >= 32 && i < 40)
+            g.update(dt: 1 / 60, input: GameInput(up: up)); _ = g.drainEvents(); peak = min(peak, g.max.pos.y)
+        }
+        XCTAssertLessThan(peak, 28.1, "the second jump carries Max higher than one jump")
+        XCTAssertGreaterThan(peak, 26.0, "but there is no third")
     }
 }
