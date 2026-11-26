@@ -111,12 +111,12 @@ extension Game {
             R = 0.55
             if let b = buriedBelow() { c = V2(b.pos.x, Swift.max(c.y, b.pos.y - 0.2)) }
         case .up:
-            c = V2(max.pos.x, max.pos.y - (max.mode == .climb ? (max.biteHigh ? 2.55 : 1.9) : 2.0))
+            c = V2(max.pos.x, max.pos.y - (max.mode == .climb ? (max.biteHigh ? 2.55 : 1.9) : (max.biteHigh ? 2.5 : 2.2)))
             R = 1.05
             tool = inv.has(.shortPick) ? .pick : .shovel
         }
         func hasEarth(_ c: V2) -> Bool {
-            for o in [V2(0, 0), V2(0.3, 0), V2(-0.3, 0), V2(0, 0.3), V2(0, -0.3)] {
+            for o in [V2(0, 0), V2(0.3, 0), V2(-0.3, 0), V2(0, 0.3), V2(0, -0.3), V2(0, -0.6)] {
                 let p = c + o
                 let m = world.m(Int(p.x.rounded(.down)), Int(p.y.rounded(.down)))
                 // The shaft's packed seam needs the pick; the shovel only skids off it.
