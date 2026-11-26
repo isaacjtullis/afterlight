@@ -385,7 +385,9 @@ extension Game {
         let v = (input.down ? 1.0 : 0) - (input.up ? 1.0 : 0)
         let wasMoving = abs(max.vy) > 0.1
         max.vy = v * Tuning.climbSpeed
+        let cph = Int((max.phase / .pi).rounded(.down))
         max.phase += abs(max.vy) * dt * 3.2
+        if Int((max.phase / .pi).rounded(.down)) != cph { emit(.climbStep) }
         // Pendulum sway: each reach pulls the body to one side; stopping lets it swing out and settle.
         let reach = abs(max.vy) > 0.1 ? sin(max.phase) * 7.5 : 0
         if wasMoving && abs(max.vy) < 0.1 { max.swayV += (max.sway >= 0 ? 1 : -1) * 0.9 }

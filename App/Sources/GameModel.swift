@@ -215,16 +215,20 @@ final class GameModel: ObservableObject {
     private func handle(_ e: GameEvent) {
         switch e {
         case .bite(let at, let kind, let carved, let face):
-            audio.play(carved ? .scoop : .whoosh)
+            audio.play(carved ? (kind == .up ? .pick : .scoop) : .whoosh)
             if carved { haptics.bite() }
             scene?.burst(at: at, kind: kind, carved: carved, face: face)
         case .clank(let at): audio.play(.clank); haptics.clank(); scene?.sparks(at: at)
         case .whoosh: audio.play(.whoosh)
-        case .step: audio.play(.step)
+        case .step:
+            let p = game.max.pos
+            let under = game.world.m(Int(p.x.rounded(.down)), Int((p.y + 0.2).rounded(.down)))
+            audio.play(under == .metal ? .stepMetal : under == .plank ? .stepWood : .step)
+        case .climbStep: audio.play(.climb)
         case .land(let v): audio.play(.land); if v > 6 { haptics.bite() }; scene?.landPuff()
         case .pour(let at): audio.play(.pour); scene?.pour(at: at)
         case .reveal(let at): audio.play(.chime); scene?.sparkle(at: at)
-        case .pickup(let name): game.hint("Picked up: \(name)", 2.4)
+        case .pickup(let name): audio.play(.bag); game.hint("Picked up: \(name)", 2.4)
         case .chime: audio.play(.chime)
         case .breakthrough: audio.play(.rush); haptics.big(); audio.cavern(true)
         case .flashOn: audio.play(.click)
@@ -242,8 +246,8 @@ final class GameModel: ObservableObject {
         case .openSheet(let s): sheet = s
         case .conversation(let id):
             if let c = game.conversation(id) { lineIndex = 0; conversation = c }
-        case .placed: audio.play(.scoop); haptics.bite()
-        case .wood: audio.play(.step); haptics.tap()
+        case .placed(let what): audio.play(what == "plank" ? .plank : .scoop); haptics.bite()
+        case .wood: audio.play(.chop); haptics.bite()
         case .panel(let id):
             confirming = nil
             if let p = game.panel(id) { panelPoint = scene?.viewPoint(p.anchor) ?? .zero; panel = p }
@@ -349,6 +353,7 @@ final class GameModel: ObservableObject {
     }
 
     func didBecomeActive() {
+        if !showTitle || showIntro { audio.resume() }
         // SpriteKit pauses while the app is inactive (a system prompt, a call); make sure it always resumes.
         scene?.isPaused = false
         scene?.view?.isPaused = false

@@ -32,6 +32,7 @@ public enum GameEvent: Equatable, Sendable {
     case conversation(String)
     case placed(String)
     case wood(Int)
+    case climbStep
     case panel(String)
     case saveNow
 }
