@@ -296,6 +296,51 @@ enum Art {
             rect(-1.6, -0.9, 3.2, 0.12, 0x6b4f3a); rect(-1.5, -0.78, 0.1, 0.78, 0x4f392d); rect(1.4, -0.78, 0.1, 0.78, 0x4f392d)
             for i in 0..<5 { ActorArt.dot(ctx, -1.2 + CGFloat(i) * 0.6, -1.05, 0.18, c(i % 2 == 0 ? 0x6f9a52 : 0x8cc46a)) }
             rect(-2.6, -0.5, 0.9, 0.5, 0x4a2f24); rect(1.8, -0.5, 0.9, 0.5, 0x4a2f24)
+        case .waterDrum:
+            // A blue steel drum on a low stand, a tap near the bottom, the intake pipe and filter housing behind.
+            rect(0.25, -2.6, 0.12, 1.4, 0x5c6670); rect(0.1, -1.55, 0.42, 0.5, p.flags.contains("newFilter") ? 0x8fb7c9 : 0x6e6252)
+            ctx.setFillColor(c(0x3e6f8e)); ActorArt.rr(ctx, -0.55, -1.45, 1.0, 1.25, 0.12); ctx.fillPath()
+            rect(-0.55, -1.2, 1.0, 0.06, 0x2f566e); rect(-0.55, -0.55, 1.0, 0.06, 0x2f566e)
+            rect(-0.6, -0.2, 1.1, 0.2, 0x3a3f47)
+            rect(-0.72, -0.42, 0.2, 0.08, 0x9aa0a6)
+            // the clamp, once fitted
+            if p.flags.contains("sealed") { rect(-0.58, -0.34, 0.12, 0.16, 0xb08a4a) }
+            // cups left: a little gauge
+            let k = CGFloat(min(12, max(0, crop))) / 12
+            rect(0.32, -1.38, 0.08, 1.05, 0x1c2a33); rect(0.32, -0.33 - 1.05 * k, 0.08, 1.05 * k, 0x7fc8ef)
+        case .brokenBunk:
+            rect(-1.0, -0.55, 2.0, 0.12, 0x4a3a30); rect(-1.0, -0.43, 0.1, 0.43, 0x3a2c24); rect(0.9, -0.43, 0.1, 0.43, 0x3a2c24)
+            ActorArt.line(ctx, [CGPoint(x: -1.0, y: -1.5), CGPoint(x: 0.7, y: -0.6)], c(0x4a3a30), 0.1)
+            rect(-0.9, -0.7, 1.3, 0.16, 0x6a6458)
+            if !p.stock.isEmpty { rect(0.2, -0.85, 0.08, 0.5, 0x8a7a5c) }
+        case .washstand:
+            rect(-0.4, -1.0, 0.8, 0.1, 0xb8b4aa); ctx.setFillColor(c(0xd4d0c6)); ctx.fillEllipse(in: CGRect(x: -0.32, y: -1.06, width: 0.64, height: 0.16))
+            rect(-0.05, -0.9, 0.1, 0.9, 0x6b6f75); rect(-0.25, -0.05, 0.5, 0.05, 0x6b6f75)
+            if !p.stock.isEmpty { ActorArt.dot(ctx, 0, -0.75, 0.07, c(0x2a2a2a)) }
+        case .floorGrate:
+            for k in 0..<5 { rect(-0.45 + CGFloat(k) * 0.2, -0.06, 0.08, 0.08, p.flags.contains("open") ? 0x15110f : 0x6b6f75) }
+        case .landmark:
+            switch p.id {
+            case "lm.pipe":
+                // a pipe coming down the wall that forks in two
+                ActorArt.line(ctx, [CGPoint(x: 0, y: -2.9), CGPoint(x: 0, y: -1.8)], c(0x7d8a93), 0.18)
+                ActorArt.line(ctx, [CGPoint(x: 0, y: -1.8), CGPoint(x: -0.6, y: -1.2), CGPoint(x: -0.6, y: -0.2)], c(0x7d8a93), 0.16)
+                ActorArt.line(ctx, [CGPoint(x: 0, y: -1.8), CGPoint(x: 0.6, y: -1.2), CGPoint(x: 0.6, y: -0.2)], c(0x7d8a93), 0.16)
+            case "lm.stripes":
+                for k in 0..<3 { rect(-0.5 + CGFloat(k) * 0.4, -2.2, 0.16, 1.4, 0xe8e6df, 0.85) }
+            default:
+                // a question mark scratched into the door frame
+                ctx.setStrokeColor(c(0xe8e0c8, 0.85)); ctx.setLineWidth(0.08)
+                ctx.addArc(center: CGPoint(x: 0, y: -1.75), radius: 0.22, startAngle: .pi, endAngle: .pi * 2.4, clockwise: false); ctx.strokePath()
+                ActorArt.line(ctx, [CGPoint(x: 0.04, y: -1.55), CGPoint(x: 0, y: -1.35)], c(0xe8e0c8, 0.85), 0.08)
+                ActorArt.dot(ctx, 0, -1.18, 0.05, c(0xe8e0c8, 0.85))
+            }
+        case .storeShelf:
+            rect(-1.0, -2.0, 0.08, 2.0, 0x4a4f57); rect(0.92, -2.0, 0.08, 2.0, 0x4a4f57)
+            for k in 0..<3 { rect(-1.0, -0.1 - CGFloat(k) * 0.9, 2.0, 0.08, 0x5c6670) }
+            if p.stock.contains(where: { $0.id == .filterAssembly }) { ctx.setFillColor(c(0x8fb7c9)); ActorArt.rr(ctx, -0.8, -0.75, 0.7, 0.65, 0.08); ctx.fillPath() }
+            if p.stock.contains(where: { $0.id == .waterCan }) { ctx.setFillColor(c(0x3e6f8e)); ActorArt.rr(ctx, 0.2, -0.72, 0.5, 0.62, 0.06); ctx.fillPath() }
+            for s in p.stock where s.id != .filterAssembly && s.id != .waterCan { _ = s; rect(-0.6, -1.4, 0.3, 0.4, 0xb08a4a) }
         }
     }
 
@@ -309,6 +354,12 @@ enum Art {
         case .gantry: return (-3.2, -6.7, 6.4, 8.1)
         case .warmPipe: return (0, -0.3, 44, 0.5)
         case .odiStall: return (-2.8, -1.4, 5.6, 1.5)
+        case .waterDrum: return (-0.8, -2.7, 1.6, 2.8)
+        case .brokenBunk: return (-1.1, -1.6, 2.2, 1.7)
+        case .washstand: return (-0.5, -1.2, 1.0, 1.3)
+        case .floorGrate: return (-0.5, -0.1, 1.0, 0.2)
+        case .landmark: return (-0.8, -3.0, 1.6, 3.1)
+        case .storeShelf: return (-1.1, -2.1, 2.2, 2.2)
         case .bed: return (-1.2, -0.9, 2.5, 1.0)
         case .maraLift: return (-1.5, -5.2, 3.0, 5.3)
         case .maraPump: return (-0.7, -2.4, 2.8, 2.5)

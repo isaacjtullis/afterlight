@@ -281,6 +281,7 @@ struct HUDView: View {
                 meter("heart.fill", ui.health, Color(red: 0.95, green: 0.42, blue: 0.4), id: "meter.health")
                 meter("bolt.fill", ui.stamina, Color.amber, id: "meter.stamina")
                 meter("fork.knife", ui.hunger, Color(red: 0.7, green: 0.85, blue: 0.45), id: "meter.hunger")
+                meter("drop.fill", ui.hydration, Color(red: 0.5, green: 0.78, blue: 1), id: "meter.water")
                 if ui.hasFlashlight {
                     Button { model.game.swapCell(); model.haptics.tap() } label: {
                         meter("battery.75", ui.battery, Color(red: 0.6, green: 0.85, blue: 1), id: "meter.battery")

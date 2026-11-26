@@ -282,7 +282,12 @@ final class GameScene: SKScene {
             if p.kind == .workbench && !g.inv.has(.flashlight) { p.flags.insert("flashlight") }
             if p.kind == .pump && g.story.flags.contains("pumpFixed") { p.flags.insert("fixed") }
             if p.kind == .maraTap && g.story.coop.water.outpostTapFlow > 0 { p.flags.insert("flowing") }
-            let crop = p.kind == .planter ? (p.planted == nil ? 0 : max(0.08, g.cropProgress(p))) : 0
+            if p.kind == .waterDrum {
+                if g.quarters.drumSealed { p.flags.insert("sealed") }
+                if g.quarters.filterFitted || g.story.flags.contains("filterIn") { p.flags.insert("newFilter") }
+            }
+            if p.kind == .floorGrate && g.story.flags.contains("gotSketch") { p.flags.insert("open") }
+            let crop = p.kind == .planter ? (p.planted == nil ? 0 : max(0.08, g.cropProgress(p))) : (p.kind == .waterDrum ? g.quarters.clean.rounded(.down) : 0)
             let key = "\(p.kind.rawValue)|\(p.stock.isEmpty)|\(p.flags.sorted().joined())|\(Int(crop * 10))|\(g.story.flags.contains("power"))|\(S)"
             alive.insert(p.id)
             if let e = propNodes[p.id], e.key == key { continue }

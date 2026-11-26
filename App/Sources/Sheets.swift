@@ -314,6 +314,12 @@ struct ThoughtsCard: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .padding(.trailing, 28)
+                if let h = model.game.landmarkHint {
+                    HStack(alignment: .top, spacing: 10) {
+                        Image(systemName: "map").font(.system(size: 14, weight: .semibold)).foregroundStyle(Color.amber).padding(.top, 2)
+                        Text(h).font(.avenir(14)).foregroundStyle(Color.cream.opacity(0.85)).fixedSize(horizontal: false, vertical: true)
+                    }
+                }
                 if let c = model.ui.clue {
                     Button { close(); model.sheet = .journal } label: {
                         HStack(spacing: 12) {
@@ -467,6 +473,13 @@ extension ItemID {
         case .photo: return "photo.fill"
         case .toy: return "bird.fill"
         case .spores: return "sparkles"
+        case .strap: return "lanyardcard.fill"
+        case .gasket: return "circle.circle"
+        case .hoseClamp: return "link.circle.fill"
+        case .waterCan: return "drop.circle.fill"
+        case .filterAssembly: return "cylinder.split.1x2.fill"
+        case .sketch: return "map.fill"
+        case .roster: return "list.clipboard.fill"
         }
     }
     var tint: Color {
@@ -480,7 +493,9 @@ extension ItemID {
         case .spores: return Color(red: 0.6, green: 1, blue: 0.75)
         case .seedTin, .greens: return Color(red: 0.6, green: 0.85, blue: 0.5)
         case .lampCell, .batteryCell, .lamp: return Color(red: 1, green: 0.85, blue: 0.5)
-        case .waterTank: return Color(red: 0.55, green: 0.8, blue: 1)
+        case .waterTank, .waterCan, .filterAssembly: return Color(red: 0.55, green: 0.8, blue: 1)
+        case .sketch, .roster: return Color(red: 0.95, green: 0.88, blue: 0.72)
+        case .strap: return Color(red: 0.7, green: 0.6, blue: 0.45)
         case .rope, .trailMeal: return Color(red: 0.9, green: 0.75, blue: 0.55)
         default: return Color(red: 0.86, green: 0.88, blue: 0.9)
         }

@@ -27,6 +27,7 @@ struct UIState: Equatable {
     var battery = 100
     var started = false
     var hunger = 100
+    var hydration = 100
     var depth = ""
     var canGoInside = false
     var aim = 0          // -1 the wheel points up, 1 down, 0 ahead
@@ -230,6 +231,7 @@ final class GameModel: ObservableObject {
         u.battery = Int(g.battery.rounded())
         u.started = g.started
         u.hunger = Int(g.max.hunger.rounded())
+        u.hydration = Int(g.hydration.rounded())
         if g.thoughtT > 0, !g.thoughtText.isEmpty, thoughtLog.last != g.thoughtText { thoughtLog.append(g.thoughtText); if thoughtLog.count > 8 { thoughtLog.removeFirst() } }
         u.depth = Depth.label(atY: g.max.pos.y)
         g.lootUI = true
