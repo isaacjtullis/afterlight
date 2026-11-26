@@ -117,7 +117,7 @@ extension Bot {
     /// Route A: the long dig. Down from the tunnel mouth through the store's caved-in roof.
     func playStoreByDigging() -> Bool {
         guard go(32.5, timeout: 60) else { return false }
-        hold(GameInput(down: true, dig: true), until: { self.g.story.flags.contains("foundStore") }, timeout: 200, "dig down into Store B")
+        hold(GameInput(down: true), until: { self.g.story.flags.contains("foundStore") }, timeout: 200, "dig down into Store B")
         guard g.story.flags.contains("foundStore") else { return false }
         return fetchAndFit(back: .digUp)
     }
@@ -163,7 +163,7 @@ final class PlaythroughTests: XCTestCase {
         // East to the lift pit, through the plank cover, down the ladder.
         XCTAssertTrue(b.go(36), b.trail)
         XCTAssertTrue(b.go(Double(Landmarks.serviceShaft.c1), dig: true, timeout: 200), b.trail)
-        b.hold(GameInput(down: true, dig: true), until: { g.max.pos.y > 31 }, timeout: 6, "dig through the plank cover")
+        b.hold(GameInput(down: true), until: { g.max.pos.y > 31 || g.max.mode == .climb }, timeout: 6, "dig through the plank cover")
         b.hold(GameInput(down: true), until: { g.max.pos.y > Double(Landmarks.serviceWalk.floor) - 0.3 && g.max.mode == .walk }, timeout: 20, "climb down the service ladder")
         XCTAssertTrue(g.story.flags.contains("lm.pipe"), "passed the forked pipe\n" + b.trail)
         // West along the walk to the broken span: lay planks across it.
