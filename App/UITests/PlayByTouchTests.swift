@@ -81,5 +81,10 @@ final class PlayByTouchTests: XCTestCase {
         shot("08-candle")
         candle.tap()
         XCTAssertTrue(waitFor("started=true"), "lighting the candle hands control to Max")
+        // The game's content files made it into the app bundle.
+        XCTAssertGreaterThanOrEqual(value("recipes"), 20, "recipes loaded in the app; state: \(state)")
+        XCTAssertGreaterThanOrEqual(value("quests"), 10, "quests loaded in the app; state: \(state)")
+        XCTAssertGreaterThanOrEqual(value("talks"), 1, "conversations loaded in the app; state: \(state)")
+        XCTAssertTrue(state.contains("items=true"), "every item has a name in the app; state: \(state)")
     }
 }

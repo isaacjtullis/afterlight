@@ -213,7 +213,7 @@ final class GameModel: ObservableObject {
         if let d = cloudDue, clock >= d { cloudDue = nil; pushCloud() }
         refreshUI()
         if uiTesting, Int(clock * 10) % 3 == 0 {
-            let s = "x=\(String(format: "%.2f", game.max.pos.x)) y=\(String(format: "%.2f", game.max.pos.y)) started=\(game.started) dug=\(game.story.flags.contains("dug"))"
+            let s = "x=\(String(format: "%.2f", game.max.pos.x)) y=\(String(format: "%.2f", game.max.pos.y)) started=\(game.started) dug=\(game.story.flags.contains("dug")) recipes=\(Recipes.all.count) quests=\(Quests.all.count) talks=\(Dialogue.graphs.count) items=\(ItemTable.missing.isEmpty)"
             if s != debugState { debugState = s }
         }
     }
