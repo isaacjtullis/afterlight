@@ -769,7 +769,7 @@ final class GameScene: SKScene {
                 for c in max(0, ex0)...max(0, ex1) where g.story.explored.contains((r / b) * cols + c / b) {
                     let open = !w.m(c, r).solid
                     let face = !open && (!w.m(c, r - 1).solid || !w.m(c - 1, r).solid || !w.m(c + 1, r).solid)
-                    if open || face { ctx.fill(CGRect(x: c, y: r, width: 1, height: open ? 1 : 0.35)) }
+                    if open || face { ctx.fill(CGRect(x: CGFloat(c), y: CGFloat(r), width: 1, height: open ? 1 : 0.35)) }
                 }
             }
         }
