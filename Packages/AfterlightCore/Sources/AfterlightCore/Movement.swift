@@ -577,8 +577,8 @@ extension Game {
         max.flashI = t < 0.05 ? 1 : t < 0.14 ? 0 : t < 0.22 ? 0.8 : t < 0.45 ? 0.08 : t < 0.52 ? 1 : t < 0.6 ? 0.4 : 1
         if t > 0.5 && c.beat == 0 { c.beat = 1; emit(.swell) }
         if t > 1.3 && c.beat == 1 { c.beat = 2; think("Oh.", 1.6) }
-        if t > 2.7 && c.beat == 2 { c.beat = 3; think("…what’s up there?", 2) }
-        if t > 5 && c.beat == 3 { c.beat = 4; think("A service shaft. It goes all the way up.", 3.4) }
+        if t > 2.7 && c.beat == 2 { c.beat = 3; think("I wonder how high this goes.", 2.4) }
+        if t > 5 && c.beat == 3 { c.beat = 4; think("Rungs. Somebody climbed this, once.", 3.4) }
         var dir = 0
         if t > 2.3 {
             max.face = 1

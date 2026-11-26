@@ -22,7 +22,7 @@ final class IntroTests: XCTestCase {
         let short = IntroScript.duration(IntroScript.scenes[0])
         let long = IntroScript.duration(IntroScript.scenes[2])
         XCTAssertLessThan(short, 3)
-        XCTAssertGreaterThan(long, 7)
+        XCTAssertGreaterThan(long, short + 2)
     }
 
     func testAutoAdvanceThroughEverySceneThenHoldOnMax() {

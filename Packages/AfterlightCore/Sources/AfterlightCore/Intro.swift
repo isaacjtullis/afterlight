@@ -47,7 +47,7 @@ public enum IntroScript {
     /// Reading time: short lines move quickly, long ones get time to be read comfortably.
     public static func duration(_ s: IntroScene) -> Double {
         let words = s.text.split(separator: " ").count
-        return Swift.max(2.2, 1.4 + Double(words) * 0.36)
+        return Swift.max(1.9, 0.9 + Double(words) * 0.25)
     }
 }
 

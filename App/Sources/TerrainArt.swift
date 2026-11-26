@@ -176,66 +176,90 @@ enum TerrainArt {
 
     struct Layer { var f: Double; var k: Double; var image: CGImage; var origin: CGPoint; var pxPerUnit: CGFloat }
 
-    /// Distant machinery silhouettes in three hazy layers, rendered once.
+    /// Where the parallax layers line up with the world.
+    static let parallaxAnchorX = 130.0
+
+    /// The far cavern in three hazy layers of rock: a ceiling hung with stalactites, a floor of stalagmites,
+    /// columns where the two have met, and arches in the distance. Rendered once.
     static func parallaxLayers() -> [Layer] {
-        let specs: [(Double, Double, UInt32, UInt32, CGFloat)] = [(0.18, 0.55, 0xa0636a, 0xc8826e, 0.16), (0.42, 0.75, 0x6c3b49, 0xa05c56, 0.14), (0.68, 0.9, 0x432433, 0x5a2e3a, 0.12)]
+        let specs: [(Double, Double, UInt32, UInt32, CGFloat)] = [(0.18, 0.55, 0x4e3f4a, 0x7a6070, 0.22), (0.42, 0.75, 0x33262f, 0x5a4250, 0.16), (0.68, 0.9, 0x20171d, 0x2e2128, 0.1)]
         var out: [Layer] = []
         for (li, s) in specs.enumerated() {
             let ppu: CGFloat = 6
-            let x0: CGFloat = -60, y0: CGFloat = -30, wU: CGFloat = 320, hU: CGFloat = 120
+            let x0: CGFloat = -20, y0: CGFloat = -30, wU: CGFloat = 320, hU: CGFloat = 120
             guard let ctx = CGContext(data: nil, width: Int(wU * ppu), height: Int(hU * ppu), bitsPerComponent: 8, bytesPerRow: 0,
                                       space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { continue }
             ctx.translateBy(x: 0, y: hU * ppu); ctx.scaleBy(x: ppu, y: -ppu); ctx.translateBy(x: -x0, y: -y0)
             ctx.setFillColor(color(s.2)); ctx.setStrokeColor(color(s.2))
-            // ceiling teeth and floor
-            let topY: Double = li == 0 ? 2 : li == 1 ? 0 : -2
+            let L = Double(li)
+            let topY: Double = li == 0 ? 6 : li == 1 ? 3 : 0
             let botY: Double = li == 0 ? 44 : li == 1 ? 47 : 50
-            let topP = CGMutablePath(); topP.move(to: CGPoint(x: -60, y: -30))
-            var x = -60.0
-            while x <= 260 { let n = hash2(Int(x * 7), li * 99); topP.addLine(to: CGPoint(x: x, y: topY + n * 4 + (n > 0.8 ? 7 * n : 0))); x += 2.5 }
-            topP.addLine(to: CGPoint(x: 260, y: -30)); topP.closeSubpath()
-            let botP = CGMutablePath(); botP.move(to: CGPoint(x: -60, y: 90))
-            x = -60
-            while x <= 260 { let n = hash2(Int(x * 5), li * 77); botP.addLine(to: CGPoint(x: x, y: botY - n * 3 - (n > 0.85 ? 5 : 0))); x += 3 }
-            botP.addLine(to: CGPoint(x: 260, y: 90)); botP.closeSubpath()
-            ctx.addPath(topP); ctx.addPath(botP); ctx.fillPath()
-            func tower(_ x: Double, _ b: Double, _ wd: Double, _ h: Double) {
+            let xa = -20.0, xb = 300.0
+            // Ceiling: a lumpy rock mass with stalactites hanging from it.
+            let top = CGMutablePath(); top.move(to: CGPoint(x: xa, y: -30))
+            var x = xa
+            while x <= xb {
+                let n = hash2(Int(x * 7), li * 99)
+                let base = topY + 2.5 * sin(x * 0.07 + L) + n * 1.5
+                top.addLine(to: CGPoint(x: x, y: base))
+                if n > 0.45 {
+                    // a stalactite: narrow, long, slightly crooked
+                    let len = 2 + n * (li == 2 ? 6 : 9), w = 0.5 + n * 1.1
+                    top.addLine(to: CGPoint(x: x + w * 0.45, y: base + len * 0.55))
+                    top.addLine(to: CGPoint(x: x + w * 0.55 + 0.2, y: base + len))
+                    top.addLine(to: CGPoint(x: x + w, y: base + 0.3))
+                }
+                x += 1.6 + n * 1.4
+            }
+            top.addLine(to: CGPoint(x: xb, y: -30)); top.closeSubpath()
+            // Floor: rubble humps with stalagmites.
+            let bot = CGMutablePath(); bot.move(to: CGPoint(x: xa, y: 90))
+            x = xa
+            while x <= xb {
+                let n = hash2(Int(x * 5), li * 77)
+                let base = botY - 2 * sin(x * 0.05 + L * 2) - n * 1.2
+                bot.addLine(to: CGPoint(x: x, y: base))
+                if n > 0.6 {
+                    let len = 1.5 + n * (li == 2 ? 4 : 7), w = 0.9 + n * 1.4
+                    bot.addLine(to: CGPoint(x: x + w * 0.45, y: base - len))
+                    bot.addLine(to: CGPoint(x: x + w, y: base))
+                }
+                x += 2 + n * 1.6
+            }
+            bot.addLine(to: CGPoint(x: xb, y: 90)); bot.closeSubpath()
+            ctx.addPath(top); ctx.addPath(bot); ctx.fillPath()
+            // Columns where a stalactite and stalagmite met: pinched in the middle.
+            func column(_ cx: Double, _ wd: Double) {
                 let p = CGMutablePath()
-                p.addLines(between: [CGPoint(x: x - wd / 2, y: b), CGPoint(x: x - wd / 2, y: b - h * 0.72), CGPoint(x: x - wd * 0.28, y: b - h),
-                                     CGPoint(x: x + wd * 0.28, y: b - h), CGPoint(x: x + wd / 2, y: b - h * 0.72), CGPoint(x: x + wd / 2, y: b)])
+                let t0 = topY + 2, b0 = botY - 1, mid = (t0 + b0) / 2
+                p.move(to: CGPoint(x: cx - wd, y: t0))
+                p.addQuadCurve(to: CGPoint(x: cx - wd * 0.22, y: mid), control: CGPoint(x: cx - wd * 0.3, y: t0 + (mid - t0) * 0.5))
+                p.addQuadCurve(to: CGPoint(x: cx - wd * 1.1, y: b0), control: CGPoint(x: cx - wd * 0.3, y: mid + (b0 - mid) * 0.6))
+                p.addLine(to: CGPoint(x: cx + wd * 1.1, y: b0))
+                p.addQuadCurve(to: CGPoint(x: cx + wd * 0.22, y: mid), control: CGPoint(x: cx + wd * 0.3, y: mid + (b0 - mid) * 0.6))
+                p.addQuadCurve(to: CGPoint(x: cx + wd, y: t0), control: CGPoint(x: cx + wd * 0.3, y: t0 + (mid - t0) * 0.5))
                 p.closeSubpath(); ctx.addPath(p); ctx.fillPath()
             }
-            func derrick(_ x: Double, _ b: Double, _ wd: Double, _ h: Double, _ lw: CGFloat) {
-                ctx.setLineWidth(lw)
+            // Arches in the far wall: dark mouths of other passages.
+            func arch(_ cx: Double, _ by: Double, _ wd: Double, _ h: Double) {
                 let p = CGMutablePath()
-                p.move(to: CGPoint(x: x - wd / 2, y: b)); p.addLine(to: CGPoint(x: x - wd * 0.08, y: b - h))
-                p.move(to: CGPoint(x: x + wd / 2, y: b)); p.addLine(to: CGPoint(x: x + wd * 0.08, y: b - h))
-                for i in 1..<6 {
-                    let y = b - h * Double(i) / 6, hw = wd / 2 * (1 - Double(i) / 6 * 0.84)
-                    p.move(to: CGPoint(x: x - hw, y: y)); p.addLine(to: CGPoint(x: x + hw, y: y - h / 12))
-                    p.move(to: CGPoint(x: x + hw, y: y)); p.addLine(to: CGPoint(x: x - hw, y: y - h / 12))
-                }
-                ctx.addPath(p); ctx.strokePath()
+                p.move(to: CGPoint(x: cx - wd / 2 - 3, y: by)); p.addLine(to: CGPoint(x: cx - wd / 2 - 3, y: by - h - 3))
+                p.addLine(to: CGPoint(x: cx + wd / 2 + 3, y: by - h - 3)); p.addLine(to: CGPoint(x: cx + wd / 2 + 3, y: by))
+                p.addLine(to: CGPoint(x: cx + wd / 2, y: by))
+                p.addQuadCurve(to: CGPoint(x: cx - wd / 2, y: by), control: CGPoint(x: cx, y: by - h * 2))
+                p.closeSubpath(); ctx.addPath(p); ctx.fillPath()
             }
             switch li {
             case 0:
-                tower(70, 44, 7, 26); tower(98, 44, 5, 34); tower(128, 44, 9, 20); derrick(84, 44, 8, 30, 0.5); derrick(140, 44, 6, 24, 0.5)
-                let ring = CGMutablePath(); ring.addLines(between: [CGPoint(x: 108, y: 24), CGPoint(x: 113, y: 18), CGPoint(x: 120, y: 18), CGPoint(x: 124, y: 24), CGPoint(x: 120, y: 30), CGPoint(x: 113, y: 30)]); ring.closeSubpath()
-                ctx.addPath(ring); ctx.fillPath()
+                arch(118, 44, 10, 14); arch(150, 44, 7, 10); column(98, 2.2); column(176, 3)
             case 1:
-                tower(63, 47, 4, 17); tower(96, 47, 16, 12); derrick(116, 47, 10, 26, 0.6); tower(138, 47, 17, 10)
-                ctx.setLineWidth(0.7)
-                let g = CGMutablePath(); g.move(to: CGPoint(x: 70, y: 14)); g.addLine(to: CGPoint(x: 70, y: 30)); g.move(to: CGPoint(x: 64, y: 14)); g.addLine(to: CGPoint(x: 98, y: 14)); g.move(to: CGPoint(x: 92, y: 14)); g.addLine(to: CGPoint(x: 92, y: 20))
-                ctx.addPath(g); ctx.strokePath()
+                column(112, 1.8); column(141, 2.6); column(166, 1.4)
             default:
-                tower(74, 50, 17, 8); tower(111, 50, 19, 6)
-                ctx.setLineWidth(0.8)
-                let g = CGMutablePath(); g.move(to: CGPoint(x: 92, y: 50)); g.addLine(to: CGPoint(x: 98, y: 36)); g.addLine(to: CGPoint(x: 108, y: 38)); g.move(to: CGPoint(x: 124, y: 50)); g.addLine(to: CGPoint(x: 124, y: 34))
-                ctx.addPath(g); ctx.strokePath()
+                column(127, 1.6); column(184, 2.2)
             }
             // atmospheric haze over the layer
             ctx.setBlendMode(.sourceAtop)
-            ctx.setFillColor(color(s.3, s.4)); ctx.fill(CGRect(x: -60, y: -30, width: 320, height: 120))
+            ctx.setFillColor(color(s.3, s.4)); ctx.fill(CGRect(x: -20, y: -30, width: 320, height: 120))
             if let img = ctx.makeImage() { out.append(Layer(f: s.0, k: s.1, image: img, origin: CGPoint(x: x0, y: y0), pxPerUnit: ppu)) }
         }
         return out

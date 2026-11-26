@@ -75,7 +75,7 @@ final class GameScene: SKScene {
         cam.addChild(sunNode)
         for i in 0..<6 {
             let r = SKShapeNode(); r.blendMode = .add; r.zPosition = -94; r.strokeColor = .clear
-            r.fillColor = UIColor(red: 1, green: 0.82, blue: 0.66, alpha: 0.035 + 0.01 * CGFloat(i % 3)); cam.addChild(r); rayNodes.append(r)
+            r.fillColor = UIColor(red: 1, green: 0.86, blue: 0.7, alpha: 0.02 + 0.008 * CGFloat(i % 3)); cam.addChild(r); rayNodes.append(r)
         }
         darkNode.zPosition = 50; darkNode.anchorPoint = CGPoint(x: 0.5, y: 0.5); cam.addChild(darkNode)
         maxNode.zPosition = 25; addChild(maxNode)
@@ -115,7 +115,7 @@ final class GameScene: SKScene {
         propNodes.removeAll()
         game.world.markAllDirty()
         skyNode.size = size
-        let g = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: [TerrainArt.color(0x2a1624), TerrainArt.color(0x6d3a46), TerrainArt.color(0xc47f5f), TerrainArt.color(0x8c4f4a), TerrainArt.color(0x3a1f2a)] as CFArray, locations: [0, 0.42, 0.6, 0.74, 1])!
+        let g = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: [TerrainArt.color(0x0e0a0d), TerrainArt.color(0x2a1d26), TerrainArt.color(0x6a4a48), TerrainArt.color(0x3a2830), TerrainArt.color(0x120d10)] as CFArray, locations: [0, 0.42, 0.6, 0.74, 1])!
         if let ctx = CGContext(data: nil, width: 4, height: 256, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) {
             ctx.drawLinearGradient(g, start: CGPoint(x: 0, y: 256), end: CGPoint(x: 0, y: 0), options: [])
             if let img = ctx.makeImage() { skyNode.texture = SKTexture(cgImage: img) }
@@ -348,7 +348,8 @@ final class GameScene: SKScene {
         let W = size.width, H = size.height
         func screen(_ lx: Double, _ ly: Double, _ f: Double, _ k: Double) -> CGPoint {
             // camera space: origin at screen center, y up
-            let x = CGFloat(((lx - 90) - (camX - 90) * f) * k) * sc
+            let ax = TerrainArt.parallaxAnchorX
+            let x = CGFloat(((lx - ax) - (camX - ax) * f) * k) * sc
             let y = CGFloat(((ly - 25) - (camY - 25) * f) * k) * sc
             return CGPoint(x: x, y: -y)
         }
@@ -357,11 +358,12 @@ final class GameScene: SKScene {
             n.position = p
             n.size = CGSize(width: CGFloat(l.image.width) / l.pxPerUnit * CGFloat(l.k) * sc, height: CGFloat(l.image.height) / l.pxPerUnit * CGFloat(l.k) * sc)
         }
-        let sun = screen(126, 21, 0.18, 0.55)
+        // Not a sun: a far-off crack of light high in the cavern wall.
+        let sun = screen(150, 18, 0.18, 0.55)
         sunNode.position = sun
         let R = max(W, H) * 1.9
         sunNode.size = CGSize(width: R, height: R)
-        sunNode.alpha = 0.9
+        sunNode.alpha = 0.5
         let t = game.time
         for (i, r) in rayNodes.enumerated() {
             let a = CGFloat(-Double.pi / 2 + Double(i - 3) * 0.3 + sin(t * 0.13 + Double(i) * 1.7) * 0.05)
@@ -703,7 +705,7 @@ final class GameScene: SKScene {
         if g.story.flags.contains("power") { light(25.5, 27.6, 8, 0.95, rays: g.world.castLight(from: V2(25.5, 27.6), radius: 8, a0: 0, a1: 2 * .pi, rays: 48)) }
         if abs(g.max.pos.x - 80) < 30 && g.max.pos.y < 14 { light(80.5, 7, 7, 0.95, rays: g.world.castLight(from: V2(80.5, 7), radius: 7, a0: 0, a1: 2 * .pi, rays: 48)) }
         if g.odi.walking { light(g.odi.pos.x + Double(g.odi.face) * 0.3, g.odi.pos.y - 0.5, 3.6, 0.9, rays: nil) }
-        if g.ambient > 0 { light(102, 26, 78, 0.92 * g.ambient, rays: nil) }
+        if g.ambient > 0 { light(135, 30, 60, 0.92 * g.ambient, rays: nil) }
         if let b = g.world.buried.first(where: { !$0.revealed }), abs(b.pos.x - lx) < 6 { light(b.pos.x, b.pos.y - 0.1, 1.1, 0.35, rays: nil) }
         if let img = ctx.makeImage() {
             darkNode.texture = SKTexture(cgImage: img)
