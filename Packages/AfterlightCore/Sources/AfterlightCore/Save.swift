@@ -154,7 +154,10 @@ extension Game {
         g.max.stamina = s.stamina
         g.max.health = s.health ?? 100
         g.battery = s.battery ?? 100
-        if let q = s.quarters { g.quarters = q }
+        if let q = s.quarters { g.quarters = q } else {
+            // Saves from before the quarters existed: that home already had working water.
+            g.quarters = Quarters(); g.quarters.drumSealed = true; g.quarters.filterFitted = true; g.quarters.clean = 8
+        }
         g.max.hunger = s.hunger ?? 100
         g.hydration = s.hydration ?? 100
         g.max.digFloor = maxPos.y
