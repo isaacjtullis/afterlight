@@ -194,7 +194,7 @@ final class HomeGroundTests: XCTestCase {
         walk(g, to: 28.3)
         sim(g, GameInput(), 0.2)
         XCTAssertEqual(g.context?.id, "pantry")
-        g.performContext()
+        g.eatAndDrink()
         XCTAssertGreaterThan(g.max.stamina, 55, "a meal gives a good chunk back")
         XCTAssertEqual(g.world.prop("pantry")?.stock.first?.count, 11)
     }
