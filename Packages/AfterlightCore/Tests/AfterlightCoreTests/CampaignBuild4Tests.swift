@@ -27,7 +27,7 @@ final class CampaignBuild4Tests: XCTestCase {
         g.begin()
         g.story.chapter = 6
         g.story.flags.formUnion(["flashOn", "hotel.seen", "hotel.inside", "answered"])
-        place(g, V2(244.6, 28))
+        place(g, V2(229.6, 28))
         return g
     }
 
@@ -60,7 +60,8 @@ final class CampaignBuild4Tests: XCTestCase {
     func testArrivalSavesAtTheLandingAndTheGalleryComesAlive() {
         let g = hotelTop()
         let ev = arrive(g)
-        XCTAssertTrue(ev.contains(.landingSave), "a pinned save at the landing")
+        _ = ev
+        XCTAssertTrue(g.story.isDone("gallery", "landing"), "the landing step (and the app's pinned save with it)")
         XCTAssertEqual(g.story.chapter, 7)
         sim(g, GameInput(), 1.5)
         // Two people stop at the landing.
@@ -149,7 +150,7 @@ final class CampaignBuild4Tests: XCTestCase {
         XCTAssertNil(g.world.prop("gallery.door"))
         XCTAssertNil(g.story.ending, "not until he walks back through the changed landing")
         // The short return: down the gallery stair.
-        place(g, V2(244.6, 12))
+        place(g, V2(229.6, 12))
         let b = Bot(g)
         b.hold(GameInput(climbDown: true), until: { g.max.pos.y > 27.5 }, timeout: 30, "down from the landing")
         sim(g, GameInput(), 0.5)

@@ -86,7 +86,7 @@ final class CampaignBuild3Tests: XCTestCase {
         XCTAssertTrue(b.go(247.6, timeout: 160), b.trail)
         b.hold(GameInput(up: true), until: { g.max.pos.y < 28.4 && g.max.mode == .walk }, timeout: 40, "up the exit stair")
         XCTAssertLessThan(g.max.pos.y, 28.5, b.trail)
-        XCTAssertTrue(b.go(244.6), b.trail)
+        XCTAssertTrue(b.go(229.6, timeout: 60), b.trail)
         b.hold(GameInput(up: true), until: { g.max.pos.y < 12.4 && g.max.mode == .walk }, timeout: 40, "up to the gallery")
         XCTAssertLessThan(g.max.pos.y, 12.5, "in the upper gallery\n\(b.trail)")
     }

@@ -18,7 +18,7 @@ extension Landmarks {
     public static let exitWell = (x0: 247, x1: 248)
     public static let luggageX = 199.0
     public static let fireHatch = (c0: 172, c1: 173, r: 28)
-    public static let galleryWell = (x0: 244, x1: 245)
+    public static let galleryWell = (x0: 228, x1: 229)
     public static let gallery = (x0: 228, x1: 326, top: 5, floor: 12)
     public static let hotelLift = V2(171.6, 52)
     public static let backstairs = V2(175.2, 52)
@@ -113,7 +113,7 @@ extension Game {
 
     // MARK: where Max is
 
-    public var inHotel: Bool { max.pos.x >= 168 && max.pos.y > Double(Landmarks.gallery.floor) + 0.5 }
+    public var inHotel: Bool { max.pos.x >= 168 && max.pos.y > Double(Landmarks.gallery.floor) + 1 }
     var inLobby: Bool { inHotel && abs(max.pos.y - 52) < 1.2 && max.pos.x < 214 }
     var onGuestFloor: Bool { inHotel && abs(max.pos.y - 40) < 1.2 && max.pos.x < 213 }
     var onLoadingFloor: Bool { inHotel && abs(max.pos.y - 52) < 1.2 && max.pos.x >= 214 }

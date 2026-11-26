@@ -68,7 +68,7 @@ extension WorldGen {
 
 extension Game {
 
-    public var inGallery: Bool { max.pos.x >= Double(Landmarks.gallery.x0) && max.pos.y <= Double(Landmarks.gallery.floor) + 0.2 && max.pos.y > 3 }
+    public var inGallery: Bool { max.pos.x >= Double(Landmarks.gallery.x0) && max.pos.y <= Double(Landmarks.gallery.floor) + 0.7 && max.pos.y > 3 }
     var atLanding: Bool { inGallery && max.pos.x < Double(Landmarks.landing.x1) }
     public var galleryClosed: Bool { story.flags.contains("gallery.closed") }
     public var endingChosen: String? { story.ending?.id }
@@ -265,7 +265,7 @@ extension Game {
 
     /// Anyone besides Max still standing in the part of the gallery that would come down.
     var galleryPeople: [String] {
-        story.cast.values.filter { !$0.hidden && $0.pos.y <= 12.2 && $0.pos.y > 3 && $0.pos.x >= Double(Landmarks.landing.x1) }.map(\.id).sorted()
+        story.cast.values.filter { !$0.hidden && $0.pos.y <= 12.7 && $0.pos.y > 3 && $0.pos.x >= Double(Landmarks.landing.x1) }.map(\.id).sorted()
     }
 
     func galleryRow(_ panel: String, _ row: String) -> Bool {
@@ -346,7 +346,7 @@ extension Game {
         world.props.removeAll { ["gallery.toll", "gallery.door", "gallery.crossing"].contains($0.id) }
         world.props.append(Prop(id: "gallery.rubble", kind: .thing, pos: V2(Double(Landmarks.landing.x1) + 2.5, 12), look: "rubble"))
         story.flags.insert("gallery.closed")
-        for (id, a) in story.cast where a.pos.x > Double(Landmarks.landing.x1) && a.pos.y <= 12.2 { story.cast[id]?.hidden = true }
+        for (id, a) in story.cast where a.pos.x > Double(Landmarks.landing.x1) && a.pos.y <= 12.7 { story.cast[id]?.hidden = true }
         if let i = world.propIndex("gallery.map") { world.props[i].flags.insert("closed") }
     }
 
