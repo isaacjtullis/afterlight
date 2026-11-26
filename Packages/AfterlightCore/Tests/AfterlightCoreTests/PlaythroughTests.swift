@@ -154,6 +154,11 @@ extension Bot {
             hold(GameInput(up: true), until: { self.g.max.pos.y < 31 && self.g.max.mode == .walk }, timeout: 40, "climb the service ladder")
         }
         guard g.max.pos.y < 31 else { note("didn't make it back up"); return false }
+        if back == .digUp {
+            // Cover the hole by the door with a plank, the way you'd want to before walking past it again.
+            hold(GameInput(dx: 1), until: { self.g.context?.id == "plank" || self.g.max.pos.x > 31.9 }, timeout: 3, "edge of my own hole")
+            if g.context?.id == "plank" { g.performContext(); note("planked over the hole") } else { note("no plank offered: \(g.context?.id ?? "nothing") wood=\(g.inv.wood)") }
+        }
         guard go(30.7, timeout: 120), use("panel:drum") else { return false }
         row("drum", "drum.can")
         guard row("drum", "drum.fit") else { return false }
