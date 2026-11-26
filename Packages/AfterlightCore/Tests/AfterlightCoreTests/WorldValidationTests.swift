@@ -6,7 +6,7 @@ import XCTest
 final class WorldValidationTests: XCTestCase {
 
     /// Items the story hands out rather than the world holding them.
-    static let storySources: Set<ItemID> = [.greens, .trailMeal, .ration, .flashlight, .campCrate, .workbenchKit, .cotKit, .woodLadder, .torch, .lamp]
+    static let storySources: Set<ItemID> = [.greens, .trailMeal, .ration, .campCrate, .workbenchKit, .cotKit, .woodLadder, .torch, .lamp]
 
     func testEveryPropStandsOnTheFloorInOpenAir() {
         let w = WorldGen.make()
@@ -70,7 +70,7 @@ final class WorldValidationTests: XCTestCase {
         g.begin()
         g.story.flags.formUnion(["flashOn", "sawShaft"])
         g.inv.belt.append(.flashlight)
-        for q in [Quest.blackout] { g.story.addQuest(q) }
+        for q in [Quest.blackout, .homeLight, .firstAscent, .dryTaps, .farEdge] { g.story.addQuest(q) }
         var checked = 0
         for q in g.story.quests where !q.side {
             for s in q.steps {
