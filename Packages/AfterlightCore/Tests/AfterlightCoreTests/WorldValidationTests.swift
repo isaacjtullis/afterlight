@@ -58,7 +58,10 @@ final class WorldValidationTests: XCTestCase {
             while y < c.bottom - 0.4 {
                 // The seam over the shaft is opened in play; skip those rows.
                 if c.id == Landmarks.shaftRungsID && Landmarks.hatchRows.contains(Int(y)) { y += 0.5; continue }
-                XCTAssertFalse(w.solid(c.x, y), "\(c.id) runs through solid at y \(y)")
+                // A plank cover over a ladder is dug through in play.
+                if w.m(Int(c.x), Int(y)) != .plank && w.m(Int(c.x) - 1, Int(y)) != .plank {
+                    XCTAssertFalse(w.solid(c.x, y), "\(c.id) runs through solid at y \(y)")
+                }
                 y += 0.5
             }
         }

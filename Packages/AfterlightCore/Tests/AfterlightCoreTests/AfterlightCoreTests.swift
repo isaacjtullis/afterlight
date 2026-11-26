@@ -97,6 +97,9 @@ final class ChapterTests: XCTestCase {
         g.performContext()
         sim(g, GameInput(), 9.5)
         XCTAssertTrue(g.story.flags.contains("sawShaft"))
+        // The water comes first now; this test is about the shaft.
+        for s in Quest.homeWater.steps { g.story.step("drum", s.id) }
+        g.quarters.filterFitted = true
         walk(g, to: 26.0)
         XCTAssertEqual(g.context?.id, "tryUp")
         g.performContext()

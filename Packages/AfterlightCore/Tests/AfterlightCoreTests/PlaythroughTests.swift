@@ -87,7 +87,8 @@ extension Bot {
         idle(2)
         guard use("switchOn") else { return false }
         idle(12)
-        return g.story.flags.contains("sawShaft")
+        note("after the first look: sawShaft=\(g.story.flags.contains("sawShaft")) cine=\(g.cine?.kind ?? "none") drumQuest=\(g.waterQuestActive)")
+        return g.inv.has(.flashlight) && g.waterQuestActive
     }
 
     /// Trace the drip, fetch strap and gasket from the old bunk room, clamp it, read the old filter.
@@ -95,8 +96,8 @@ extension Bot {
         guard go(30.7), use("panel:drum"), row("drum", "drum.trace") else { return false }
         idle(4)
         // West through the roots into the old bunk room.
-        guard go(16.6, dig: true, timeout: 120), takeAll("washstand") else { return false }
-        guard go(14.4), takeAll("bunk.broken") else { return false }
+        guard go(17.6, dig: true, timeout: 120), takeAll("washstand") else { return false }
+        guard go(16.0), takeAll("bunk.broken") else { return false }
         guard go(30.7, timeout: 120), use("panel:drum"), row("drum", "drum.clamp") else { return false }
         idle(2)
         guard g.quarters.drumSealed else { note("drum not sealed"); return false }
