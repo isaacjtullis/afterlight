@@ -539,6 +539,23 @@ struct BagSheet: View {
                 }
                 .frame(height: 82)
 
+                // Ore on hand (bag, plus storage when home)
+                HStack(spacing: 8) {
+                    ForEach([ItemID.copperOre, .ironOre, .quartz], id: \.self) { ore in
+                        let n = g.inv.count(ore) + (g.atHome ? g.storage.count(ore) : 0)
+                        HStack(spacing: 5) {
+                            Image(systemName: ore.symbol).font(.system(size: 12, weight: .semibold)).foregroundStyle(ore.tint)
+                            Text("\(n)").font(.avenir(14, "Bold")).monospacedDigit().foregroundStyle(Color.cream.opacity(n > 0 ? 1 : 0.4))
+                            Text(ore == .quartz ? "quartz" : ore == .ironOre ? "iron" : "copper").font(.avenir(11, "DemiBold")).foregroundStyle(Color.cream.opacity(0.55))
+                        }
+                        .padding(.horizontal, 10).frame(height: 30)
+                        .background(Capsule().fill(Color.black.opacity(0.3)))
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 16)
+                .accessibilityIdentifier("bag.ore")
+
                 // Pockets
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 5), spacing: 10) {
                     ForEach(0..<Inventory.capacity, id: \.self) { i in
