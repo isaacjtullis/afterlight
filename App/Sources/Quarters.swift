@@ -22,7 +22,7 @@ struct QuartersView: View {
         GeometryReader { geo in
             let unit = min(geo.size.width / 9.4, (geo.size.height - 260) / 7.4)
             let origin = CGPoint(x: (geo.size.width - unit * 9) / 2, y: geo.safeAreaInsets.top + 70)
-            func sp(_ p: CGPoint) -> CGPoint { CGPoint(x: origin.x + p.x * unit, y: origin.y + p.y * unit) }
+            let sp: (CGPoint) -> CGPoint = { p in CGPoint(x: origin.x + p.x * unit, y: origin.y + p.y * unit) }
             ZStack(alignment: .topLeading) {
                 Color(red: 0.07, green: 0.05, blue: 0.06).ignoresSafeArea()
                 // Floor and walls
