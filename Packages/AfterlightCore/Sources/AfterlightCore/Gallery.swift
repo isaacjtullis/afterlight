@@ -102,7 +102,7 @@ extension Game {
         // Someone from above, with a part the lower pumps need.
         later(6) { g in
             g.spawn("upper", at: V2(Landmarks.doorPos.x - 0.8, 12), carrying: [ItemStack(.regulator)], lamp: true)
-            g.send("upper", [Waypoint(Landmarks.landing.x1 + 1.5, 12, tag: "selaDown")])
+            g.send("upper", [Waypoint(Double(Landmarks.landing.x1) + 1.5, 12, tag: "selaDown")])
             g.story.flags.insert("sela.came")
             g.story.counters["sela.outing"] = g.outings
             g.think("The surface door. Somebody’s coming through it.", 3)
