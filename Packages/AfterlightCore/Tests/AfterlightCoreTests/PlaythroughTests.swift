@@ -224,6 +224,9 @@ final class PlaythroughTests: XCTestCase {
         b.idle(1)
         XCTAssertTrue(b.use("genFree"), b.trail)
         b.idle(2)
+        // Hop over the hole the long dig left by the door.
+        b.go(30.9)
+        b.hold(GameInput(dx: 1, jump: true), until: { g.max.pos.x > 33.6 && g.max.ground }, timeout: 3, "jump my own hole")
         XCTAssertTrue(b.go(36), b.trail)
         XCTAssertTrue(b.go(Landmarks.liftCarPos.x - 0.6, dig: true, timeout: 200), b.trail)
         b.idle(0.5)
