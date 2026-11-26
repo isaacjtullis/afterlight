@@ -105,14 +105,56 @@ enum Art {
                 ctx.strokeEllipse(in: CGRect(x: -0.38, y: -1.08, width: 0.46, height: 0.13))
             }
         case .drillRig:
-            rect(-3, -1.8, 5.2, 1.6, 0x3b3640); rect(-2.6, -0.4, 4.6, 0.4, 0x2a2730)
-            ctx.setFillColor(c(0x4a4450)); ctx.addLines(between: [CGPoint(x: 2.2, y: -1.8), CGPoint(x: 4.2, y: -1.0), CGPoint(x: 2.2, y: -0.2)]); ctx.fillPath()
-            rect(-2.2, -3.0, 0.3, 1.2, 0x3b3640); rect(-2.6, -3.1, 1.1, 0.2, 0x4a4450)
+            // A tracked boring machine nosed into the slope: treads, a riveted cab, a spiral auger, a dead work lamp.
+            let line = { (pts: [CGPoint], col: UInt32, w: CGFloat) in ActorArt.line(ctx, pts, c(col), w) }
+            // struts down to wherever the ground is
+            line([CGPoint(x: -2.4, y: -0.3), CGPoint(x: -2.7, y: 1.4)], 0x2a2730, 0.16)
+            line([CGPoint(x: 1.6, y: -0.3), CGPoint(x: 1.9, y: 1.4)], 0x2a2730, 0.16)
+            // tread
+            ctx.setFillColor(c(0x221f26)); ActorArt.rr(ctx, -2.9, -0.75, 5.0, 0.75, 0.37); ctx.fillPath()
+            for i in 0..<6 { ActorArt.dot(ctx, -2.5 + CGFloat(i) * 0.84, -0.37, 0.26, c(0x3b3640)); ActorArt.dot(ctx, -2.5 + CGFloat(i) * 0.84, -0.37, 0.08, c(0x18161c)) }
+            for i in 0..<14 { rect(-2.8 + CGFloat(i) * 0.35, -0.8, 0.14, 0.08, 0x3b3640) }
+            // body and cab
+            rect(-2.6, -2.0, 4.2, 1.25, 0x4a3f3a); rect(-2.6, -2.0, 4.2, 0.12, 0x6a5a50)
+            for i in 0..<8 { rect(-2.4 + CGFloat(i) * 0.5, -1.4, 0.32, 0.1, i % 2 == 0 ? 0xd4a03a : 0x2a2420) }   // warning stripe
+            rect(-2.4, -3.1, 1.6, 1.1, 0x3d3540); rect(-2.2, -2.95, 1.1, 0.62, 0x15131a)
+            ActorArt.line(ctx, [CGPoint(x: -2.1, y: -2.9), CGPoint(x: -1.5, y: -2.45)], c(0x8f96a0, 0.4), 0.03)
+            for i in 0..<5 { ActorArt.dot(ctx, -2.45 + CGFloat(i) * 0.95, -1.88, 0.04, c(0x8a7a6a)) }
+            // exhaust and lamp
+            rect(-0.5, -3.0, 0.22, 1.0, 0x2a2730); rect(-0.56, -3.1, 0.34, 0.12, 0x3b3640)
+            ActorArt.line(ctx, [CGPoint(x: -0.9, y: -3.1), CGPoint(x: -0.7, y: -3.5)], c(0x2a2730), 0.05)
+            ActorArt.dot(ctx, -0.7, -3.58, 0.13, c(0x6a6470)); ActorArt.dot(ctx, -0.7, -3.58, 0.07, c(0x9a8a70))
+            // auger housing and spiral bit
+            rect(1.6, -1.85, 0.5, 1.0, 0x3b3640)
+            ctx.setFillColor(c(0x5c5560))
+            ctx.addLines(between: [CGPoint(x: 2.1, y: -1.8), CGPoint(x: 4.3, y: -1.32), CGPoint(x: 2.1, y: -0.9)]); ctx.closePath(); ctx.fillPath()
+            for i in 0..<5 {
+                let x = 2.25 + CGFloat(i) * 0.4, k = 1 - CGFloat(i) * 0.19
+                ActorArt.line(ctx, [CGPoint(x: x, y: -1.32 - 0.42 * k), CGPoint(x: x + 0.28, y: -1.32 + 0.42 * k)], c(0x8f8a94), 0.07)
+            }
+            ActorArt.dot(ctx, 4.3, -1.32, 0.05, c(0xd8dee6))
         case .gantry:
-            ActorArt.line(ctx, [CGPoint(x: -2.2, y: 0), CGPoint(x: -2.2, y: -6), CGPoint(x: 2.2, y: -6), CGPoint(x: 2.2, y: 0)], c(0x3b3640), 0.3)
-            ActorArt.line(ctx, [CGPoint(x: -2.2, y: -3), CGPoint(x: 2.2, y: -5.8)], c(0x3b3640), 0.15)
-            ActorArt.line(ctx, [CGPoint(x: 0.6, y: -6), CGPoint(x: 0.6, y: -3.4)], c(0x2a2730), 0.06)
-            rect(0.35, -3.5, 0.5, 0.35, 0x4a4450)
+            // An A-frame lifting gantry: lattice legs, a riveted beam, a trolley, chain and hook.
+            let L = { (a: CGPoint, b: CGPoint, w: CGFloat, col: UInt32) in ActorArt.line(ctx, [a, b], c(col), w) }
+            for side in [-1.0, 1.0] as [CGFloat] {
+                let footO = CGPoint(x: side * 2.6, y: 1.2), footI = CGPoint(x: side * 1.7, y: 1.2)
+                let topO = CGPoint(x: side * 2.0, y: -6), topI = CGPoint(x: side * 1.6, y: -6)
+                L(footO, topO, 0.16, 0x3b3640); L(footI, topI, 0.12, 0x3b3640)
+                for k in 0..<8 {
+                    let u0 = CGFloat(k) / 8, u1 = CGFloat(k + 1) / 8
+                    let a = CGPoint(x: footO.x + (topO.x - footO.x) * u0, y: footO.y + (topO.y - footO.y) * u0)
+                    let b = CGPoint(x: footI.x + (topI.x - footI.x) * u1, y: footI.y + (topI.y - footI.y) * u1)
+                    L(a, b, 0.05, 0x2f2b34)
+                }
+                rect(side * 2.6 - 0.35, 1.1, 0.7, 0.18, 0x2a2730)   // foot plate
+            }
+            rect(-2.5, -6.45, 5.0, 0.5, 0x45404c); rect(-2.5, -6.45, 5.0, 0.08, 0x5f5866)
+            for i in 0..<10 { ActorArt.dot(ctx, -2.3 + CGFloat(i) * 0.51, -6.2, 0.04, c(0x8a8090)) }
+            rect(0.25, -5.95, 0.7, 0.35, 0x2a2730)                      // trolley
+            var y: CGFloat = -5.6
+            while y < -2.9 { ctx.setStrokeColor(c(0x6a6470)); ctx.setLineWidth(0.04); ctx.strokeEllipse(in: CGRect(x: 0.53, y: y, width: 0.14, height: 0.2)); y += 0.18 }
+            ActorArt.line(ctx, [CGPoint(x: 0.6, y: -2.9), CGPoint(x: 0.6, y: -2.6), CGPoint(x: 0.85, y: -2.45), CGPoint(x: 0.9, y: -2.7)], c(0x8a8490), 0.08)
+            rect(0.35, -3.05, 0.5, 0.18, 0xd4a03a)                     // hook block
         case .pump:
             rect(-0.35, -1.3, 0.7, 1.3, 0x45505a); rect(-0.15, -1.9, 0.3, 0.6, 0x55606a)
             ActorArt.line(ctx, [CGPoint(x: 0, y: -1.85), CGPoint(x: 0.7, y: -2.1)], c(0x8a6440), 0.08)
@@ -190,8 +232,8 @@ enum Art {
         case .workbench: return (-1.5, -2.8, 3.0, 2.9)
         case .liftCar: return (-3.0, -5.6, 6.0, 5.8)
         case .crate: return (-0.9, -1.3, 1.8, 1.4)
-        case .drillRig: return (-3.2, -3.3, 7.6, 3.4)
-        case .gantry: return (-2.5, -6.3, 5.0, 6.4)
+        case .drillRig: return (-3.2, -3.9, 7.8, 5.5)
+        case .gantry: return (-3.2, -6.7, 6.4, 8.1)
         case .warmPipe: return (0, -0.3, 44, 0.5)
         case .odiStall: return (-2.8, -1.4, 5.6, 1.5)
         case .bed: return (-1.2, -0.9, 2.5, 1.0)
