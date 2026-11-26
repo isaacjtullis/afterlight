@@ -33,7 +33,18 @@ final class Bot {
     /// Walk to x, digging through whatever's in the way.
     @discardableResult
     func go(_ x: Double, dig: Bool = false, timeout: Double = 120) -> Bool {
-        hold(GameInput(dx: g.max.pos.x < x ? 1 : -1, dig: dig), until: { abs(g.max.pos.x - x) < 0.35 }, timeout: timeout, "go to x\(x)") && settle()
+        // Like a player: jump over holes in the floor (unless the goal is down in one).
+        var k = 0.0
+        while abs(g.max.pos.x - x) >= 0.35 && k < timeout {
+            let d = g.max.pos.x < x ? 1 : -1
+            let ahead = g.max.pos.x + Double(d) * 0.9
+            let hole = g.max.ground && !g.world.solid(ahead, g.max.pos.y + 0.35) && !g.world.solid(ahead, g.max.pos.y + 1.2) && abs(ahead - x) > 0.6
+            if g.max.stamina < 5 && dig { idle(6) }
+            step(GameInput(dx: d, dig: dig, jump: hole)); k += 1 / 60
+        }
+        let ok = abs(g.max.pos.x - x) < 0.35
+        note((ok ? "ok " : "TIMED OUT ") + "go to x\(x)")
+        return ok && settle()
     }
     @discardableResult func settle() -> Bool { idle(0.4); return true }
 
