@@ -32,6 +32,7 @@ final class GameScene: SKScene {
     private var dropNodes: [SKSpriteNode] = []
     private let planNode = SKNode()
     private let markerNode = SKSpriteNode(texture: Art.radial)
+    private let guideNode = SKShapeNode()
     private let bubble = SKShapeNode()
     private let bubbleLabel = SKLabelNode(fontNamed: "AvenirNext-MediumItalic")
     private var bubbleText = ""
@@ -93,6 +94,11 @@ final class GameScene: SKScene {
         bubbleLabel.numberOfLines = 0; bubbleLabel.preferredMaxLayoutWidth = 260
         bubbleLabel.verticalAlignmentMode = .center; bubbleLabel.horizontalAlignmentMode = .center
         bubble.addChild(bubbleLabel); cam.addChild(bubble)
+        let chev = CGMutablePath()
+        chev.move(to: CGPoint(x: -7, y: 9)); chev.addLine(to: CGPoint(x: 6, y: 0)); chev.addLine(to: CGPoint(x: -7, y: -9))
+        guideNode.path = chev; guideNode.lineWidth = 3.5; guideNode.lineCap = .round; guideNode.lineJoin = .round
+        guideNode.strokeColor = UIColor(red: 1, green: 0.82, blue: 0.55, alpha: 1); guideNode.fillColor = .clear
+        guideNode.glowWidth = 3; guideNode.zPosition = 89; guideNode.isHidden = true; cam.addChild(guideNode)
         buildDecals()
         resetScarf()
         camX = game.max.pos.x + 0.5; camY = game.max.pos.y - 1.4
@@ -160,7 +166,7 @@ final class GameScene: SKScene {
         let steps: [(String, () -> Void)] = [
             ("camera", { self.updateCamera(dt) }), ("chunks", updateChunks), ("props", updateProps), ("climbs", updateClimbs),
             ("parallax", updateParallax), ("scarf", { self.updateScarf(dt) }), ("actors", drawActors), ("particles", { self.updateParticles(dt) }),
-            ("lights", updateLights), ("plan", updatePlan), ("bubble", updateBubble), ("marker", updateMarker),
+            ("lights", updateLights), ("plan", updatePlan), ("bubble", updateBubble), ("marker", updateMarker), ("guide", updateGuide),
         ]
         for (name, f) in steps {
             if GameScene.profiling {
@@ -796,5 +802,28 @@ final class GameScene: SKScene {
         let s = CGFloat(c.prominent ? 0.9 : 0.6) * S
         markerNode.size = CGSize(width: s, height: s)
         markerNode.alpha = 0.5 + 0.2 * CGFloat(sin(game.time * 3))
+    }
+
+    /// Points toward the current objective from the edge of the screen when it's out of view.
+    private func updateGuide() {
+        guard let t = game.guide, game.context == nil else { guideNode.isHidden = true; return }
+        let x = CGFloat(t.x - camX) * sc, y = -CGFloat(t.y - camY) * sc
+        let hw = size.width / 2 - 34, hh = size.height / 2 - 150
+        if abs(x) < hw && abs(y) < hh {
+            // In view: hover a small arrow over it, unless Max is already there.
+            let d = hypot(t.x - game.max.pos.x, t.y - game.max.pos.y)
+            guideNode.isHidden = d < 2.5
+            guideNode.position = CGPoint(x: x, y: y + 30 + CGFloat(sin(game.time * 4)) * 5)
+            guideNode.zRotation = -.pi / 2
+            guideNode.alpha = 0.8
+            return
+        }
+        let k = min(hw / max(abs(x), 1), hh / max(abs(y), 1))
+        let bob = CGFloat(sin(game.time * 4)) * 4
+        let ang = atan2(y, x)
+        guideNode.isHidden = false
+        guideNode.position = CGPoint(x: x * k - cos(ang) * bob, y: y * k - sin(ang) * bob)
+        guideNode.zRotation = ang
+        guideNode.alpha = 0.65 + 0.25 * CGFloat(sin(game.time * 3))
     }
 }

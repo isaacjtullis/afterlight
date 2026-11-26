@@ -146,7 +146,11 @@ public enum WorldGen {
         w.buried = [Buried(id: "crystal", item: ItemStack(.chargeCrystal), pos: Landmarks.crystal)]
 
         // Props.
-        func floorAt(_ x: Int) -> Double { Double(w.groundY(Double(x) + 0.5, from: 14, to: 58) ?? 30) }
+        // The cavern floor at a column: start in the cavern's own open air, never in the earth above its ceiling.
+        func floorAt(_ x: Int) -> Double {
+            let top = (10..<58).first { w.m(x, $0) == .air && w.bd(x, $0) == .open } ?? 20
+            return w.groundY(Double(x) + 0.5, from: Double(top), to: 58) ?? 30
+        }
         w.props = [
             Prop(id: "bench", kind: .workbench, pos: Landmarks.bench),
             Prop(id: "locker.ws", kind: .locker, pos: V2(20.7, 30), stock: [ItemStack(.spareGrip), ItemStack(.fasteners, 2), ItemStack(.lampCell), ItemStack(.wire)]),

@@ -208,7 +208,15 @@ extension Game {
         for pr in world.props where [.liftCar, .drillRig, .gantry].contains(pr.kind) && abs(pr.pos.x - p.x) < 5 {
             story.flags.insert("seen.\(pr.id)")
         }
-        if let car = world.prop("liftcar"), abs(p.x - car.pos.x) < 4 { once("car") { think("A lift car. It fell all the way down here.", 3) } }
+        if let car = world.prop("liftcar"), abs(p.x - car.pos.x) < 4, abs(p.y - car.pos.y) < 3 {
+            once("car") {
+                think("A lift car. It fell all the way down here.", 3)
+                if f.contains("needPick") { later(3.2) { $0.think("The drive teeth are hard steel. That’s my pick.", 3.4) } }
+            }
+        }
+        if story.chapter == 2 && f.contains("broke") && p.x > Double(Landmarks.caveStart) + 1 && f.contains("needPick") && !f.contains("said.car") {
+            once("wreck") { later(4) { $0.hint("Something metal down the slope. Head right.", 6) } }
+        }
         if f.contains("needPick") && inv.count(.liftTooth) + storage.count(.liftTooth) > 0 && !inv.has(.shortPick) {
             once("tooth") { story.step("ascent", "tooth"); think("A lift tooth. Hard steel. With a grip, that’s a pick.", 3.4) }
         }
