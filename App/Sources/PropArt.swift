@@ -234,6 +234,38 @@ enum Art {
             if !p.stock.isEmpty { ActorArt.dot(ctx, 0, -0.18, 0.2, c(0xc9a24a)); rect(-0.32, -0.22, 0.64, 0.1, 0xa8842e) }
         case .chimney:
             rect(-0.9, -2.2, 0.08, 0.5, 0x5a4a3a); rect(0.82, -2.2, 0.08, 0.5, 0x5a4a3a)
+        case .signalLamp:
+            // A platform signal: a post, a hooded lamp head, a dead or living light.
+            let lit = p.flags.contains("lit")
+            rect(-0.08, -2.9, 0.16, 2.9, 0x3b3640); rect(-0.35, -0.12, 0.7, 0.12, 0x2a2730)
+            ctx.setFillColor(c(0x4a4450)); ActorArt.rr(ctx, -0.32, -3.35, 0.64, 0.5, 0.12); ctx.fillPath()
+            ActorArt.dot(ctx, 0, -3.1, 0.18, c(lit ? 0xfff0b8 : 0x2a2530))
+            if lit { ActorArt.dot(ctx, 0, -3.1, 0.3, c(0xffe08a, 0.35)) }
+            rect(0.08, -1.6, 0.34, 0.5, 0x2f2b34); rect(0.12, -1.55, 0.26, 0.12, lit ? 0x9cff9c : 0x5a3030)
+        case .lanternClue:
+            // A lantern someone set down, wick still smoking.
+            ActorArt.line(ctx, [CGPoint(x: -0.12, y: -0.55), CGPoint(x: 0, y: -0.7), CGPoint(x: 0.12, y: -0.55)], c(0x2c2724), 0.04)
+            ctx.setFillColor(c(0x2c2724)); ActorArt.rr(ctx, -0.16, -0.55, 0.32, 0.5, 0.06); ctx.fillPath()
+            rect(-0.11, -0.48, 0.22, 0.34, 0xffd08a, p.flags.contains("taken") ? 0.2 : 0.55)
+            rect(-0.2, -0.06, 0.4, 0.06, 0x2c2724)
+        case .shelterLight:
+            // A caged ceiling lamp on a short chain.
+            let lit = p.flags.contains("lit")
+            ActorArt.line(ctx, [CGPoint(x: 0, y: 0), CGPoint(x: 0, y: 0.45)], c(0x3a3640), 0.05)
+            ctx.setFillColor(c(0x4a4450)); ActorArt.rr(ctx, -0.45, 0.42, 0.9, 0.18, 0.06); ctx.fillPath()
+            ActorArt.dot(ctx, 0, 0.72, 0.2, c(lit ? 0xfff0c0 : 0x2a2530))
+            ctx.setStrokeColor(c(0x5a5560)); ctx.setLineWidth(0.04)
+            for k in -1...1 { ctx.move(to: CGPoint(x: CGFloat(k) * 0.18, y: 0.6)); ctx.addLine(to: CGPoint(x: CGFloat(k) * 0.12, y: 0.95)) }
+            ctx.strokePath()
+            if lit { ActorArt.dot(ctx, 0, 0.72, 0.38, c(0xffe08a, 0.25)) }
+        case .camp:
+            // A camp: a lidded crate with a bedroll strapped on top and a little flag.
+            rect(-0.6, -0.8, 1.2, 0.8, 0x7a5232); rect(-0.6, -0.86, 1.2, 0.12, 0x9a6a40)
+            for k in 0..<2 { rect(-0.6, -0.55 + CGFloat(k) * 0.3, 1.2, 0.04, 0x5a3a22) }
+            rect(-0.12, -0.6, 0.24, 0.14, 0xc9a86a, 0.7)
+            ctx.setFillColor(c(0x5a6e6a)); ActorArt.rr(ctx, -0.5, -1.15, 1.0, 0.3, 0.14); ctx.fillPath()
+            rect(0.52, -2.0, 0.05, 1.2, 0x3a2a22)
+            ctx.setFillColor(c(0xc8462f)); ctx.addLines(between: [CGPoint(x: 0.57, y: -2.0), CGPoint(x: 0.95, y: -1.85), CGPoint(x: 0.57, y: -1.7)]); ctx.fillPath()
         case .odiStall:
             rect(-1.6, -0.9, 3.2, 0.12, 0x6b4f3a); rect(-1.5, -0.78, 0.1, 0.78, 0x4f392d); rect(1.4, -0.78, 0.1, 0.78, 0x4f392d)
             for i in 0..<5 { ActorArt.dot(ctx, -1.2 + CGFloat(i) * 0.6, -1.05, 0.18, c(i % 2 == 0 ? 0x6f9a52 : 0x8cc46a)) }
@@ -256,6 +288,9 @@ enum Art {
         case .maraPump: return (-0.7, -2.4, 2.8, 2.5)
         case .maraShelf: return (-1.0, -2.4, 2.0, 2.5)
         case .transitLift: return (-1.5, -2.1, 3.0, 2.2)
+        case .signalLamp: return (-0.6, -3.7, 1.2, 3.8)
+        case .camp: return (-0.8, -2.2, 1.9, 2.3)
+        case .shelterLight: return (-0.6, -0.1, 1.2, 1.2)
         default: return (-1.0, -2.2, 2.0, 2.3)
         }
     }

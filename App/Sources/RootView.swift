@@ -105,7 +105,7 @@ struct TitleView: View {
                 Text("AFTERLIGHT").font(.avenir(40, "UltraLight")).tracking(9).lineLimit(1).minimumScaleFactor(0.5)
                     .foregroundStyle(Color(red: 1, green: 0.95, blue: 0.89))
                     .shadow(color: Color(red: 1, green: 0.8, blue: 0.5).opacity(0.5), radius: 12)
-                Text("214 miles below the surface, the power has just gone out.")
+                Text("2,600 feet below the surface, the power has just gone out.")
                     .font(.avenir(17)).foregroundStyle(.white.opacity(0.75)).multilineTextAlignment(.center).padding(.top, 14).frame(maxWidth: 300)
                 VStack(spacing: 12) {
                     Button(model.hasSave ? "Continue" : "Begin") { if model.hasSave { model.start() } else { model.beginIntro() } }

@@ -644,16 +644,16 @@ final class GameScene: SKScene {
     private func lightAt(_ x: Double, _ y: Double) -> Double {
         var v = 0.0
         let (lx, ly) = lanternPos()
-        let R = 4.8 * lanternK
+        let R = 6.3 * lanternK
         let d = ((x - lx) * (x - lx) + (y - ly) * (y - ly)).squareRoot()
         if d < R { v += pow(1 - d / R, 1.4) }
         if game.max.flashI > 0 {
             let (fx, fy) = flashOrigin()
             let dx = x - fx, dy = y - fy, dd = (dx * dx + dy * dy).squareRoot()
-            if dd < 17 {
+            if dd < 20 {
                 var da = abs(atan2(dy, dx) - beamAngle)
                 if da > .pi { da = 2 * .pi - da }
-                if da < 0.42 { v += (1 - dd / 17) * (1 - da / 0.42) * 1.6 * game.max.flashI }
+                if da < 0.5 { v += (1 - dd / 20) * (1 - da / 0.5) * 1.6 * game.max.flashI }
             }
         }
         for l in game.world.props where l.kind == .lamp {
@@ -689,22 +689,30 @@ final class GameScene: SKScene {
         }
         let (lx, ly) = lanternPos()
         let flick = 0.05 * sin(g.time * 13) + 0.035 * sin(g.time * 29 + 1) + g.flicker * 0.35 * sin(g.time * 31)
-        let R = 4.9 * (1 + flick) * lanternK
+        let R = 6.3 * (1 + flick) * lanternK
         light(lx, ly, R, 0.98, rays: g.world.castLight(from: V2(lx, ly), radius: R, a0: 0, a1: 2 * .pi, rays: 64))
+        // The flashlight spills a little light all around Max, so he's never in a black hole of his own.
+        if g.inv.has(.flashlight) && g.max.flashI > 0.1 {
+            let (bx, by) = bodyPt(0, -1.0, g.max)
+            light(bx, by, 3.6, 0.75 * g.max.flashI, rays: g.world.castLight(from: V2(bx, by), radius: 3.6, a0: 0, a1: 2 * .pi, rays: 40))
+        }
         var beam: [V2]? = nil
         if g.inv.has(.flashlight) && g.max.flashI > 0 {
             let (fx, fy) = flashOrigin()
             var pts = [V2(fx, fy)]
-            pts.append(contentsOf: g.world.castLight(from: V2(fx, fy), radius: 17, a0: beamAngle - 0.33, a1: beamAngle + 0.33, rays: 36))
+            pts.append(contentsOf: g.world.castLight(from: V2(fx, fy), radius: 20, a0: beamAngle - 0.4, a1: beamAngle + 0.4, rays: 40))
             beam = pts
-            light(fx, fy, 17, 0.95 * g.max.flashI, rays: pts)
+            light(fx, fy, 20, 0.95 * g.max.flashI, rays: pts)
             light(fx, fy, 1.8, 0.5 * g.max.flashI, rays: nil)
         }
         let (vx0, vy0, vx1, vy1) = visibleTileRect(margin: 6)
         for l in g.world.props where l.kind == .lamp && l.pos.x > Double(vx0) && l.pos.x < Double(vx1) && l.pos.y > Double(vy0) && l.pos.y < Double(vy1) {
             let o = V2(l.pos.x, l.pos.y - 1.2)
-            light(o.x, o.y, 4.8, 0.95, rays: g.world.castLight(from: o, radius: 4.8, a0: 0, a1: 2 * .pi, rays: 40))
+            light(o.x, o.y, 6.5, 0.95, rays: g.world.castLight(from: o, radius: 6.5, a0: 0, a1: 2 * .pi, rays: 48))
         }
+        if g.story.flags.contains("shelterLit") { light(23.6, 26.6, 10, 0.97, rays: g.world.castLight(from: V2(23.6, 26.6), radius: 10, a0: 0, a1: 2 * .pi, rays: 56)) }
+        if g.world.prop("signal")?.flags.contains("lit") == true { light(Landmarks.signalLampX, 0.2, 9, 0.95, rays: g.world.castLight(from: V2(Landmarks.signalLampX, 0.2), radius: 9, a0: 0, a1: 2 * .pi, rays: 48)) }
+        for camp in g.world.props(of: .camp) where abs(camp.pos.x - g.max.pos.x) < 20 { light(camp.pos.x, camp.pos.y - 1.0, 2.6, 0.7, rays: nil) }
         if g.story.flags.contains("power") { light(25.5, 27.6, 8, 0.95, rays: g.world.castLight(from: V2(25.5, 27.6), radius: 8, a0: 0, a1: 2 * .pi, rays: 48)) }
         if abs(g.max.pos.x - 80) < 30 && g.max.pos.y < 14 { light(80.5, 7, 7, 0.95, rays: g.world.castLight(from: V2(80.5, 7), radius: 7, a0: 0, a1: 2 * .pi, rays: 48)) }
         if g.odi.walking { light(g.odi.pos.x + Double(g.odi.face) * 0.3, g.odi.pos.y - 0.5, 3.6, 0.9, rays: nil) }

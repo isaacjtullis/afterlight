@@ -10,7 +10,7 @@ extension Game {
         guard stuckT > 1.0 else { return }
         stuckT = 0; stuckX = max.pos.x
         let x = max.pos.x + Double(dir) * (Tuning.halfWidth + 0.45)
-        let heights = [0.45, 0.95, 1.45]
+        let heights = [0.45, 0.95, 1.45, 1.7]
         let blocked = heights.contains { world.solid(x, max.pos.y - $0) }
         guard blocked else { return }
         if heights.contains(where: { world.solid(x, max.pos.y - $0) && world.hardAt(x, max.pos.y - $0) }) {

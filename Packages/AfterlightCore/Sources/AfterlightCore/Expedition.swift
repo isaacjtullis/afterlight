@@ -7,6 +7,10 @@ extension Quest {
         QuestStep(id: "cavern", text: "Reach the great cavern"),
         QuestStep(id: "cell", text: "Bring a battery cell back to the platform’s signal lamp"),
     ])
+    public static let homeLight = Quest(id: "homeLight", title: "A Light at Home", side: false, steps: [
+        QuestStep(id: "parts", text: "Find a lamp cell and some wire"),
+        QuestStep(id: "fix", text: "Fix the shelter’s light"),
+    ])
     public static let lantern = Quest(id: "lantern", title: "Someone Else Down Here", side: true, steps: [
         QuestStep(id: "find", text: "Find whose lantern this is"),
     ])
@@ -57,10 +61,15 @@ extension Game {
             default: break
             }
         }
+        // The shelter's own light: the first thing that makes home feel like home.
+        if let sl = world.prop("shelter.light"), !f.contains("shelterLit"), abs(p.x - sl.pos.x) < 1.4, abs(p.y - 30) < 0.5, f.contains("flashOn") {
+            if available(.lampCell) > 0 && available(.wire) > 0 { return act("fixLight", "Fix the light", V2(sl.pos.x, 27.4), true) }
+            return act("lookLight", "Light fixture", V2(sl.pos.x, 27.4))
+        }
         // The optional first lamp, at the tunnel mouth
         if inv.count(.lamp) > 0 && f.contains("lampIdea") && abs(p.x - Landmarks.lampSpot.x) < 1.2 && abs(p.y - 30) < 0.5
             && !world.props(of: .lamp).contains(where: { $0.pos.dist(Landmarks.lampSpot) < 2.5 }) {
-            return act("placeLamp", "Place lamp at the tunnel mouth", V2(p.x, p.y - 2.4), true)
+            return act("placeLamp", "Place lantern at the tunnel mouth", V2(p.x, p.y - 2.4), true)
         }
         return nil
     }
@@ -78,6 +87,19 @@ extension Game {
             think("\(name). Somewhere to leave things.", 2.6)
             emit(.placed("camp"))
             emit(.saveNow)
+        case "fixLight":
+            guard available(.lampCell) > 0, available(.wire) > 0 else { return true }
+            consume(.lampCell, 1); consume(.wire, 1)
+            story.flags.insert("shelterLit")
+            story.step("homeLight", "parts"); story.step("homeLight", "fix")
+            if let i = world.propIndex("shelter.light") { world.props[i].flags.insert("lit") }
+            max.busy = 1.0
+            think("There. Home looks like home again.", 3.4)
+            emit(.flashOn); emit(.swell)
+            emit(.saveNow)
+        case "lookLight":
+            think("The shelter light. A dead cell and a cut wire. A lamp cell and some wire would fix it.", 3.8)
+            later(4) { g in if g.available(.lampCell) == 0 { g.hint("The locker by the door has lamp cells and wire.", 6) } }
         case "campSpot":
             think(campObstruction() ?? "This’ll do.", 2.4)
         case "signal":
@@ -115,6 +137,18 @@ extension Game {
 
     func expeditionTick(_ dt: Double) {
         let p = max.pos
+        // Once the flashlight works, the first job is light at home.
+        if story.flags.contains("flashOn") && !story.flags.contains("homeLightQuest") {
+            story.flags.insert("homeLightQuest")
+            if !story.flags.contains("shelterLit") {
+                story.addQuest(.homeLight)
+                later(10) { g in
+                    guard !g.story.flags.contains("shelterLit") else { return }
+                    g.think("The shelter’s light is out too. I want to come home to light.", 3.6)
+                }
+            }
+        }
+        if available(.lampCell) > 0 && available(.wire) > 0 { story.step("homeLight", "parts") }
         // Optional first build, once the flashlight works.
         if story.flags.contains("flashOn") && story.flags.contains("sawShaft") && !story.flags.contains("said.lampIdea") && time > 20 {
             story.flags.formUnion(["said.lampIdea", "lampIdea"])

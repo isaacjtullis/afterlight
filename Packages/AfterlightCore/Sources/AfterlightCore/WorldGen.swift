@@ -100,7 +100,7 @@ public enum WorldGen {
             }
         }
         w.set(25, 9, .seam, back: .shaft); w.set(26, 9, .seam, back: .shaft)
-        w.set(35, 7, .dirt, back: .earth); w.set(35, 8, .dirt, back: .earth)   // the warm pipe leaves through a soft patch
+        w.set(35, 6, .dirt, back: .earth); w.set(35, 7, .dirt, back: .earth); w.set(35, 8, .dirt, back: .earth)   // the warm pipe leaves through a soft patch
 
         // The great cavern east of the workshop.
         var f = 30
@@ -205,12 +205,13 @@ public enum WorldGen {
         }
         w.props = [
             Prop(id: "bench", kind: .workbench, pos: Landmarks.bench),
-            Prop(id: "locker.ws", kind: .locker, pos: V2(20.7, 30), stock: [ItemStack(.spareGrip), ItemStack(.fasteners, 2), ItemStack(.lampCell), ItemStack(.wire)]),
+            Prop(id: "locker.ws", kind: .locker, pos: V2(20.7, 30), stock: [ItemStack(.spareGrip), ItemStack(.fasteners, 3), ItemStack(.lampCell, 3), ItemStack(.wire, 3)]),
+            Prop(id: "shelter.light", kind: .shelterLight, pos: V2(23.6, 26.0)),
             Prop(id: "bed", kind: .bed, pos: V2(22.4, 30)),
             Prop(id: "storage", kind: .storage, pos: V2(29.8, 30)),
             Prop(id: "pantry", kind: .pantry, pos: V2(28.3, 30), stock: [ItemStack(.ration, 12)]),
             Prop(id: "liftcar", kind: .liftCar, pos: Landmarks.liftCarPos, stock: [ItemStack(.liftTooth), ItemStack(.pipe, 2), ItemStack(.fasteners, 4)]),
-            Prop(id: "crate.west", kind: .crate, pos: V2(11.6, 30), stock: [ItemStack(.rope), ItemStack(.lampCell), ItemStack(.fasteners, 3), ItemStack(.pressureGauge)]),
+            Prop(id: "crate.west", kind: .crate, pos: V2(11.6, 30), stock: [ItemStack(.rope), ItemStack(.lampCell, 2), ItemStack(.fasteners, 3), ItemStack(.pressureGauge)]),
             Prop(id: "drill", kind: .drillRig, pos: V2(118.5, floorAt(118)), stock: [ItemStack(.fasteners, 6), ItemStack(.batteryCell), ItemStack(.rope)]),
             Prop(id: "gantry", kind: .gantry, pos: V2(136.5, floorAt(136)), stock: [ItemStack(.pipe, 2), ItemStack(.wire, 2), ItemStack(.rope)]),
             Prop(id: "locker.m1", kind: .locker, pos: V2(18.6, 9), stock: [ItemStack(.seedTin), ItemStack(.wire, 2)]),

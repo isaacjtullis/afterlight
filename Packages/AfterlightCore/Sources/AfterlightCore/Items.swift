@@ -24,7 +24,7 @@ public enum ItemID: String, Codable, CaseIterable, Sendable {
         case .batteryCell: return "Battery cell"
         case .greens: return "Greens"
         case .trailMeal: return "Trail meal"
-        case .lamp: return "Lamp"
+        case .lamp: return "Lantern"
         case .ladderSection: return "Ladder section"
         case .waterTank: return "Water tank"
         case .pressureValve: return "Pressure valve"
@@ -55,7 +55,7 @@ public enum ItemID: String, Codable, CaseIterable, Sendable {
         case .batteryCell: return "Heavy. Enough to wake a battery bank."
         case .greens: return "Fresh. Grown at home."
         case .trailMeal: return "Restores Max's strength on a long dig."
-        case .lamp: return "Place it to light the way home."
+        case .lamp: return "Set it down anywhere and it keeps burning. Light the way home."
         case .ladderSection: return "Place under an opening to climb it."
         case .waterTank: return "Place it in the workshop to store water."
         case .pressureValve: return "Brass, heavy, threaded both ends. A pump won't hold pressure without one."
@@ -211,7 +211,7 @@ public enum Recipes {
                note: "Opens soft seams overhead and cuts footholds.", unlockFlag: "needPick"),
         Recipe(id: "ladder", name: "Ladder section", inputs: [ItemStack(.pipe, 2), ItemStack(.fasteners, 4)], output: .item(.ladderSection, 1),
                note: "Bridges a tall opening, like the bottom of the shaft.", unlockFlag: "needLadder"),
-        Recipe(id: "lamp", name: "Lamp", inputs: [ItemStack(.lampCell), ItemStack(.wire), ItemStack(.fasteners)], output: .item(.lamp, 1),
+        Recipe(id: "lamp", name: "Lantern", inputs: [ItemStack(.lampCell), ItemStack(.wire), ItemStack(.fasteners)], output: .item(.lamp, 1),
                note: "Stays where you place it. Lights the way home.", unlockFlag: "lampIdea"),
         Recipe(id: "tank", name: "Water tank", inputs: [ItemStack(.pipe), ItemStack(.fasteners, 2)], output: .item(.waterTank, 1),
                note: "Stores what the pump sends home.", unlockFlag: "sawPump"),

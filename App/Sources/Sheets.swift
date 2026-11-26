@@ -30,6 +30,8 @@ struct SheetHost: View {
                         case .storage: StorageView()
                         case .pack, .journal: EmptyView()
                         case .mission: MissionView()
+                        case .camp: CampView()
+                        case .map: MapView()
                         }
                     }
                 }
@@ -50,6 +52,8 @@ struct SheetHost: View {
         case .pack: return "Belt and pack"
         case .journal: return "Journal"
         case .mission: return "Today’s job for Max"
+        case .camp: return model.game.openCamp.flatMap { id in model.game.world.prop(id)?.flags.first { $0.hasPrefix("name:") }.map { String($0.dropFirst(5)) } } ?? "Camp crate"
+        case .map: return "Map"
         }
     }
 }
@@ -137,6 +141,7 @@ extension ItemID {
         case .pressureValve: return "wrench.adjustable.fill"
         case .rope: return "lasso"
         case .ration: return "fork.knife"
+        case .campCrate: return "shippingbox.fill"
         case .copperOre: return "circle.hexagongrid.fill"
         case .ironOre: return "hexagon.fill"
         case .quartz: return "rhombus.fill"
@@ -636,6 +641,105 @@ struct PanelCard: View {
             }
             .disabled(!r.enabled)
             .opacity(r.enabled ? 1 : 0.45)
+        }
+    }
+}
+
+
+// MARK: camp crate
+
+struct CampView: View {
+    @EnvironmentObject var model: GameModel
+    @State private var tick = 0
+    var body: some View {
+        let g = model.game
+        let id = g.openCamp ?? ""
+        let stock = g.campStock(id)
+        Text("In the crate").font(.avenir(14, "DemiBold")).foregroundStyle(Color.amber)
+        if stock.isEmpty { Text("Empty. Leave things here to pick up on another trip.").font(.avenir(14)).foregroundStyle(Color.cream.opacity(0.7)) }
+        ForEach(stock, id: \.self) { s in
+            Row(title: s.count > 1 ? "\(s.id.name) ×\(s.count)" : s.id.name, detail: s.id.bulky ? "Bulky: takes a whole pocket." : s.id.blurb) {
+                Button("Take") { g.takeFromCamp(id, item: s.id); tick += 1 }.buttonStyle(PillStyle(prominent: true))
+            }
+        }
+        Text("In your bag · \(Inventory.capacity - g.inv.freeSlots) of \(Inventory.capacity)").font(.avenir(14, "DemiBold")).foregroundStyle(Color.amber)
+        ForEach(Array(g.inv.slots.enumerated()), id: \.offset) { i, s in
+            if let s {
+                Row(title: s.count > 1 ? "\(s.id.name) ×\(s.count)" : s.id.name, detail: s.id.bulky ? "Bulky" : "") {
+                    Button("Leave here") { g.stash(slot: i, in: id); tick += 1 }.buttonStyle(PillStyle(prominent: false))
+                }
+            }
+        }
+        Color.clear.frame(height: 1).id(tick)
+    }
+}
+
+// MARK: map
+
+/// Where Max has been: rooms and tunnels he's seen, the ways up, camps, caches and people.
+struct MapView: View {
+    @EnvironmentObject var model: GameModel
+    var body: some View {
+        let g = model.game
+        let seen = g.story.explored
+        VStack(alignment: .leading, spacing: 10) {
+            Canvas { ctx, size in
+                let W = Double(Landmarks.width), H = Double(Landmarks.height)
+                // Crop to what's been seen, with a margin, so the map fills the card.
+                var minX = W, maxX = 0.0, minY = H, maxY = 0.0
+                let b = Double(Game.mapBlock)
+                for k in seen { let x = Double(k % Game.mapCols) * b, y = Double(k / Game.mapCols) * b; minX = min(minX, x); maxX = max(maxX, x + b); minY = min(minY, y); maxY = max(maxY, y + b) }
+                if seen.isEmpty { minX = 10; maxX = 40; minY = 20; maxY = 34 }
+                minX -= 4; maxX += 4; minY -= 3; maxY += 3
+                let s = min(size.width / (maxX - minX), size.height / (maxY - minY))
+                func pt(_ x: Double, _ y: Double) -> CGPoint { CGPoint(x: (x - minX) * s, y: (y - minY) * s) }
+                // Seen ground: open space is light, earth dark; unseen stays black.
+                for k in seen {
+                    let bx = (k % Game.mapCols) * Game.mapBlock, by = (k / Game.mapCols) * Game.mapBlock
+                    for dy in 0..<Game.mapBlock {
+                        for dx in 0..<Game.mapBlock {
+                            let c = bx + dx, r = by + dy
+                            let m = g.world.m(c, r)
+                            let col: Color = !m.solid ? Color(red: 0.86, green: 0.76, blue: 0.6).opacity(0.55)
+                                : (m.hard ? Color(red: 0.25, green: 0.24, blue: 0.28) : Color(red: 0.32, green: 0.22, blue: 0.18))
+                            ctx.fill(Path(CGRect(origin: pt(Double(c), Double(r)), size: CGSize(width: s + 0.3, height: s + 0.3))), with: .color(col))
+                        }
+                    }
+                }
+                // Ways up and down Max has found.
+                for cl in g.world.climbs where seen.contains(Int(cl.top) / Game.mapBlock * Game.mapCols + Int(cl.x) / Game.mapBlock) || seen.contains(Int(cl.bottom - 1) / Game.mapBlock * Game.mapCols + Int(cl.x) / Game.mapBlock) {
+                    var p = Path(); p.move(to: pt(cl.x, cl.bottom)); p.addLine(to: pt(cl.x, cl.top))
+                    ctx.stroke(p, with: .color(Color.amber.opacity(0.9)), style: StrokeStyle(lineWidth: 1.5, dash: [3, 2]))
+                }
+                func mark(_ x: Double, _ y: Double, _ symbol: String, _ col: Color, _ label: String? = nil) {
+                    let k = Int(y) / Game.mapBlock * Game.mapCols + Int(x) / Game.mapBlock
+                    guard seen.contains(k) else { return }
+                    let p = pt(x, y - 0.8)
+                    ctx.draw(Text(Image(systemName: symbol)).font(.system(size: 13, weight: .bold)).foregroundColor(col), at: p)
+                    if let label { ctx.draw(Text(label).font(.avenir(10, "DemiBold")).foregroundColor(Color.cream), at: CGPoint(x: p.x, y: p.y - 13)) }
+                }
+                mark(25, 30, "house.fill", Color.amber, "Home")
+                if g.maraMet { mark(Landmarks.maraHome.x, Landmarks.maraHome.y, "person.fill", Color(red: 0.6, green: 0.85, blue: 0.8), "Mara") }
+                if let s = g.world.prop("signal") { mark(s.pos.x, s.pos.y, "light.beacon.max.fill", s.flags.contains("lit") ? Color.amber : Color.gray) }
+                if let l = g.world.prop("lantern.clue"), g.story.flags.contains("sawLantern") { mark(l.pos.x, l.pos.y, "questionmark.circle.fill", Color.violet) }
+                for c in g.world.props(of: .camp) { mark(c.pos.x, c.pos.y, "tent.fill", Color(red: 0.95, green: 0.55, blue: 0.4), c.flags.first { $0.hasPrefix("name:") }.map { String($0.dropFirst(5)) }) }
+                for p in g.world.props(of: .pile) { mark(p.pos.x, p.pos.y, "shippingbox.fill", Color.cream.opacity(0.8)) }
+                // Max
+                let mp = pt(g.max.pos.x, g.max.pos.y - 0.8)
+                ctx.fill(Path(ellipseIn: CGRect(x: mp.x - 5, y: mp.y - 5, width: 10, height: 10)), with: .color(Color.amber))
+                ctx.stroke(Path(ellipseIn: CGRect(x: mp.x - 8, y: mp.y - 8, width: 16, height: 16)), with: .color(Color.amber.opacity(0.5)), lineWidth: 1.5)
+            }
+            .frame(height: 300)
+            .background(RoundedRectangle(cornerRadius: 14).fill(Color.black))
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            HStack(spacing: 14) {
+                Label("You", systemImage: "circle.fill").foregroundStyle(Color.amber)
+                Label("Camp", systemImage: "tent.fill")
+                Label("Ladder or rope", systemImage: "line.diagonal")
+            }
+            .font(.avenir(12)).foregroundStyle(Color.cream.opacity(0.8))
+            Text("Max is at \(Depth.label(atY: g.max.pos.y)). Only what he’s seen is on the map.")
+                .font(.avenir(13)).foregroundStyle(Color.cream.opacity(0.7))
         }
     }
 }

@@ -234,6 +234,10 @@ struct HUDView: View {
                     Button { model.game.toggleFlashlight(); model.haptics.tap() } label: { circleIcon(ui.flashOn ? "flashlight.on.fill" : "flashlight.off.fill") }
                         .accessibilityIdentifier("flashlight")
                 }
+                if ui.started {
+                    Button { model.sheet = .map } label: { circleIcon("map") }
+                        .accessibilityIdentifier("map")
+                }
                 if ui.ordersOK {
                     Button { model.sheet = .mission } label: { circleIcon("sun.horizon") }
                 }
@@ -266,6 +270,7 @@ struct HUDView: View {
             VStack(alignment: .leading, spacing: 6) {
                 meter("heart.fill", ui.health, Color(red: 0.95, green: 0.42, blue: 0.4), id: "meter.health")
                 meter("bolt.fill", ui.stamina, Color.amber, id: "meter.stamina")
+                Text(ui.depth).font(.avenir(11, "DemiBold")).monospacedDigit().foregroundStyle(Color.cream.opacity(0.75))
                 if ui.hasFlashlight {
                     Button { model.game.swapCell(); model.haptics.tap() } label: {
                         meter("battery.75", ui.battery, Color(red: 0.6, green: 0.85, blue: 1), id: "meter.battery")

@@ -2,7 +2,7 @@ import Foundation
 
 extension Game {
     /// Props added to the home after saves already existed; old saves get them on load.
-    static let addedLater = ["pantry", "signal", "lantern.clue"]
+    static let addedLater = ["pantry", "signal", "lantern.clue", "shelter.light"]
 
     // MARK: eating and drinking
 

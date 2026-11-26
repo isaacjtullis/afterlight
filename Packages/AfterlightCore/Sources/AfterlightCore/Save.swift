@@ -91,6 +91,8 @@ extension Game {
         }
         var story = s.story
         story.flags.insert("world3")
+        // The steel over the warm-pipe patch was low enough to catch Max's head: it's packed earth now.
+        if w.m(35, 6) == .metal { w.mat[6 * w.w + 35] = Mat.dirt }
         if !story.flags.contains("finds1") {
             let have = Set(w.buried.map(\.id))
             for b in WorldGen.scatterFinds(w) where !have.contains(b.id) && w.m(Int(b.pos.x), Int(b.pos.y)) == .dirt { w.buried.append(b) }

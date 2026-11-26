@@ -89,4 +89,27 @@ final class ExpeditionTests: XCTestCase {
         XCTAssertEqual(Depth.feet(atY: 30), 2600)
         XCTAssertEqual(Depth.label(atY: 30), "−2,600 ft")
     }
+
+    func testFixingTheShelterLight() throws {
+        let g = Game()
+        g.begin()
+        g.inv.belt.append(.flashlight); g.story.flags.formUnion(["flashOn", "sawShaft"])
+        sim(g, GameInput(), 0.2)
+        XCTAssertNotNil(g.story.quests.first { $0.id == "homeLight" })
+        g.inv.add(.lampCell); g.inv.add(.wire)
+        walk(g, to: 23.6)
+        XCTAssertEqual(g.context?.id, "fixLight")
+        g.performContext()
+        XCTAssertTrue(g.story.flags.contains("shelterLit"))
+        let back = Game.load(try Game.decodeSave(try g.encodeSave()))
+        XCTAssertTrue(back.story.isDone("homeLight", "fix"))
+    }
+
+    func testOldSavesCanGetThroughTheWarmPipePatch() throws {
+        let g = Game()
+        g.world.set(35, 6, .metal)
+        g.story.flags.remove("world3")
+        let back = Game.load(try Game.decodeSave(try g.encodeSave()))
+        XCTAssertEqual(back.world.m(35, 6), .dirt)
+    }
 }

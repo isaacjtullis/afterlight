@@ -515,7 +515,7 @@ extension Game {
             return act("placeTank", "Place water tank", V2(p.x, p.y - 2.4), true)
         }
         if inv.count(.lamp) > 0 && max.ground && !world.props(of: .lamp).contains(where: { $0.pos.dist(p) < 2.5 }) {
-            return act("placeLamp", "Place lamp", V2(p.x, p.y - 2.4))
+            return act("placeLamp", "Place lantern", V2(p.x, p.y - 2.4))
         }
         return nil
     }

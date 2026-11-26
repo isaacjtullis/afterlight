@@ -26,6 +26,7 @@ struct UIState: Equatable {
     var health = 100
     var battery = 100
     var started = false
+    var depth = ""
     var aim = 0          // -1 the wheel points up, 1 down, 0 ahead
     var flashOn = false
     var pulseDown = false
@@ -184,6 +185,7 @@ final class GameModel: ObservableObject {
         u.health = Int((g.max.health / g.max.healthMax * 100).rounded())
         u.battery = Int(g.battery.rounded())
         u.started = g.started
+        u.depth = Depth.label(atY: g.max.pos.y)
         u.staminaMax = Int(g.max.staminaMax)
         u.showStamina = g.story.flags.contains("dug") && (g.max.stamina < g.max.staminaMax - 0.5 || g.planning != nil || g.order != nil)
         u.climbing = g.max.mode == .climb
