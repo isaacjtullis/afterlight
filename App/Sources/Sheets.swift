@@ -368,6 +368,11 @@ struct ThoughtsCard: View {
     private func close() { withAnimation(.easeOut(duration: 0.2)) { model.showThoughts = false } }
 }
 
+extension ThoughtsCard {
+    /// Opening Max's thoughts counts as asking for a hint.
+    func askingForHint() -> some View { self.onAppear { model.game.askHint() } }
+}
+
 /// Workshop storage and the bag, side by side. Tap something to move it across.
 struct StorageView: View {
     @EnvironmentObject var model: GameModel

@@ -8,7 +8,7 @@ final class GameScene: SKScene {
 
     // camera state, in tiles
     private let cam = SKCameraNode()
-    private var camX = 23.5, camY = 28.4, zoom = 1.2, look = 0.5, shake = 0.0, kickX = 0.0, kickY = 0.0
+    private var camX = 23.5, camY = 28.4, zoom = 1.2, look = 0.5, shake = 0.0, kickX = 0.0, kickY = 0.0, punch = 0.0
     private(set) var S: CGFloat = 30        // points per tile at zoom 1
     private var sc: CGFloat { S * CGFloat(zoom) }
 
@@ -213,7 +213,8 @@ final class GameScene: SKScene {
         shake = damp(shake, 0, 9, dt); kickX = damp(kickX, 0, 10, dt); kickY = damp(kickY, 0, 10, dt)
         let jx = Double.random(in: -1...1) * shake, jy = Double.random(in: -1...1) * shake
         cam.position = sp(camX + kickX + jx, camY + kickY + jy)
-        cam.setScale(1 / CGFloat(zoom))
+        punch = damp(punch, 0, 14, dt)
+        cam.setScale(1 / CGFloat(zoom * (1 + punch)))
     }
 
     // MARK: terrain
@@ -531,23 +532,54 @@ final class GameScene: SKScene {
         return n
     }
 
-    func burst(at p: V2, kind: SwingKind, carved: Bool, face: Int) {
-        let colors: [UIColor] = [UIColor(red: 0.65, green: 0.48, blue: 0.35, alpha: 1), UIColor(red: 0.54, green: 0.38, blue: 0.28, alpha: 1),
-                                 UIColor(red: 0.77, green: 0.59, blue: 0.43, alpha: 1), UIColor(red: 0.45, green: 0.31, blue: 0.24, alpha: 1)]
-        let n = carved ? 13 : 5
-        for _ in 0..<n {
-            let s = Double.random(in: 0.05...0.13)
-            let node = sprite(Art.circle, z: 26, add: false)
-            node.color = colors.randomElement()!
-            let side = kind == .side
-            clods.append(Clod(x: p.x + Double.random(in: -0.3...0.3), y: p.y + Double.random(in: -0.3...0.3),
-                              vx: (side ? -Double(face) * Double.random(in: 0.8...3.4) : Double.random(in: -2.4...2.4)) + Double.random(in: -0.6...0.6),
-                              vy: -Double.random(in: side ? 1.5...5 : 3.5...7.5), life: Double.random(in: 0.9...1.8), max: 1.8, size: s, node: node, spark: false))
+    /// What the blade met, and how it should feel: earth gives, wood splinters, stone and steel ring and stop it.
+    enum Struck { case earth, wood, stone }
+
+    func burst(at p: V2, kind: SwingKind, carved: Bool, face: Int, struck: Struck = .earth) {
+        let earth: [UIColor] = [UIColor(red: 0.65, green: 0.48, blue: 0.35, alpha: 1), UIColor(red: 0.54, green: 0.38, blue: 0.28, alpha: 1),
+                                UIColor(red: 0.77, green: 0.59, blue: 0.43, alpha: 1), UIColor(red: 0.45, green: 0.31, blue: 0.24, alpha: 1)]
+        let wood: [UIColor] = [UIColor(red: 0.82, green: 0.62, blue: 0.4, alpha: 1), UIColor(red: 0.62, green: 0.42, blue: 0.24, alpha: 1), UIColor(red: 0.9, green: 0.75, blue: 0.52, alpha: 1)]
+        let stone: [UIColor] = [UIColor(red: 0.55, green: 0.55, blue: 0.6, alpha: 1), UIColor(red: 0.4, green: 0.4, blue: 0.45, alpha: 1)]
+        let side = kind == .side
+        switch struck {
+        case .stone:
+            // A hard ring: a few chips, a burst of sparks, and the blade bounces back.
+            for _ in 0..<4 {
+                let node = sprite(Art.circle, z: 26, add: false); node.color = stone.randomElement()!
+                clods.append(Clod(x: p.x, y: p.y, vx: -Double(face) * Double.random(in: 1...3), vy: -Double.random(in: 1...3), life: 0.7, max: 0.7, size: 0.05, node: node, spark: false))
+            }
+            sparks(at: p)
+            shake = 0.05
+            if side { kickX -= Double(face) * 0.06 } else { kickY -= 0.05 }
+            return
+        case .wood:
+            // Splinters: long, light, they spin out and drift.
+            for _ in 0..<(carved ? 10 : 4) {
+                let node = sprite(Art.circle, z: 26, add: false); node.color = wood.randomElement()!
+                node.xScale = 2.2
+                clods.append(Clod(x: p.x + Double.random(in: -0.2...0.2), y: p.y + Double.random(in: -0.3...0.3),
+                                  vx: (side ? -Double(face) * Double.random(in: 1.2...3.6) : Double.random(in: -2...2)), vy: -Double.random(in: 2...5),
+                                  life: Double.random(in: 1.0...1.6), max: 1.6, size: Double.random(in: 0.04...0.07), node: node, spark: false))
+            }
+            shake = 0.03
+            punch = 0.012
+        case .earth:
+            let n = carved ? 13 : 5
+            for _ in 0..<n {
+                let s = Double.random(in: 0.05...0.13)
+                let node = sprite(Art.circle, z: 26, add: false)
+                node.color = earth.randomElement()!
+                clods.append(Clod(x: p.x + Double.random(in: -0.3...0.3), y: p.y + Double.random(in: -0.3...0.3),
+                                  vx: (side ? -Double(face) * Double.random(in: 0.8...3.4) : Double.random(in: -2.4...2.4)) + Double.random(in: -0.6...0.6),
+                                  vy: -Double.random(in: side ? 1.5...5 : 3.5...7.5), life: Double.random(in: 0.9...1.8), max: 1.8, size: s, node: node, spark: false))
+            }
+            for _ in 0..<(carved ? 9 : 3) { addMote(x: p.x + Double.random(in: -0.4...0.4), y: p.y + Double.random(in: -0.4...0.4), vx: side ? -Double(face) * 0.5 : 0) }
+            if carved { addPuff(p.x - Double(face) * 0.2, p.y, 0.3) }
+            shake = carved ? 0.028 : 0.015
+            if carved { punch = 0.009 }
         }
-        for _ in 0..<(carved ? 9 : 3) { addMote(x: p.x + Double.random(in: -0.4...0.4), y: p.y + Double.random(in: -0.4...0.4), vx: kind == .side ? -Double(face) * 0.5 : 0) }
-        if carved { addPuff(p.x - Double(face) * 0.2, p.y, 0.3) }
-        shake = 0.022
-        if kind == .side { kickX += Double(face) * 0.04 } else { kickY += 0.05 }
+        // The blade drives in: a small kick toward the strike.
+        if side { kickX += Double(face) * 0.05 } else { kickY += 0.06 }
     }
 
     func sparks(at p: V2) {

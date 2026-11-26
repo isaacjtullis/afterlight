@@ -282,9 +282,16 @@ final class GameModel: ObservableObject {
     private func handle(_ e: GameEvent) {
         switch e {
         case .bite(let at, let kind, let carved, let face):
-            audio.play(carved ? (kind == .up ? .pick : .scoop) : .whoosh)
-            if carved { haptics.bite() }
-            scene?.burst(at: at, kind: kind, carved: carved, face: face)
+            // What did the blade meet? Look just past the bite, at the face of the wall.
+            let probe = kind == .side ? V2(at.x + Double(face) * 0.5, at.y) : kind == .up ? V2(at.x, at.y - 0.5) : V2(at.x, at.y + 0.5)
+            let m = game.world.m(Int(probe.x.rounded(.down)), Int(probe.y.rounded(.down)))
+            let struck: GameScene.Struck = (m == .rock || m == .metal) && !carved ? .stone : (m == .root || m == .plank) ? .wood : .earth
+            switch struck {
+            case .stone: audio.play(.clank); haptics.clank()
+            case .wood: audio.play(.chop); if carved { haptics.bite() }
+            case .earth: audio.play(carved ? (kind == .up ? .pick : .scoop) : .whoosh); if carved { haptics.bite() }
+            }
+            scene?.burst(at: at, kind: kind, carved: carved, face: face, struck: struck)
         case .clank(let at): audio.play(.clank); haptics.clank(); scene?.sparks(at: at)
         case .whoosh: audio.play(.whoosh)
         case .step:

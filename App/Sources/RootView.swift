@@ -43,7 +43,7 @@ struct RootView: View {
                         .zIndex(5)
                 }
                 if model.sleeping { SleepView().transition(.opacity).zIndex(6) }
-                if model.showThoughts { ThoughtsCard().transition(.scale(scale: 0.95).combined(with: .opacity)) }
+                if model.showThoughts { ThoughtsCard().askingForHint().transition(.scale(scale: 0.95).combined(with: .opacity)) }
                 if model.showQuarters { QuartersView().transition(.opacity) }
                 if let b = model.banner { ChapterBanner(text: b).transition(.opacity) }
                 if model.showTitle { TitleView().transition(.opacity) }

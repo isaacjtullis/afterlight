@@ -132,6 +132,8 @@ public final class Game {
     public var placing: ItemID? = nil
     /// How watered Max is, 0…100. Hard work dries him out; a cup from the drum puts it back.
     public var hydration = 100.0
+    /// When the player last asked for a hint (game seconds).
+    public var hintAskedAt = -999.0
     public var openLoot: String? = nil
 
     public var appliedJobs: Set<String> = []

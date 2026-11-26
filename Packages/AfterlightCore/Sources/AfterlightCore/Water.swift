@@ -71,6 +71,9 @@ extension Game {
 
     func thirst(_ n: Double) { hydration = Swift.max(0, hydration - n) }
 
+    /// The player asked Max what he's thinking: point the way for a little while.
+    public func askHint() { hintAskedAt = time }
+
     // MARK: context
 
     func waterContext() -> ContextAction? {
