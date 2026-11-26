@@ -209,7 +209,11 @@ struct BagSheet: View {
                 }
                 .padding(.horizontal, 16)
 
+                // Fixed height, so tapping a pocket never makes the bag jump.
                 detail(g)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.85)
+                    .frame(height: 80, alignment: .center)
                     .padding(.horizontal, 16)
                     .animation(.easeOut(duration: 0.2), value: picked)
 
@@ -330,10 +334,9 @@ struct BagSheet: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(s.count > 1 ? "\(s.id.name) ×\(s.count)" : s.id.name).font(.avenir(16, "DemiBold")).foregroundStyle(Color.cream)
                 Text(s.id.blurb + (s.id.bulky ? " Bulky: takes a whole pocket." : "")).font(.avenir(13)).foregroundStyle(Color.cream.opacity(0.75))
-                    .fixedSize(horizontal: false, vertical: true)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(12)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .padding(.horizontal, 12)
             .background(RoundedRectangle(cornerRadius: 14).fill(Color.black.opacity(0.28)))
             .transition(.opacity)
         } else if let pin = g.pinnedRecipe, let r = Recipes.all.first(where: { $0.id == pin }) {
