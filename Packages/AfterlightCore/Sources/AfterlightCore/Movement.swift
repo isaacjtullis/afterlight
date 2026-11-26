@@ -238,8 +238,9 @@ extension Game {
                 let pred = max.pos.y + max.vyG * dt + 0.5 * Tuning.airGravity * dt * dt
                 if abs(max.vx) > 4.6 && g > pred + 0.045 {
                     max.ground = false; max.vy = max.vyG
-                } else if g < max.pos.y - 0.02 && max.vx != 0 && !max.swingOn
-                            && wallHit(max.pos.x + (max.vx > 0 ? 1 : -1) * (Tuning.halfWidth + 0.12), max.pos.y) {
+                } else if g < max.pos.y - 0.02 && max.vx != 0 && !max.swingOn,
+                          case let ahead = max.pos.x + (max.vx > 0 ? 1.0 : -1.0) * (Tuning.halfWidth + 0.75),
+                          world.solid(ahead, max.pos.y - 1.3) && world.solid(ahead, max.pos.y - 0.9) {
                     // The rounded foot of a wall is not a ramp: stop against the wall instead of riding up it.
                     max.pos.x = prevX
                     max.vx = 0
