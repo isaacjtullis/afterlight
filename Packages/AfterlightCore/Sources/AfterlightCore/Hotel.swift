@@ -14,7 +14,7 @@ extension Landmarks {
     public static let kitchen = (x0: 200, x1: 213, top: 46, floor: 52)
     public static let loadingFloor = (x0: 214, x1: 246, top: 41, floor: 52)
     public static let guestFloor = (x0: 170, x1: 212, top: 34, floor: 40)
-    public static let upper = (x0: 170, x1: 249, top: 23, floor: 28)
+    public static let upper = (x0: 170, x1: 248, top: 23, floor: 28)
     public static let exitWell = (x0: 247, x1: 248)
     public static let luggageX = 199.0
     public static let fireHatch = (c0: 172, c1: 173, r: 28)

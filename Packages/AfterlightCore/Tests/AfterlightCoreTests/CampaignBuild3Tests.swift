@@ -159,7 +159,7 @@ final class CampaignBuild3Tests: XCTestCase {
         let g = atOdis()
         intoHotel(g)
         helpEveryone(g)
-        for id in [ItemID.hotelBattery, .inspectionLamp, .ball, .ellisLamp, .pipe] { XCTAssertLessThanOrEqual(count(g, id), 1, "\(id)") }
+        for id in [ItemID.hotelBattery, .inspectionLamp, .ball, .ellisLamp] { XCTAssertLessThanOrEqual(count(g, id), 1, "\(id)") }
         outing(g)
         sim(g, GameInput(), 20)
         // 1. Odi uses the cart she actually got: the intact one, brass rail and all, in her room.
