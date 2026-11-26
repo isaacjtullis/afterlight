@@ -471,7 +471,7 @@ final class GameScene: SKScene {
             maraNode.isHidden = false
             let working = g.activeJobID(for: "mara").flatMap { g.job($0) }?.status == .working && !mr.walking
             if let img = Art.image(widthTiles: 1.8, heightTiles: 2.0, ppt: ppt, originX: 0.9, originY: 1.9, { ctx in
-                ActorArt.drawMara(ctx, face: mr.face, walking: mr.walking, working: working, time: g.time)
+                ActorArt.drawMara(ctx, face: mr.face, walking: mr.walking, working: working, time: g.time, holdingCan: g.maraAtTap)
             }) { maraNode.texture = SKTexture(cgImage: img) }
             maraNode.size = CGSize(width: 1.8 * S, height: 2.0 * S)
             maraNode.anchorPoint = CGPoint(x: 0.5, y: 1 - 1.9 / 2.0)

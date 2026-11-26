@@ -115,8 +115,14 @@ extension Game {
             if j.status == .working { return j.site }
             if j.status == .paused && j.siteID == "sump.intake" && !hatchOpen { return V2(Double(Landmarks.hatch.c) - 0.6, 9) }
         }
+        // Before they've met, with the water off: she's at her dead tap, holding a can under it.
+        if !maraMet && !waterOn { return Self.maraTapSpot }
         return Landmarks.maraHome
     }
+
+    static let maraTapSpot = V2(76.5, 9)
+    /// Mara standing at the dry tap with a can, waiting for water that doesn't come.
+    public var maraAtTap: Bool { !maraMet && !waterOn && mara.pos.dist(Self.maraTapSpot) < 0.3 }
 
     func maraTick(_ dt: Double) {
         guard story.chapter >= 3 else { return }
@@ -137,6 +143,7 @@ extension Game {
             } else {
                 mara.pos.y = target.y
                 if !mara.walking && target == Landmarks.maraHome { mara.face = max.pos.x < mara.pos.x ? -1 : 1 }
+                if !mara.walking && target == Self.maraTapSpot { mara.face = -1 }
             }
         }
     }
@@ -161,9 +168,19 @@ extension Game {
         // Then the dry tap, then the stalled lift.
         if inOutpost {
             story.step("outpost", "knock")
-            if !waterOn && p.x > 74.5 { once("tap") { think("A tap. Bone dry.", 2.8) } }
+            if !waterOn && p.x > 74.5 {
+                once("tap") {
+                    if maraAtTap {
+                        // Max believed he was the last one. He isn't.
+                        think("…Someone. A person. Holding a can under a dry tap.", 3.6)
+                        later(3.8) { $0.say("mara", "…Hello? Who’s there?", 3) }
+                    } else {
+                        think("A tap. Bone dry.", 2.8)
+                    }
+                }
+            }
             if p.x > 81.5 && story.flags.contains("said.tap") && !liftRepaired { once("lift") { think("And a lift. Stalled. That goes up.", 3) } }
-            if !maraMet && p.x > 76.5 { once("maraHi") { say("mara", "Careful by the hatch. Who sent you down my line?") } }
+            if !maraMet && !maraAtTap && p.x > 76.5 { once("maraHi") { say("mara", "Careful by the hatch. Who sent you down my line?") } }
         }
         if (abs(p.x - (Double(Landmarks.chimney) + 1.0)) < 2.5 && p.y < 9.5 && p.y > 6) {
             if !story.flags.contains("sawChimney") { story.flags.insert("sawChimney"); think("An old maintenance chimney. Rungs rusted off. Rope could do it.", 3.6) }

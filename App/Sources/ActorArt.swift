@@ -234,7 +234,7 @@ enum ActorArt {
     }
 
     /// Mara: the outpost's mechanic. Rust overalls, a teal headscarf, a wrench on her hip.
-    static func drawMara(_ ctx: CGContext, face: Int, walking: Bool, working: Bool, time: Double) {
+    static func drawMara(_ ctx: CGContext, face: Int, walking: Bool, working: Bool, time: Double, holdingCan: Bool = false) {
         ctx.saveGState()
         ctx.scaleBy(x: CGFloat(face), y: 1)
         let ph = time * (walking ? 7 : 0)
@@ -259,10 +259,20 @@ enum ActorArt {
         line(ctx, [CGPoint(x: -0.2, y: headY - 0.02), CGPoint(x: -0.32, y: headY + 0.12)], c(0x2f7a78), 0.06)
         ctx.setFillColor(c(0x1a1214)); ctx.fillEllipse(in: CGRect(x: 0.1, y: headY - 0.03, width: 0.045, height: 0.065))
         // arm: working swings a wrench, otherwise rests
-        let a = working ? CGFloat(sin(time * 9)) * 0.4 : 0
-        let hand = CGPoint(x: 0.3 + a * 0.1, y: shY + 0.36 - a * 0.25)
-        line(ctx, [CGPoint(x: 0.08, y: shY + 0.08), hand], c(0x8a5a3c), 0.1)
-        if working { line(ctx, [hand, CGPoint(x: hand.x + 0.22, y: hand.y - 0.1)], c(0x9aa0a6), 0.06) }
+        if holdingCan {
+            // both arms out, a dented can held under the tap, a small shake now and then
+            let shake = CGFloat(sin(time * 1.3)) > 0.95 ? CGFloat(sin(time * 30)) * 0.015 : 0
+            let hand = CGPoint(x: 0.38 + shake, y: shY + 0.28)
+            line(ctx, [CGPoint(x: 0.08, y: shY + 0.08), hand], c(0x8a5a3c), 0.1)
+            line(ctx, [CGPoint(x: -0.06, y: shY + 0.1), CGPoint(x: hand.x - 0.04, y: hand.y + 0.08)], c(0x7a4e34), 0.09)
+            ctx.setFillColor(c(0x8d969c)); rr(ctx, hand.x - 0.02, hand.y - 0.12, 0.2, 0.24, 0.03); ctx.fillPath()
+            ctx.setFillColor(c(0x5f676d)); ctx.fill(CGRect(x: hand.x - 0.02, y: hand.y - 0.12, width: 0.2, height: 0.03))
+        } else {
+            let a = working ? CGFloat(sin(time * 9)) * 0.4 : 0
+            let hand = CGPoint(x: 0.3 + a * 0.1, y: shY + 0.36 - a * 0.25)
+            line(ctx, [CGPoint(x: 0.08, y: shY + 0.08), hand], c(0x8a5a3c), 0.1)
+            if working { line(ctx, [hand, CGPoint(x: hand.x + 0.22, y: hand.y - 0.1)], c(0x9aa0a6), 0.06) }
+        }
         ctx.restoreGState()
     }
 
