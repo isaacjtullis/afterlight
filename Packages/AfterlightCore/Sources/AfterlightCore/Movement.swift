@@ -593,7 +593,10 @@ extension Game {
     /// above. He braces against both walls and climbs the whole way, cutting footholds as he goes.
     @discardableResult
     func tryShaftClimb() -> Bool {
-        let x = max.pos.x
+        // Line up with the middle of the opening above (a dug hole is rarely exactly overhead).
+        let x = [max.pos.x, max.pos.x - 0.35, max.pos.x + 0.35, max.pos.x - 0.7, max.pos.x + 0.7].first { cx in
+            (1...8).allSatisfy { !world.solid(cx, max.pos.y - 1.8 - Double($0) * 0.5) } || !world.solid(cx, max.pos.y - 3.0)
+        } ?? max.pos.x
         let left = world.solid(x - 0.95, max.pos.y - 0.6), right = world.solid(x + 0.95, max.pos.y - 0.6)
         // Both walls (a shaft he dug), or one (scrambling up a rubble pile) as long as it leads somewhere to stand.
         guard left || right, !world.solid(x, max.pos.y - 2.2) else { return false }
@@ -609,6 +612,7 @@ extension Game {
             y -= 0.1
         }
         guard let t = top, max.pos.y - t > 1.45 else { return false }
+        max.pos.x = x
         world.climbs.append(Climb(id: "foot.\(Int(time * 100))", x: x, top: t, bottom: max.pos.y, kind: .foothold))
         emit(.bite(at: V2(x, max.pos.y - 1), kind: .side, carved: true, face: max.face))
         if !story.flags.contains("said.chimneyClimb") {
