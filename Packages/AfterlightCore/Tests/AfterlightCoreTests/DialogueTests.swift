@@ -12,8 +12,20 @@ final class DialogueTests: XCTestCase {
     }
 
     func outpost() -> Game {
-        let g = MaraTests().outpost(FixedClock())
-        MaraTests().place(g, V2(79.6, 9))
+        let g = Game()
+        let clock = FixedClock()
+        g.clock = { clock.now }
+        g.begin()
+        g.story.chapter = 3
+        g.story.flags.formUnion(["ordersOK", "ch2Done", "hatchOpen", "flashOn"])
+        g.story.addQuest(.dryTaps)
+        for x in stride(from: 35.5, through: 72.5, by: 1.0) {
+            _ = g.world.carve(center: V2(x, 7.6), radius: 0.9, floorY: 9, tool: .shovel)
+            _ = g.world.carve(center: V2(x, 8.45), radius: 0.9, floorY: 9, tool: .shovel)
+        }
+        g.max.pos = V2(79.6, 9)
+        g.max.ground = true; g.max.vx = 0; g.max.vy = 0; g.max.mode = .walk; g.max.digFloor = 9
+        sim(g, GameInput(), 0.3)
         return g
     }
 
