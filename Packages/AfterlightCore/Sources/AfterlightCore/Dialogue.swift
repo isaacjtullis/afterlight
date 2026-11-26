@@ -89,12 +89,15 @@ public enum Dialogue {
         if s.hasPrefix("has:") { return ItemID(rawValue: String(s.dropFirst(4))) != nil }
         if s.hasPrefix("holding:") { let a = s.split(separator: ":"); return a.count == 3 && ItemID(rawValue: String(a[2])) != nil }
         if s.hasPrefix("trust:") { return s.contains(">=") || s.contains("<") }
+        if s.hasPrefix("can:") { return s.count > 4 }
+        if s.hasPrefix("knows:") { return s.split(separator: ":").count == 3 }
+        if s.hasPrefix("chapter>=") { return Int(s.dropFirst(9)) != nil }
         return false
     }
 
     static func knownEffect(_ f: String) -> Bool {
         if f == "end" { return true }
-        for p in ["row:", "flag:", "unflag:", "trust:", "meet:", "say:"] where f.hasPrefix(p) { return f.count > p.count }
+        for p in ["row:", "flag:", "unflag:", "trust:", "meet:", "say:", "do:", "remember:"] where f.hasPrefix(p) { return f.count > p.count }
         return false
     }
 }
@@ -113,6 +116,7 @@ extension Game {
         guard let t = talk else { return }
         talk = nil
         if t.graph == "mara" { meetMara() }
+        talkEnded(t.graph)
         emit(.saveNow)
     }
 
@@ -157,6 +161,8 @@ extension Game {
         case "unflagged": return !story.flags.contains(parts[1])
         case "job": return job(parts[1]) != nil
         case "evidence": return story.coop.evidence.contains { $0.id == parts[1] }
+        case "can": return campaignCan(parts[1...].joined(separator: ":"))
+        case "knows": return parts.count == 3 && remembers(parts[1], parts[2])
         case "has": return ItemID(rawValue: parts[1]).map { available($0) > 0 } ?? false
         case "holding": return parts.count == 3 && ItemID(rawValue: parts[2]).map { holding(parts[1], $0) > 0 } ?? false
         case "trust":
@@ -178,6 +184,8 @@ extension Game {
         case "trust": if parts.count == 3, let n = Int(parts[2].replacingOccurrences(of: "+", with: "")) { addTrust(parts[1], n) }
         case "meet": if parts[1] == "mara" { meetMara() }
         case "say": if parts.count == 3 { say(parts[1], fill(parts[2])) }
+        case "do": campaignDo(parts[1...].joined(separator: ":"))
+        case "remember": if parts.count == 3 { remember(parts[1], parts[2]) }
         default: break
         }
     }
@@ -194,7 +202,9 @@ extension Game {
             "chimneyHave": have(MaraDeal.chimneyCost),
             "liftReward": job(MaraDeal.liftJob) != nil || liftRepaired ? "two trail meals when the water runs" : "she repairs your lift",
             "status": maraStatusLine(),
-        ]
+            "odiStatus": odiStatusLine,
+            "cableHave": have(Game.cableCost),
+        ].merging(campaignVars()) { a, _ in a }
         var out = s
         for (k, v) in vars { out = out.replacingOccurrences(of: "{\(k)}", with: v) }
         return out

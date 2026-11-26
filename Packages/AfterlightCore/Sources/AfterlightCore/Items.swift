@@ -15,6 +15,8 @@ public enum ItemID: String, Codable, CaseIterable, Sendable {
     case tape
     // Milestone 1: water
     case strap, gasket, hoseClamp, waterCan, filterAssembly, sketch, roster
+    // The campaign: deliveries, the hotel, the gallery
+    case fullCan, growTray, inspectionLamp, hotelBattery, ball, breakfastCard, seedPackets, cartWheels, regulator, ellisLamp
 
     public var name: String { ItemTable.row(self)?.name ?? rawValue }
 

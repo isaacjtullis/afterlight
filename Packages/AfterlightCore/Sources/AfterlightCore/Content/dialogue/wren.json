@@ -1,0 +1,93 @@
+{
+  "id": "wren",
+  "speaker": "Wren",
+  "entries": [
+    {
+      "node": "chimney",
+      "when": [
+        "!knows:wren:met",
+        "knows:wren:metAtChimney"
+      ]
+    },
+    {
+      "node": "first",
+      "when": [
+        "!knows:wren:met"
+      ]
+    },
+    {
+      "node": "hub"
+    }
+  ],
+  "nodes": {
+    "chimney": {
+      "lines": [
+        "The kid with the rope. You saved me a day going round.",
+        "Wren. I carry things for people who can’t leave what they’re keeping."
+      ],
+      "choices": [
+        {
+          "id": "what",
+          "label": "What do you carry?",
+          "next": "what"
+        },
+        {
+          "id": "bye",
+          "label": "Glad it helped.",
+          "effects": [
+            "end"
+          ]
+        }
+      ]
+    },
+    "first": {
+      "lines": [
+        "Wren. I carry things for people who can’t leave what they’re keeping.",
+        "Mara’s cans, Odi’s trays, letters nobody admits to writing."
+      ],
+      "choices": [
+        {
+          "id": "what",
+          "label": "Where does it all go?",
+          "next": "what"
+        },
+        {
+          "id": "bye",
+          "label": "See you around.",
+          "effects": [
+            "end"
+          ]
+        }
+      ]
+    },
+    "what": {
+      "lines": [
+        "Down here to Odi. Up to the hotel. One day up past that, if the gallery’s ever open.",
+        "My dad said you could see a mountain all day and never reach it by dinner. I want to see if he was lying."
+      ],
+      "choices": [
+        {
+          "id": "bye",
+          "label": "Good luck.",
+          "effects": [
+            "end"
+          ]
+        }
+      ]
+    },
+    "hub": {
+      "lines": [
+        "Still walking. Still carrying."
+      ],
+      "choices": [
+        {
+          "id": "bye",
+          "label": "See you.",
+          "effects": [
+            "end"
+          ]
+        }
+      ]
+    }
+  }
+}

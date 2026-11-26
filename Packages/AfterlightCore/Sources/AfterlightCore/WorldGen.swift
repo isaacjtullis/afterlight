@@ -102,6 +102,33 @@ public enum WorldGen {
         for r in (Landmarks.liftPit.floor + 1)...(sw.floor - 3) { w.set(sh.c0 - 1, r, .metal, back: .shaft); w.set(sh.c1 + 1, r, .metal, back: .shaft) }
     }
 
+    /// Odi's grow room: a lean-to of salvaged steel against the cavern's east wall.
+    static func buildOdiRoom(_ w: World) {
+        let r = Landmarks.odiRoom
+        for c in r.x0...(r.x1 + 1) {
+            w.set(c, r.top, .metal)
+            w.set(c, r.floor, .metal)
+            for row in (r.top + 1)..<r.floor { w.set(c, row, .air, back: .room) }
+        }
+        for row in (r.top + 1)...(r.floor - 3) { w.set(r.x0, row, .metal) }
+        for row in (r.floor - 2)..<r.floor { w.setBack(r.x0, row, .room) }
+    }
+
+    static let odiRoomPropIDs: Set<String> = ["odi.signal", "odi.bed1", "odi.bed2", "odi.bed3", "odi.bed4", "odi.shelf", "odi.lift", "mara.drop"]
+
+    static func odiRoomProps() -> [Prop] {
+        let f = Double(Landmarks.odiRoom.floor)
+        var signal = Prop(id: "odi.signal", kind: .answerLamp, pos: Landmarks.odiLamp)
+        signal.flags = ["lit"]
+        var beds = (1...4).map { i in Prop(id: "odi.bed\(i)", kind: .growBed, pos: V2(146.2 + Double(i) * 2.2, f)) }
+        beds[0].flags = ["lit"]
+        return [signal] + beds + [
+            Prop(id: "odi.shelf", kind: .odiShelf, pos: V2(156.1, f), stock: [ItemStack(.seedPackets, 2)]),
+            Prop(id: "odi.lift", kind: .serviceLift, pos: V2(157.0, f)),
+            Prop(id: "mara.drop", kind: .dropCrate, pos: Landmarks.transitDrop),
+        ]
+    }
+
     static let storeBPropIDs: Set<String> = ["drum", "grate", "bunk.broken", "washstand", "store.shelf", "store.locker", "lm.pipe", "lm.stripes", "lm.mark"]
 
     static func storeBProps(_ w: World) -> [Prop] {
@@ -253,6 +280,7 @@ public enum WorldGen {
         for c in (Landmarks.chimney - 1)...(op.door - 1) { for r in 7...8 { w.set(c, r, .dug, back: .earth) } }
 
         buildStoreB(w)
+        buildOdiRoom(w)
         w.rebuildDensity()
 
         // Buried things.
@@ -273,7 +301,7 @@ public enum WorldGen {
             return w.groundY(Double(x) + 0.5, from: Double(top) + 0.5, to: 58) ?? 30
         }
         let storeProps = storeBProps(w)
-        w.props = storeProps + [
+        w.props = storeProps + odiRoomProps() + [
             Prop(id: "bench", kind: .workbench, pos: Landmarks.bench),
             Prop(id: "locker.ws", kind: .locker, pos: V2(20.7, 30), stock: [ItemStack(.spareGrip), ItemStack(.fasteners, 3), ItemStack(.lampCell, 3), ItemStack(.wire, 3), ItemStack(.tape, 2)]),
             Prop(id: "shelter.light", kind: .shelterLight, pos: V2(23.6, 26.0)),

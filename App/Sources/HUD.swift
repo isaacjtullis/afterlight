@@ -174,7 +174,7 @@ struct HUDView: View {
             VStack(spacing: 10) {
                 topBar(ui)
                 if ui.started { meters(ui) }
-                if !ui.hint.isEmpty {
+                if !ui.hint.isEmpty && model.cards.isEmpty {
                     Text(ui.hint)
                         .font(.avenir(15)).foregroundStyle(Color.cream).multilineTextAlignment(.center)
                         .padding(.horizontal, 16).padding(.vertical, 9)
@@ -182,7 +182,7 @@ struct HUDView: View {
                         .frame(maxWidth: 420)
                         .transition(.opacity)
                 }
-                if let s = ui.speech {
+                if let s = ui.speech, model.cards.isEmpty {
                     (Text(ui.speaker + "  ").font(.avenir(14, "DemiBold")).foregroundColor(Color.amber) + Text(s).font(.avenir(15)).foregroundColor(Color.cream))
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 16).padding(.vertical, 9)

@@ -727,6 +727,7 @@ extension Game {
     // MARK: cinematic: the flashlight
 
     func cineTick(_ dt: Double) -> Int {
+        if let k = cine?.kind, k != "flash" { return campaignCineTick(dt, kind: k) }
         guard var c = cine else { return 0 }
         c.t += dt
         let t = c.t

@@ -223,5 +223,58 @@
     "id": "roster",
     "name": "Crew roster",
     "blurb": "The builders’ crew list. Halfway down, in pencil, Dad’s name in his own hand."
+  },
+  {
+    "id": "fullCan",
+    "name": "Full water can",
+    "blurb": "Mara's can, full to the cap. Heavy enough to feel in your shoulders.",
+    "bulky": true
+  },
+  {
+    "id": "growTray",
+    "name": "Grow trays",
+    "blurb": "A stack of shallow trays with drainage holes.",
+    "bulky": true
+  },
+  {
+    "id": "inspectionLamp",
+    "name": "Inspection lamp",
+    "blurb": "A hotel maintenance lamp on a hook. Bright, steady, and it still holds a charge."
+  },
+  {
+    "id": "hotelBattery",
+    "name": "Hotel battery",
+    "blurb": "The hotel's emergency battery. Heavy, valuable, and somebody else wants it too.",
+    "bulky": true
+  },
+  {
+    "id": "ball",
+    "name": "Soccer ball",
+    "blurb": "Scuffed, patched, still round. Somebody kept it pumped for years."
+  },
+  {
+    "id": "breakfastCard",
+    "name": "Breakfast card",
+    "blurb": "“Hang on your door by 2 a.m.” Eggs, toast, juice, coffee. People ticked boxes for this."
+  },
+  {
+    "id": "seedPackets",
+    "name": "Seed packets",
+    "blurb": "Paper packets with pictures of what's inside. Some of the pictures are things nobody here has seen."
+  },
+  {
+    "id": "cartWheels",
+    "name": "Cart wheels",
+    "blurb": "Four small wheels off a housekeeping cart, still on their brackets."
+  },
+  {
+    "id": "regulator",
+    "name": "Pressure regulator",
+    "blurb": "A brass regulator from above. The lower pumps have been running without one for years."
+  },
+  {
+    "id": "ellisLamp",
+    "name": "Ellis’s lamp",
+    "blurb": "Ellis lent it for the game. It goes back to him."
   }
 ]

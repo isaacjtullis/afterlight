@@ -44,12 +44,20 @@ public struct Story: Codable, Sendable {
     public var waterTo: String? = nil      // where the home pump sends its water: "home" for now
     /// Shared jobs, agreements, ownership and water routing with other survivors.
     public var coop = Coop()
+    /// Travelers, the hotel crowd and everyone else who isn't Mara or Odi.
+    public var cast: [String: Actor] = [:]
+    /// What each person has seen Max do, or heard from him. Only the one who saw it knows it.
+    public var memories: [String: Set<String>] = [:]
+    /// Mara's delivery route while she's out with her cans.
+    public var maraRoute: [Waypoint] = []
+    /// The ending Max chose, written once.
+    public var ending: EndingRecord? = nil
     /// Steps finished since the app last showed them (not saved).
     public var checkpoints: [Checkpoint] = []
 
     public init() {}
 
-    enum CodingKeys: String, CodingKey { case chapter, flags, quests, counters, explored, waterTo, coop }
+    enum CodingKeys: String, CodingKey { case chapter, flags, quests, counters, explored, waterTo, coop, cast, memories, maraRoute, ending }
     /// Every field is optional on the way in, so saves from older builds always load.
     public init(from d: Decoder) throws {
         let c = try d.container(keyedBy: CodingKeys.self)
@@ -60,6 +68,10 @@ public struct Story: Codable, Sendable {
         explored = try c.decodeIfPresent(Set<Int>.self, forKey: .explored) ?? []
         waterTo = try c.decodeIfPresent(String.self, forKey: .waterTo)
         coop = try c.decodeIfPresent(Coop.self, forKey: .coop) ?? Coop()
+        cast = try c.decodeIfPresent([String: Actor].self, forKey: .cast) ?? [:]
+        memories = try c.decodeIfPresent([String: Set<String>].self, forKey: .memories) ?? [:]
+        maraRoute = try c.decodeIfPresent([Waypoint].self, forKey: .maraRoute) ?? []
+        ending = try c.decodeIfPresent(EndingRecord.self, forKey: .ending)
     }
 
     public mutating func addQuest(_ q: Quest) {
@@ -216,6 +228,7 @@ extension Game {
         guard started else { return }
         expeditionTick(dt)
         waterTick(dt)
+        campaignTick(dt)
         let p = max.pos
         let f = story.flags
         func once(_ k: String, _ body: () -> Void) {
@@ -323,32 +336,8 @@ extension Game {
     // MARK: Odi
 
     /// Odi now belongs to a later chapter; until then she isn't in the world.
-    func odiTick(_ dt: Double) {
-        guard story.chapter >= 5 else { return }
-        let homeX = 81.0, visitX = 34.0
-        if story.flags.contains("passageLit") && odi.met {
-            // She uses the lit passage: walks to the maintenance room, lingers, walks home.
-            odi.routeT += dt
-            let cycle = odi.routeT.truncatingRemainder(dividingBy: 140)
-            let target = cycle < 70 ? visitX : homeX
-            let dx = target - odi.pos.x
-            if abs(dx) > 0.2 {
-                odi.vx = (dx > 0 ? 1 : -1) * 1.6
-                odi.face = dx > 0 ? 1 : -1
-                odi.pos.x += odi.vx * dt
-                odi.walking = true
-            } else { odi.walking = false; odi.vx = 0 }
-            if abs(odi.pos.x - max.pos.x) < 3 && abs(odi.pos.y - max.pos.y) < 1.5 {
-                if !story.isDone("lights", "used") {
-                    story.step("lights", "used")
-                    emit(.conversation("odi.lamps"))
-                }
-            }
-        } else {
-            odi.walking = false
-            odi.face = max.pos.x < odi.pos.x ? -1 : 1
-        }
-    }
+    /// Odi lives in her grow room now (Errands.swift moves her).
+    func odiTick(_ dt: Double) {}
 
     public var nearOdi: Bool { story.chapter >= 5 && abs(odi.pos.x - max.pos.x) < 1.8 && abs(odi.pos.y - max.pos.y) < 1.2 }
 
@@ -458,12 +447,13 @@ extension Game {
         let f = story.flags
         func act(_ id: String, _ label: String, _ at: V2, _ big: Bool = false) -> ContextAction { ContextAction(id: id, label: label, anchor: at, prominent: big) }
 
+        if let c = campaignContext() { return c }
         if max.stamina < 25 && inv.count(.trailMeal) > 0 { return act("eat", "Eat a trail meal", V2(p.x, p.y - 2.4), true) }
         if let c = waterContext() { return c }
         if let c = maraContext() { return c }
         if let c = expeditionContext() { return c }
         if let s = plankSpot() { return act("plank", "Lay plank · \(Inventory.plankCost) wood", V2(Double(s.c) + 0.5, Double(s.r) - 0.9), true) }
-        if nearOdi { return act("talk", odi.met ? "Talk to Odi" : "Say hello", V2(odi.pos.x, odi.pos.y - 2.4), !odi.met) }
+        if nearOdi { return act("panel:odi", odi.met ? "Talk to Odi" : "Say hello", V2(odi.pos.x, odi.pos.y - 2.4), !odi.met) }
         if underShaft && f.contains("sawShaft") && !f.contains("triedUp") && !waterQuestActive { return act("tryUp", "Dig up", V2(p.x, p.y - 2.4)) }
         if underShaft && available(.ladderSection) > 0 && !world.climbs.contains(where: { $0.id == "ladder.shaft" }) {
             return act("placeLadder", "Place ladder", V2(26, 27.5), true)
@@ -522,6 +512,7 @@ extension Game {
         let p = max.pos
         if performExpedition(a.id) { return }
         if performWater(a.id) { return }
+        if performCampaign(a.id) { return }
         switch a.id {
         case "inspect":
             story.flags.formUnion(["inspected", "sawFlashlight"])

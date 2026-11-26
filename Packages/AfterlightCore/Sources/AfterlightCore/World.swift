@@ -75,6 +75,8 @@ public enum PropKind: String, Codable, Sendable {
     // Mara's outpost (chapter 3)
     case maraTap, maraPump, maraLift, maraShelf, sumpHatch, intake, sunkValve, chimney, transitLift
     case waterDrum, brokenBunk, washstand, floorGrate, landmark, storeShelf
+    // The campaign: Odi's grow room, Mara's drop, the hotel and the gallery
+    case growBed, answerLamp, odiShelf, serviceLift, dropCrate, thing
 }
 
 public struct Prop: Codable, Identifiable, Equatable, Sendable {
@@ -84,8 +86,10 @@ public struct Prop: Codable, Identifiable, Equatable, Sendable {
     public var stock: [ItemStack] = []
     public var flags: Set<String> = []
     public var planted: Date? = nil
-    public init(id: String, kind: PropKind, pos: V2, stock: [ItemStack] = []) {
-        self.id = id; self.kind = kind; self.pos = pos; self.stock = stock
+    /// For `.thing` props: which drawing to use (a bench, a cart, a breakfast card on a door…).
+    public var look: String? = nil
+    public init(id: String, kind: PropKind, pos: V2, stock: [ItemStack] = [], look: String? = nil) {
+        self.id = id; self.kind = kind; self.pos = pos; self.stock = stock; self.look = look
     }
 }
 

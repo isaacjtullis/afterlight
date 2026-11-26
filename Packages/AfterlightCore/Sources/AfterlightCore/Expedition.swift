@@ -78,7 +78,7 @@ extension Game {
         case .campCrate: return (p, campObstruction())
         case .woodLadder:
             if let s = ladderSpot() { return (V2(s.x, s.top), nil) }
-            return (p, "Face a ledge to lean it on")
+            return (p, "No room to stand it up here")
         case .torch:
             guard max.ground else { return (p, "Feet on the ground first") }
             return (p, nil)
@@ -115,6 +115,7 @@ extension Game {
                     if available(.batteryCell) > 0 { return act("signal", "Fit the battery cell", V2(pr.pos.x, pr.pos.y - 3.2), true) }
                     return act("signalLook", "Signal lamp", V2(pr.pos.x, pr.pos.y - 3.2))
                 }
+                return act("flash.signal", "Flash the signal", V2(pr.pos.x, pr.pos.y - 3.2))
             case .lanternClue:
                 if !f.contains("sawLantern") { return act("lantern", "Look at the lantern", V2(pr.pos.x, pr.pos.y - 1.6), true) }
             default: break
@@ -231,6 +232,7 @@ extension Game {
             story.flags.insert("signalLit")
             think("It’s alive. Anyone on the line can see that now.", 3.4)
             emit(.chime); emit(.swell)
+            later(3.6) { g in if !g.story.flags.contains("answered") { g.startAnswer() } }
             emit(.saveNow)
         case "signalLook":
             story.flags.insert("sawSignal")
@@ -397,6 +399,11 @@ extension Game {
                 y -= 0.1
             }
         }
+        // No ledge beside him: stand it straight up, as tall as the headroom allows (up a shaft, under a hole).
+        var y = max.pos.y - 1.9
+        while y > max.pos.y - 7.9 && !world.solid(max.pos.x, y - 0.1) && !world.solid(max.pos.x - 0.35, y - 0.1) && !world.solid(max.pos.x + 0.35, y - 0.1) { y -= 0.1 }
+        let top = Swift.max(max.pos.y - 6, y + 1.9)
+        if max.pos.y - top >= 1.2 { return (max.pos.x, top) }
         return nil
     }
 }

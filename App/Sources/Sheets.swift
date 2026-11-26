@@ -151,7 +151,7 @@ struct RecipeCard: View {
         let enough = have >= need
         return HStack(spacing: 4) {
             icon.frame(width: 14, height: 14)
-            Text("\(min(have, need))/\(need)").font(.avenir(11, "DemiBold")).monospacedDigit()
+            Text("\(need) · have \(have)").font(.avenir(11, "DemiBold")).monospacedDigit()
         }
         .foregroundStyle(enough ? Color.cream : Color(red: 0.95, green: 0.55, blue: 0.45))
         .padding(.horizontal, 7).frame(height: 24)
@@ -485,6 +485,16 @@ extension ItemID {
         case .filterAssembly: return "cylinder.split.1x2.fill"
         case .sketch: return "map.fill"
         case .roster: return "list.clipboard.fill"
+        case .fullCan: return "drop.fill"
+        case .growTray: return "square.stack.3d.up.fill"
+        case .inspectionLamp: return "flashlight.on.fill"
+        case .hotelBattery: return "battery.100.bolt"
+        case .ball: return "soccerball"
+        case .breakfastCard: return "menucard.fill"
+        case .seedPackets: return "envelope.fill"
+        case .cartWheels: return "circle.circle.fill"
+        case .regulator: return "gauge.with.dots.needle.33percent"
+        case .ellisLamp: return "lightbulb.led.fill"
         }
     }
     var tint: Color {
@@ -1087,6 +1097,11 @@ struct Portrait: View {
                     switch name.lowercased() {
                     case "mara": return (Color(red: 0.42, green: 0.38, blue: 0.4), Color(red: 0.32, green: 0.55, blue: 0.42), Color(red: 0.36, green: 0.3, blue: 0.27), Color(red: 0.86, green: 0.68, blue: 0.55))
                     case "odi": return (Color(red: 0.15, green: 0.12, blue: 0.12), Color(red: 0.75, green: 0.5, blue: 0.2), Color(red: 0.25, green: 0.3, blue: 0.38), Color(red: 0.55, green: 0.38, blue: 0.28))
+                    case "wren", "ellis", "corvin", "jun", "pip", "hask", "toller", "sela", "bram":
+                        let ids = ["wren": "wren", "ellis": "ellis", "corvin": "scav", "jun": "kid1", "pip": "kid2", "hask": "toll1", "toller": "toll2", "sela": "upper", "bram": "keeper"]
+                        let L = ActorArt.looks[ids[name.lowercased()] ?? ""]!
+                        func col(_ v: UInt32) -> Color { Color(red: Double((v >> 16) & 255) / 255, green: Double((v >> 8) & 255) / 255, blue: Double(v & 255) / 255) }
+                        return (col(L.hair), col(L.trim), col(L.coat), col(L.skin))
                     default: return (Color(red: 0.29, green: 0.23, blue: 0.36), Color(red: 0.78, green: 0.27, blue: 0.18), Color(red: 0.93, green: 0.86, blue: 0.74), Color(red: 0.95, green: 0.82, blue: 0.7))
                     }
                 }()
@@ -1609,8 +1624,9 @@ struct BuildSheet: View {
         let enough = have >= need
         return HStack(spacing: 6) {
             icon.frame(width: 16, height: 16)
-            Text("\(min(have, need))/\(need)").font(.avenir(12, "Bold")).monospacedDigit()
-                .foregroundStyle(enough ? Color.cream : Color(red: 0.95, green: 0.55, blue: 0.45))
+            Text("\(need)").font(.avenir(13, "Bold")).monospacedDigit().foregroundStyle(Color.cream)
+            Text("· have \(have)").font(.avenir(12, "DemiBold")).monospacedDigit()
+                .foregroundStyle(enough ? Color.cream.opacity(0.6) : Color(red: 0.95, green: 0.55, blue: 0.45))
         }
         .padding(.horizontal, 10).frame(height: 32)
         .background(Capsule().fill(enough ? Color.white.opacity(0.07) : Color.red.opacity(0.12)))

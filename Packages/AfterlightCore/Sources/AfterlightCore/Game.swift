@@ -135,6 +135,8 @@ public final class Game {
     /// When the player last asked for a hint (game seconds).
     public var hintAskedAt = -999.0
     public var openLoot: String? = nil
+    /// A checkpoint card is on screen: thoughts, hints and speech wait (and stay hidden) until it's gone.
+    public var holdMessages = false
 
     public var appliedJobs: Set<String> = []
     public var activeJob: JobRecord? = nil
@@ -177,6 +179,7 @@ public final class Game {
         story.flags.insert("gen1")
         story.flags.insert("tape1")
         story.flags.insert("storeB1")
+        story.flags.insert("odiRoom1")
         quarters.clean = 4; quarters.drumSealed = false; quarters.filterFitted = false
     }
 
@@ -207,10 +210,10 @@ public final class Game {
         let due = timers.filter { $0.at <= time }
         timers.removeAll { $0.at <= time }
         for t in due { t.fn(self) }
-        if thoughtT > 0 { thoughtT -= dt }
-        if hintT > 0 { hintT -= dt }
+        if thoughtT > 0 && !holdMessages { thoughtT -= dt }
+        if hintT > 0 && !holdMessages { hintT -= dt }
         if !story.checkpoints.isEmpty { for c in story.checkpoints { emit(.checkpoint(c)) }; story.checkpoints.removeAll() }
-        if speechT > 0 { speechT -= dt }
+        if speechT > 0 && !holdMessages { speechT -= dt }
         jobTickT += dt
         if jobTickT >= 0.5 { jobTickT = 0; if !story.coop.jobs.isEmpty { advanceSharedJobs(to: clock()) }; quartersTick(now: clock()) }
         if started { candle = Swift.min(1, candle + dt * 0.8) }

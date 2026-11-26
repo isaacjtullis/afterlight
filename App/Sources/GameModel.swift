@@ -207,6 +207,8 @@ final class GameModel: ObservableObject {
         frames += 1
         guard !showTitle else { return }
         let paused = sleeping || talk != nil || conversation != nil || sheet != nil || banner != nil || game.activeJob != nil || panel != nil || showQuarters
+        // One thing in the middle of the screen at a time: thoughts, hints and speech wait out a checkpoint card.
+        game.holdMessages = !cards.isEmpty
         game.update(dt: dt, input: paused ? GameInput() : input)
         for e in game.drainEvents() { handle(e) }
         if let d = saveDue, clock >= d { saveDue = nil; saveNow(cloud: false) }
@@ -266,7 +268,7 @@ final class GameModel: ObservableObject {
         u.hasFlashlight = g.inv.has(.flashlight) && g.story.flags.contains("sawShaft")
         u.flashOn = g.flashlightLit
         u.aim = input.up ? -1 : (input.climbDown ? 1 : 0)
-        if g.speechT > 0 && !g.speechText.isEmpty { u.speech = g.speechText; u.speaker = g.speechWho == "mara" ? "Mara" : g.speechWho }
+        if g.speechT > 0 && !g.speechText.isEmpty { u.speech = g.speechText; u.speaker = Cast.name(g.speechWho) }
         if let id = g.activeJobID(for: "mara"), let j = g.job(id), j.status == .working {
             let s = Int(j.secondsLeft.rounded(.up))
             u.coopStatus = "Mara · \(j.title) · \(s / 60):\(String(format: "%02d", s % 60))"

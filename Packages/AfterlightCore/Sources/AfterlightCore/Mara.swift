@@ -120,10 +120,10 @@ extension Game {
     /// Mara standing at the tap with a can.
     public var maraAtTap: Bool { !mara.walking && mara.pos.dist(Self.maraTapSpot) < 0.3 }
     /// Mara carrying a full can from the tap to her beds.
-    public var maraCarrying: Bool { waterOn && story.coop.water.outpostTapFlow > 0 && mara.walking && mara.face > 0 }
+    public var maraCarrying: Bool { (waterOn && story.coop.water.outpostTapFlow > 0 && mara.walking && mara.face > 0) || (maraHauling && maraCans > 0) }
 
     func maraTick(_ dt: Double) {
-        guard story.chapter >= 3 else { return }
+        guard story.chapter >= 3, !maraHauling else { return }
         let target = maraTarget()
         let hatchX = Double(Landmarks.hatch.c) + 0.5
         // Changing level goes by the sump rungs.
@@ -255,7 +255,7 @@ extension Game {
         case "sump.hatch": return hatchPanel()
         case "chimney": return chimneyPanel()
         case "drum": return drumPanel()
-        default: return nil
+        default: return campaignPanel(id)
         }
     }
 
@@ -490,6 +490,7 @@ extension Game {
         case "chimney.rig": rigChimney()
         default:
             if row.hasPrefix("drum.") { drumAction(row); break }
+            if campaignRow(panelID, row) { break }
             if row.hasPrefix("deliver.") {
                 let parts = row.split(separator: ".").map(String.init)   // deliver.job.<name>.c.<name>
                 if parts.count >= 5 { deliver(job: parts[1] + "." + parts[2], contribution: parts[3...].joined(separator: ".")) }
@@ -628,6 +629,8 @@ extension Game {
 
     func rideLift(up: Bool) {
         guard liftRepaired else { return }
+        story.flags.insert("rodeLift")
+        story.counters["liftCar"] = up ? 100 : 0
         max.busy = 2.2
         max.vx = 0
         emit(.swell)

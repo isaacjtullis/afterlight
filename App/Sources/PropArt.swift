@@ -226,12 +226,18 @@ enum Art {
             if !p.stock.isEmpty { ActorArt.dot(ctx, -0.05, -1.32, 0.14, c(0xc9a24a)); rect(-0.2, -1.36, 0.3, 0.08, 0xa8842e) }
         case .maraLift:
             rect(-1.3, -4.9, 0.12, 4.9, 0x3b3640); rect(1.2, -4.9, 0.12, 4.9, 0x3b3640)
-            rect(-1.1, -2.5, 2.2, 2.5, p.flags.contains("repaired") ? 0x4a4a52 : 0x3a3540, 0.9)
-            for i in 0..<4 { rect(-1.1 + CGFloat(i) * 0.7, -2.5, 0.06, 2.5, 0x58505c) }
+            if !p.flags.contains("carUp") {
+                rect(-1.1, -2.5, 2.2, 2.5, p.flags.contains("repaired") ? 0x4a4a52 : 0x3a3540, 0.9)
+                for i in 0..<4 { rect(-1.1 + CGFloat(i) * 0.7, -2.5, 0.06, 2.5, 0x58505c) }
+            }
             rect(-1.3, -5.0, 2.6, 0.2, 0x4a4450)
             ActorArt.dot(ctx, 1.0, -2.9, 0.09, c(p.flags.contains("repaired") ? 0x9cff9c : 0xff6a4a))
         case .transitLift:
             rect(-1.3, -1.9, 0.12, 1.9, 0x3b3640); rect(1.2, -1.9, 0.12, 1.9, 0x3b3640); rect(-1.3, -1.95, 2.6, 0.15, 0x4a4450)
+            if p.flags.contains("carUp") {
+                rect(-1.1, -1.8, 2.2, 1.8, 0x4a4a52, 0.9)
+                for i in 0..<4 { rect(-1.1 + CGFloat(i) * 0.7, -1.8, 0.06, 1.8, 0x58505c) }
+            }
             ActorArt.dot(ctx, 1.0, -1.4, 0.08, c(p.flags.contains("repaired") ? 0x9cff9c : 0x6a6e72))
         case .sumpHatch:
             if p.flags.contains("open") {
@@ -335,6 +341,45 @@ enum Art {
                 ActorArt.line(ctx, [CGPoint(x: 0.04, y: -1.55), CGPoint(x: 0, y: -1.35)], c(0xe8e0c8, 0.85), 0.08)
                 ActorArt.dot(ctx, 0, -1.18, 0.05, c(0xe8e0c8, 0.85))
             }
+        case .growBed:
+            let lit = p.flags.contains("lit"), grown = p.flags.contains("grown")
+            // the hanging grow lamp
+            ActorArt.line(ctx, [CGPoint(x: 0, y: -4.4), CGPoint(x: 0, y: -2.6)], c(0x3a3a40), 0.04)
+            ctx.setFillColor(c(0x4a4a52)); ctx.fill(CGRect(x: -0.55, y: -2.65, width: 1.1, height: 0.14))
+            ctx.setFillColor(c(lit ? 0xffd9a0 : 0x2a2a30)); ctx.fill(CGRect(x: -0.48, y: -2.52, width: 0.96, height: 0.06))
+            if lit { ctx.setFillColor(c(0xffd9a0, 0.08)); ctx.addLines(between: [CGPoint(x: -0.45, y: -2.45), CGPoint(x: 0.45, y: -2.45), CGPoint(x: 0.85, y: -0.5), CGPoint(x: -0.85, y: -0.5)]); ctx.closePath(); ctx.fillPath() }
+            // the bed
+            rect(-0.85, -0.5, 1.7, 0.5, 0x6a4a32); rect(-0.8, -0.55, 1.6, 0.1, 0x3a2a1e)
+            if grown {
+                for k in 0..<5 {
+                    let x = -0.65 + CGFloat(k) * 0.32
+                    ActorArt.line(ctx, [CGPoint(x: x, y: -0.55), CGPoint(x: x + 0.04, y: -1.35)], c(0x5e9a4a), 0.06)
+                    ActorArt.dot(ctx, x - 0.1, -1.1, 0.12, c(0x6fb85a)); ActorArt.dot(ctx, x + 0.12, -1.3, 0.13, c(0x7cc664))
+                }
+            } else if lit {
+                for k in 0..<5 { let x = -0.65 + CGFloat(k) * 0.32; ActorArt.line(ctx, [CGPoint(x: x, y: -0.55), CGPoint(x: x, y: -0.8)], c(0x6fb85a), 0.05); ActorArt.dot(ctx, x + 0.05, -0.8, 0.06, c(0x7cc664)) }
+            } else {
+                for k in 0..<3 { let x = -0.5 + CGFloat(k) * 0.5; ActorArt.line(ctx, [CGPoint(x: x, y: -0.55), CGPoint(x: x + 0.18, y: -0.7)], c(0x8a9a5a, 0.7), 0.04) }
+            }
+        case .answerLamp:
+            rect(-0.06, -3.0, 0.12, 3.0, 0x3b3640)
+            ctx.setFillColor(c(0x2c2724)); ctx.fill(CGRect(x: -0.3, y: -3.5, width: 0.6, height: 0.55))
+            ctx.setFillColor(c(p.flags.contains("lit") ? 0xffe2a8 : 0x4a4038)); ctx.fill(CGRect(x: -0.22, y: -3.42, width: 0.44, height: 0.38))
+        case .odiShelf:
+            rect(-0.7, -1.8, 0.07, 1.8, 0x5a4636); rect(0.63, -1.8, 0.07, 1.8, 0x5a4636)
+            for k in 0..<3 { rect(-0.7, -0.1 - CGFloat(k) * 0.8, 1.4, 0.07, 0x6a5444) }
+            if p.stock.contains(where: { $0.id == .growTray }) { rect(-0.55, -1.05, 1.1, 0.12, 0x2e2a26); rect(-0.55, -1.2, 1.1, 0.12, 0x3a342e) }
+            if p.stock.contains(where: { $0.id == .seedPackets }) { for k in 0..<4 { rect(-0.5 + CGFloat(k) * 0.26, -0.45, 0.18, 0.28, [0xd8b060, 0x8ab868, 0xd87a5a, 0xa8c8e0][k]) } }
+        case .serviceLift:
+            rect(-0.9, -3.2, 0.1, 3.2, 0x3b3640); rect(0.8, -3.2, 0.1, 3.2, 0x3b3640); rect(-0.9, -3.3, 1.8, 0.14, 0x4a4450)
+            for i in 0..<6 { rect(-0.8, -3.0 + CGFloat(i) * 0.5, 1.6, 0.04, 0x6a5e50) }
+            ActorArt.dot(ctx, 0.62, -1.4, 0.07, c(p.flags.contains("locked") ? 0xff6a4a : 0x9cff9c))
+        case .dropCrate:
+            rect(-0.6, -0.7, 1.2, 0.7, 0x5a4a3a); rect(-0.6, -0.72, 1.2, 0.08, 0x3a2e24)
+            let n = p.stock.first { $0.id == .fullCan }?.count ?? 0
+            for k in 0..<min(n, 4) { ctx.setFillColor(c(0x3e6f8e)); ActorArt.rr(ctx, -0.5 + CGFloat(k) * 0.28, -1.25, 0.24, 0.55, 0.04); ctx.fillPath() }
+        case .thing:
+            Art.drawThing(ctx, p)
         case .storeShelf:
             rect(-1.0, -2.0, 0.08, 2.0, 0x4a4f57); rect(0.92, -2.0, 0.08, 2.0, 0x4a4f57)
             for k in 0..<3 { rect(-1.0, -0.1 - CGFloat(k) * 0.9, 2.0, 0.08, 0x5c6670) }
@@ -360,6 +405,12 @@ enum Art {
         case .floorGrate: return (-0.5, -0.1, 1.0, 0.2)
         case .landmark: return (-0.8, -3.0, 1.6, 3.1)
         case .storeShelf: return (-1.1, -2.1, 2.2, 2.2)
+        case .growBed: return (-1.0, -4.5, 2.0, 4.6)
+        case .answerLamp: return (-0.4, -3.6, 0.8, 3.7)
+        case .odiShelf: return (-0.8, -1.9, 1.6, 2.0)
+        case .serviceLift: return (-1.0, -3.4, 2.0, 3.5)
+        case .dropCrate: return (-0.7, -1.4, 1.4, 1.5)
+        case .thing: return (-2.2, -4.2, 4.4, 4.3)
         case .bed: return (-1.2, -0.9, 2.5, 1.0)
         case .maraLift: return (-1.5, -5.2, 3.0, 5.3)
         case .maraPump: return (-0.7, -2.4, 2.8, 2.5)

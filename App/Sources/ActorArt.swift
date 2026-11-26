@@ -233,6 +233,62 @@ enum ActorArt {
         ctx.restoreGState()
     }
 
+    /// Everyone else, drawn from one figure with their own colors and one telling detail.
+    struct Look { var coat: UInt32; var trim: UInt32; var skin: UInt32; var hair: UInt32; var legs: UInt32; var height: CGFloat; var hat: Int }
+    static let looks: [String: Look] = [
+        "wren":  Look(coat: 0x8a6a3a, trim: 0x5a4424, skin: 0xb07a58, hair: 0x2a1c14, legs: 0x3a3226, height: 1.0, hat: 1),   // traveler's cap
+        "ellis": Look(coat: 0x3e6aa8, trim: 0xe8e6df, skin: 0x8a5a40, hair: 0x1a1210, legs: 0x2a2e3a, height: 1.08, hat: 0), // old team shirt
+        "scav":  Look(coat: 0x4a4a3a, trim: 0x6a6a52, skin: 0xc49a7a, hair: 0x5a4a3a, legs: 0x2e2a24, height: 1.04, hat: 2),  // hood
+        "kid1":  Look(coat: 0xc0603a, trim: 0x8a3a24, skin: 0xd8a882, hair: 0x3a2418, legs: 0x3a3a46, height: 0.8, hat: 0),
+        "kid2":  Look(coat: 0x6aa070, trim: 0x3a6a44, skin: 0x9a6a4a, hair: 0x14100c, legs: 0x2e2a2a, height: 0.76, hat: 0),
+        "toll1": Look(coat: 0x2a2a2e, trim: 0xa03a2a, skin: 0xc8946c, hair: 0x2a2018, legs: 0x1e1e22, height: 1.1, hat: 2),
+        "toll2": Look(coat: 0x34302c, trim: 0xa03a2a, skin: 0x7a5038, hair: 0x14100c, legs: 0x1e1e22, height: 1.06, hat: 0),
+        "upper": Look(coat: 0xb8b0a0, trim: 0x7a8a9a, skin: 0xd4a888, hair: 0x8a6a3a, legs: 0x4a4a50, height: 1.0, hat: 1),
+        "keeper": Look(coat: 0x5a6a5a, trim: 0x3a4a3a, skin: 0xa07050, hair: 0xb8b4aa, legs: 0x2e2e2e, height: 0.98, hat: 0),
+    ]
+
+    static func drawPerson(_ ctx: CGContext, look id: String, face: Int, walking: Bool, time: Double, carrying: Bool, lamp: Bool) {
+        let L = looks[id] ?? Look(coat: 0x6a6a6a, trim: 0x4a4a4a, skin: 0xc49a7a, hair: 0x2a2018, legs: 0x2e2e2e, height: 1, hat: 0)
+        ctx.saveGState()
+        ctx.scaleBy(x: CGFloat(face) * L.height, y: L.height)
+        let ph = time * (walking ? 7 : 0)
+        let bob = walking ? CGFloat(-abs(sin(ph)) * 0.06) : CGFloat(sin(time * 2.0) * 0.01)
+        let hipY: CGFloat = -0.66, shY = -1.18 + bob, headY = -1.48 + bob
+        for i in [1, 0] {
+            let sw = walking ? CGFloat(sin(ph + Double(i) * .pi)) : 0
+            let fx = CGFloat(i == 1 ? -0.07 : 0.07) + sw * 0.22
+            line(ctx, [CGPoint(x: 0, y: hipY), CGPoint(x: fx, y: -0.05)], c(L.legs), 0.13)
+            ctx.setFillColor(c(0x1a1614)); rr(ctx, fx - 0.08, -0.11, 0.21, 0.11, 0.05); ctx.fillPath()
+        }
+        ctx.setFillColor(c(L.coat))
+        ctx.addLines(between: [CGPoint(x: -0.18, y: shY), CGPoint(x: 0.18, y: shY), CGPoint(x: 0.25, y: hipY + 0.3), CGPoint(x: -0.25, y: hipY + 0.3)])
+        ctx.closePath(); ctx.fillPath()
+        ctx.setFillColor(c(L.trim)); ctx.fill(CGRect(x: -0.2, y: shY + 0.02, width: 0.4, height: 0.07))
+        dot(ctx, 0.03, headY, 0.22, c(L.skin))
+        ctx.setFillColor(c(L.hair))
+        ctx.addArc(center: CGPoint(x: -0.01, y: headY - 0.03), radius: 0.235, startAngle: .pi * 0.85, endAngle: .pi * 2.05, clockwise: false); ctx.fillPath()
+        switch L.hat {
+        case 1: ctx.setFillColor(c(L.trim)); ctx.fill(CGRect(x: -0.24, y: headY - 0.26, width: 0.46, height: 0.12)); ctx.fill(CGRect(x: 0.1, y: headY - 0.17, width: 0.2, height: 0.05))
+        case 2: ctx.setFillColor(c(L.coat)); ctx.addArc(center: CGPoint(x: -0.02, y: headY - 0.02), radius: 0.27, startAngle: .pi * 0.75, endAngle: .pi * 2.15, clockwise: false); ctx.fillPath()
+        default: break
+        }
+        ctx.setFillColor(c(0x1a1214)); ctx.fillEllipse(in: CGRect(x: 0.11, y: headY - 0.04, width: 0.045, height: 0.065))
+        if carrying {
+            // a bundle held in both arms
+            line(ctx, [CGPoint(x: 0.0, y: shY + 0.1), CGPoint(x: 0.3, y: shY + 0.32)], c(L.coat), 0.1)
+            ctx.setFillColor(c(0x7a6a52)); rr(ctx, 0.14, shY + 0.18, 0.42, 0.36, 0.05); ctx.fillPath()
+        } else {
+            let sw = walking ? CGFloat(sin(ph)) * 0.15 : 0
+            line(ctx, [CGPoint(x: 0.02, y: shY + 0.1), CGPoint(x: 0.1 + sw, y: hipY + 0.05)], c(L.coat), 0.1)
+        }
+        if lamp {
+            line(ctx, [CGPoint(x: -0.05, y: shY + 0.1), CGPoint(x: -0.26, y: hipY + 0.05)], c(L.coat), 0.09)
+            ctx.setFillColor(c(0x2c2724)); ctx.fill(CGRect(x: -0.34, y: hipY + 0.05, width: 0.14, height: 0.2))
+            ctx.setFillColor(c(0xffc878, 0.9)); ctx.fill(CGRect(x: -0.32, y: hipY + 0.08, width: 0.1, height: 0.14))
+        }
+        ctx.restoreGState()
+    }
+
     /// Mara: the outpost's mechanic. Rust overalls, a teal headscarf, a wrench on her hip.
     static func drawMara(_ ctx: CGContext, face: Int, walking: Bool, working: Bool, time: Double, holdingCan: Bool = false) {
         ctx.saveGState()

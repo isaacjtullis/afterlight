@@ -278,5 +278,32 @@
         "text": "Wake the battery bank"
       }
     ]
+  },
+  {
+    "id": "answer",
+    "title": "Someone Answered",
+    "side": false,
+    "steps": [
+      {
+        "id": "seen",
+        "text": "A lamp blinked back from across the cavern"
+      },
+      {
+        "id": "traveler",
+        "text": "Someone else is using the way up"
+      },
+      {
+        "id": "reach",
+        "text": "Follow the light across the cavern floor"
+      },
+      {
+        "id": "meet",
+        "text": "Meet whoever lit it"
+      },
+      {
+        "id": "beds",
+        "text": "Odi’s dark beds: lend a lamp, run cable, or keep your gear"
+      }
+    ]
   }
 ]

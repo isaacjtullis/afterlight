@@ -13,6 +13,7 @@ final class GameScene: SKScene {
     private var sc: CGFloat { S * CGFloat(zoom) }
 
     private var chunks: [Int: SKSpriteNode] = [:]
+    private var castNodes: [String: SKSpriteNode] = [:]
     private var propNodes: [String: (node: SKSpriteNode, key: String)] = [:]
     private var climbNode = SKShapeNode()
     private var climbKey = ""
@@ -115,6 +116,8 @@ final class GameScene: SKScene {
         S = size.height > size.width ? max(30, min(64, size.width / 8)) : max(22, min(46, min(size.width / 11.5, size.height / 10.5)))
         for n in chunks.values { n.removeFromParent() }
         chunks.removeAll()
+        for n in castNodes.values { n.removeFromParent() }
+        castNodes.removeAll()
         for n in propNodes.values { n.node.removeFromParent() }
         propNodes.removeAll()
         game.world.markAllDirty()
@@ -288,6 +291,8 @@ final class GameScene: SKScene {
                 if g.quarters.filterFitted || g.story.flags.contains("filterIn") { p.flags.insert("newFilter") }
             }
             if p.kind == .floorGrate && g.story.flags.contains("gotSketch") { p.flags.insert("open") }
+            if (p.kind == .maraLift || p.kind == .transitLift) && g.liftRepaired && g.liftCar > 0.5 { p.flags.insert("carUp") }
+            if p.kind == .answerLamp { if g.odiLampBlink { p.flags.insert("lit") } else { p.flags.remove("lit") } }
             let crop = p.kind == .planter ? (p.planted == nil ? 0 : max(0.08, g.cropProgress(p))) : (p.kind == .waterDrum ? g.quarters.clean.rounded(.down) : 0)
             let key = "\(p.kind.rawValue)|\(p.stock.isEmpty)|\(p.flags.sorted().joined())|\(Int(crop * 10))|\(g.story.flags.contains("power"))|\(S)"
             alive.insert(p.id)
@@ -493,7 +498,7 @@ final class GameScene: SKScene {
 
         // Odi (a later chapter)
         let o = g.odi
-        if g.story.chapter >= 5 && o.pos.x > Double(vx0) && o.pos.x < Double(vx1) {
+        if g.story.chapter >= 5 && !g.story.flags.contains("odi.out") && o.pos.x > Double(vx0) && o.pos.x < Double(vx1) {
             odiNode.isHidden = false
             if let img = Art.image(widthTiles: 1.6, heightTiles: 2.0, ppt: ppt, originX: 0.8, originY: 1.9, { ctx in
                 ActorArt.drawOdi(ctx, face: o.face, walking: o.walking, time: g.time)
@@ -504,6 +509,22 @@ final class GameScene: SKScene {
         } else {
             odiNode.isHidden = true
         }
+
+        // Everyone else: travelers, the hotel crowd.
+        let cast = g.visibleCast.filter { $0.pos.x > Double(vx0) && $0.pos.x < Double(vx1) }
+        for a in cast {
+            let node: SKSpriteNode
+            if let n = castNodes[a.id] { node = n } else { node = SKSpriteNode(); node.zPosition = 24; addChild(node); castNodes[a.id] = node }
+            node.isHidden = false
+            if let img = Art.image(widthTiles: 2.0, heightTiles: 2.2, ppt: ppt, originX: 1.0, originY: 2.05, { ctx in
+                ActorArt.drawPerson(ctx, look: a.id, face: a.face, walking: a.walking, time: g.time + Double(a.id.count), carrying: !a.carrying.isEmpty, lamp: a.lamp)
+            }) { node.texture = SKTexture(cgImage: img) }
+            node.size = CGSize(width: 2.0 * S, height: 2.2 * S)
+            node.anchorPoint = CGPoint(x: 0.5, y: 1 - 2.05 / 2.2)
+            node.position = sp(a.pos.x, a.pos.y)
+        }
+        let shown = Set(cast.map(\.id))
+        for (id, n) in castNodes where !shown.contains(id) { n.isHidden = true }
 
         // loose finds waiting to be picked up
         while dropNodes.count < g.drops.count {
@@ -778,6 +799,7 @@ final class GameScene: SKScene {
             light(29.5, 6.6, 9, 1, rays: g.world.castLight(from: V2(29.5, 6.6), radius: 9, a0: 0, a1: 2 * .pi, rays: 48), flat: true)
         }
         if abs(g.max.pos.x - 80) < 30 && g.max.pos.y < 14 { light(80.5, 7, 10, 1, rays: g.world.castLight(from: V2(80.5, 7), radius: 10, a0: 0, a1: 2 * .pi, rays: 56), flat: true) }
+        for (lp, r) in g.campaignLights { light(lp.x, lp.y, r, 0.95, rays: g.world.castLight(from: lp, radius: r, a0: 0, a1: 2 * .pi, rays: 40), flat: true) }
         if g.odi.walking { light(g.odi.pos.x + Double(g.odi.face) * 0.3, g.odi.pos.y - 0.5, 3.6, 0.9, rays: nil) }
         if g.ambient > 0 { light(135, 30, 60, 0.92 * g.ambient, rays: nil) }
         if let b = g.world.buried.first(where: { $0.id == "crystal" && !$0.revealed }), abs(b.pos.x - lx) < 6 { light(b.pos.x, b.pos.y - 0.1, 1.1, 0.35, rays: nil) }
@@ -860,7 +882,7 @@ final class GameScene: SKScene {
 
     private func updateBubble() {
         let g = game
-        let show = g.thoughtT > 0 && !g.thoughtText.isEmpty
+        let show = g.thoughtT > 0 && !g.thoughtText.isEmpty && !g.holdMessages
         bubble.isHidden = !show
         guard show else { return }
         if bubbleText != g.thoughtText {

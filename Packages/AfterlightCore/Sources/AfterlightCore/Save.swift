@@ -104,7 +104,15 @@ extension Game {
             for r in 0..<w.h { for c in 100...108 { w.mat[r * w.w + c] = freshMat[r * w.w + c] } }
             for j in 0..<w.dh { for i in (100 * K)...(109 * K) where i < w.dw { w.dens[j * w.dw + i] = freshDens[j * w.dw + i] } }
         }
+        if !s.story.flags.contains("odiRoom1") {
+            // Odi's grow room and Mara's drop came with the campaign: lay them into this save's world.
+            let K = World.K, r = Landmarks.odiRoom
+            for row in r.top...r.floor { for c in r.x0...(r.x1 + 1) { w.mat[row * w.w + c] = freshMat[row * w.w + c] } }
+            for j in (r.top * K)..<((r.floor + 1) * K) { for i in (r.x0 * K)..<((r.x1 + 2) * K) where i < w.dw { w.dens[j * w.dw + i] = freshDens[j * w.dw + i] } }
+            for f in freshProps where WorldGen.odiRoomPropIDs.contains(f.id) && w.propIndex(f.id) == nil { w.props.append(f) }
+        }
         var story = s.story
+        story.flags.insert("odiRoom1")
         story.flags.insert("world3")
         story.flags.insert("storeB1")
         // The steel over the warm-pipe patch was low enough to catch Max's head: it's packed earth now.

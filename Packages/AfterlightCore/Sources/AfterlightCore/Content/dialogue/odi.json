@@ -1,0 +1,218 @@
+{
+  "id": "odi",
+  "speaker": "Odi",
+  "entries": [
+    {
+      "node": "first",
+      "when": [
+        "!knows:odi:met"
+      ]
+    },
+    {
+      "node": "beds",
+      "when": [
+        "!flag:odi.chose"
+      ]
+    },
+    {
+      "node": "hub"
+    }
+  ],
+  "nodes": {
+    "first": {
+      "lines": [
+        "You flashed the platform lamp. Nobody’s done that in years, so I flashed back.",
+        "I’m Odi. I grow for whoever comes through. Mara, Wren, the hotel lot when they remember me."
+      ],
+      "choices": [
+        {
+          "id": "hotel",
+          "label": "The hotel?",
+          "next": "hotel1",
+          "effects": [
+            "do:odi.meet"
+          ]
+        },
+        {
+          "id": "beds",
+          "label": "What’s wrong with the beds?",
+          "next": "beds",
+          "effects": [
+            "do:odi.meet"
+          ]
+        },
+        {
+          "id": "bye",
+          "label": "I just wanted to see who answered.",
+          "effects": [
+            "do:odi.meet",
+            "say:odi:Well. Now you have. Come back when you want greens."
+          ]
+        }
+      ]
+    },
+    "hotel1": {
+      "lines": [
+        "Up the service lift on my back wall. People paid to sleep there once. Our parents, some of them.",
+        "It’s busy now. Ellis kicks a ball around the loading floor. There’s a scavenger who’d sell you your own boots."
+      ],
+      "choices": [
+        {
+          "id": "beds",
+          "label": "And your beds?",
+          "next": "beds"
+        },
+        {
+          "id": "bye",
+          "label": "Maybe I’ll go up.",
+          "effects": [
+            "end"
+          ]
+        }
+      ]
+    },
+    "beds": {
+      "lines": [
+        "Four beds. One lamp that works. Seedlings stretch for light and fall over.",
+        "I saw a lamp swinging off your pack. Or there’s the signal battery on the platform, if you ran a cable down. Or keep your gear: you’ve got a climb ahead of you, I can tell."
+      ],
+      "choices": [
+        {
+          "id": "lend",
+          "label": "Lend her a lamp",
+          "detail": "One more bed lit. You go without until you ask for it back.",
+          "when": [
+            "can:odi.lend"
+          ],
+          "locked": "You don’t have a lamp to lend.",
+          "effects": [
+            "do:odi.lend",
+            "say:odi:I’ll look after it. Ask when you need it."
+          ]
+        },
+        {
+          "id": "cable",
+          "label": "Run permanent cable",
+          "detail": "Every bed lit for good. {cableHave}.",
+          "when": [
+            "can:odi.cable"
+          ],
+          "locked": "Needs 4 wire and 2 fasteners. {cableHave}.",
+          "effects": [
+            "do:odi.cable",
+            "say:odi:All four. I don’t know what to say."
+          ],
+          "primary": true
+        },
+        {
+          "id": "keep",
+          "label": "Keep the gear",
+          "detail": "Her beds stay as they are. Nobody’s owed anything.",
+          "effects": [
+            "do:odi.keep",
+            "say:odi:Fair. It’s a long way up."
+          ]
+        },
+        {
+          "id": "later",
+          "label": "Let me think about it.",
+          "effects": [
+            "end"
+          ]
+        }
+      ]
+    },
+    "hub": {
+      "lines": [
+        "{odiStatus}"
+      ],
+      "choices": [
+        {
+          "id": "back",
+          "label": "Could I have my lamp back?",
+          "when": [
+            "flag:odi.lent",
+            "!flag:odi.lampBack"
+          ],
+          "effects": [
+            "do:odi.return",
+            "say:odi:Here. The far bed will manage."
+          ]
+        },
+        {
+          "id": "wren",
+          "label": "Who’s Wren?",
+          "when": [
+            "flag:wren.seen"
+          ],
+          "next": "wren"
+        },
+        {
+          "id": "hotel",
+          "label": "How do I get to the hotel?",
+          "next": "hotel2"
+        },
+        {
+          "id": "grass",
+          "label": "What are you growing?",
+          "next": "grass"
+        },
+        {
+          "id": "bye",
+          "label": "See you.",
+          "effects": [
+            "end"
+          ]
+        }
+      ]
+    },
+    "wren": {
+      "lines": [
+        "Wren walks the line between everyone. Trays to me, cans from Mara, gossip both ways.",
+        "If somebody’s moving through, Wren knows them."
+      ],
+      "choices": [
+        {
+          "id": "ok",
+          "label": "Okay.",
+          "next": "hub"
+        }
+      ]
+    },
+    "hotel2": {
+      "lines": [
+        "The service lift on my back wall. Pull the gate, it goes up to the lobby. Bring something back if you find trays."
+      ],
+      "choices": [
+        {
+          "id": "ok",
+          "label": "Thanks.",
+          "next": "hub"
+        }
+      ]
+    },
+    "grass": {
+      "lines": [
+        "Beans, chard. Whatever the seed packets say. My mother grew grass, before. On purpose. Then cut it every week.",
+        "I still want to know what she did with the cuttings."
+      ],
+      "choices": [
+        {
+          "id": "no",
+          "label": "I have no idea.",
+          "effects": [
+            "say:odi:Nobody does. I never asked her."
+          ],
+          "next": "hub"
+        },
+        {
+          "id": "bye",
+          "label": "See you.",
+          "effects": [
+            "end"
+          ]
+        }
+      ]
+    }
+  }
+}
