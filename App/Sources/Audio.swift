@@ -134,6 +134,12 @@ final class AudioEngine {
         return b
     }
 
+    /// One decaying sine partial.
+    private func partial(_ f: Double, _ t: Double, _ decay: Double) -> Double {
+        let w: Double = 2.0 * Double.pi * f * t
+        return sin(w) * exp(-t / decay)
+    }
+
     private func env(_ t: Double, attack a: Double, decay d: Double) -> Double {
         t < a ? t / a : exp(-(t - a) / d)
     }
@@ -161,7 +167,7 @@ final class AudioEngine {
                 let thump: Double = sin(2.0 * Double.pi * freq * t) * env(t, attack: 0.003, decay: 0.05)
                 let crunch: Double = g.band(0.35 * pitch, 0.02) * env(t, attack: 0.004, decay: 0.07)
                 var fall = 0.0
-                for p in patter where t > p && t < p + 0.03 { fall += g2.band(0.5, 0.05) * exp(-(t - p) / 0.008) * 0.5 }
+                for p in patter where t > p && t < p + 0.03 { let u: Double = t - p; fall += g2.band(0.5, 0.05) * exp(-u / 0.008) * 0.5 }
                 return Float(thump * 0.8 + crunch * 1.3 + fall)
             }
         case .pick:
@@ -169,9 +175,10 @@ final class AudioEngine {
             var g = Grit()
             return buffer(seconds: 0.5) { (_: Int, t: Double, _: inout Double) -> Float in
                 var ring = 0.0
-                for (i, f) in [2350.0, 3720, 5100].enumerated() { ring += sin(2 * .pi * f * pitch * t) * exp(-t / (0.05 - Double(i) * 0.012)) }
+                let pf: [Double] = [2350, 3720, 5100]
+                for i in 0..<3 { ring += partial(pf[i] * pitch, t, 0.05 - Double(i) * 0.012) }
                 let crack = g.band(0.6, 0.08) * env(t, attack: 0.001, decay: 0.03)
-                let dull = sin(2 * .pi * 190 * pitch * t) * env(t, attack: 0.002, decay: 0.04)
+                let dull: Double = sin(2.0 * Double.pi * 190.0 * pitch * t) * env(t, attack: 0.002, decay: 0.04)
                 let grit: Double = t > 0.06 && Double.random(in: 0...1) < 0.006 ? Double.random(in: -0.4...0.4) * exp(-t / 0.2) : 0
                 return Float(ring * 0.35 + crack * 1.2 + dull * 0.5 + grit)
             }
@@ -180,7 +187,8 @@ final class AudioEngine {
             var g = Grit()
             return buffer(seconds: 0.45) { (_: Int, t: Double, _: inout Double) -> Float in
                 var knock = 0.0
-                for (i, f) in [165.0, 392, 731, 1180].enumerated() { knock += sin(2 * .pi * f * pitch * t + Double(i)) * exp(-t / (0.11 - Double(i) * 0.02)) / Double(i + 1) }
+                let kf: [Double] = [165, 392, 731, 1180]
+                for i in 0..<4 { knock += partial(kf[i] * pitch, t, 0.11 - Double(i) * 0.02) / Double(i + 1) }
                 let click = g.band(0.7, 0.1) * env(t, attack: 0.0005, decay: 0.008)
                 let wob: Double = 520.0 + 90.0 * sin(t * 60.0)
                 let creak: Double = t > 0.05 ? sin(2.0 * Double.pi * wob * t) * env(t - 0.05, attack: 0.02, decay: 0.06) * 0.12 : 0
@@ -208,52 +216,55 @@ final class AudioEngine {
             var g = Grit()
             let grains = (0..<5).map { _ in Double.random(in: 0.008...0.07) }
             return buffer(seconds: 0.14) { (_: Int, t: Double, _: inout Double) -> Float in
-                let thud = sin(2 * .pi * 85 * pitch * t) * env(t, attack: 0.002, decay: 0.022)
+                let thud: Double = sin(2.0 * Double.pi * 85.0 * pitch * t) * env(t, attack: 0.002, decay: 0.022)
                 var crunch = g.band(0.42 * pitch, 0.03) * env(t, attack: 0.004, decay: 0.035)
-                for gr in grains where t > gr && t < gr + 0.006 { crunch += Double.random(in: -0.8...0.8) * exp(-(t - gr) / 0.0015) }
+                for gr in grains where t > gr && t < gr + 0.006 { let u: Double = t - gr; crunch += Double.random(in: -0.8...0.8) * exp(-u / 0.0015) }
                 return Float(thud * 0.9 + crunch * 0.8)
             }
         case .stepMetal:
             // A boot on steel plate: a muffled thump and a faint ring.
             var g = Grit()
             return buffer(seconds: 0.28) { (_: Int, t: Double, _: inout Double) -> Float in
-                let thud = sin(2 * .pi * 110 * pitch * t) * env(t, attack: 0.002, decay: 0.03)
+                let thud: Double = sin(2.0 * Double.pi * 110.0 * pitch * t) * env(t, attack: 0.002, decay: 0.03)
                 var ring = 0.0
-                for (i, f) in [910.0, 1430, 2210].enumerated() { ring += sin(2 * .pi * f * pitch * t) * exp(-t / (0.09 - Double(i) * 0.02)) }
+                let mf: [Double] = [910, 1430, 2210]
+                for i in 0..<3 { ring += partial(mf[i] * pitch, t, 0.09 - Double(i) * 0.02) }
                 let scuff = g.band(0.5, 0.05) * env(t, attack: 0.002, decay: 0.012)
                 return Float(thud + ring * 0.16 + scuff * 0.4)
             }
         case .stepWood:
             return buffer(seconds: 0.2) { (_: Int, t: Double, _: inout Double) -> Float in
                 var k = 0.0
-                for (i, f) in [140.0, 330, 610].enumerated() { k += sin(2 * .pi * f * pitch * t) * exp(-t / (0.05 - Double(i) * 0.012)) / Double(i + 1) }
+                let wf: [Double] = [140, 330, 610]
+                for i in 0..<3 { k += partial(wf[i] * pitch, t, 0.05 - Double(i) * 0.012) / Double(i + 1) }
                 return Float(k)
             }
         case .climb:
             // Hands and boots finding the next hold: a cloth rustle and a small grip tick.
             var g = Grit()
             return buffer(seconds: 0.26) { (_: Int, t: Double, _: inout Double) -> Float in
-                let rustle = g.band(0.25, 0.04) * sin(.pi * min(1, t / 0.2)) * (t < 0.2 ? 1 : 0)
-                let tick = t > 0.16 ? sin(2 * .pi * 240 * pitch * t) * env(t - 0.16, attack: 0.001, decay: 0.018) : 0
+                let rustle: Double = t < 0.2 ? g.band(0.25, 0.04) * sin(Double.pi * min(1.0, t / 0.2)) : 0
+                let tick: Double = t > 0.16 ? sin(2.0 * Double.pi * 240.0 * pitch * t) * env(t - 0.16, attack: 0.001, decay: 0.018) : 0
                 return Float(rustle * 0.7 + tick * 0.8)
             }
         case .plank:
             // A board dropped into place: a wooden thunk and a rattle as it settles.
             return buffer(seconds: 0.6) { (_: Int, t: Double, _: inout Double) -> Float in
                 var k = 0.0
-                for (i, f) in [118.0, 286, 520].enumerated() { k += sin(2 * .pi * f * pitch * t) * exp(-t / (0.14 - Double(i) * 0.03)) / Double(i + 1) }
+                let bf: [Double] = [118, 286, 520]
+                for i in 0..<3 { k += partial(bf[i] * pitch, t, 0.14 - Double(i) * 0.03) / Double(i + 1) }
                 var rattle = 0.0
-                for h in [0.11, 0.17, 0.21] where t > h { rattle += sin(2 * .pi * 300 * (t - h)) * exp(-(t - h) / 0.012) * 0.35 }
+                for h in [0.11, 0.17, 0.21] where t > h { rattle += partial(300, t - h, 0.012) * 0.35 }
                 return Float(k + rattle)
             }
         case .bag:
             // Something going into the bag: a short zip of teeth and a soft cloth flop.
             var g = Grit()
             return buffer(seconds: 0.34) { (_: Int, t: Double, _: inout Double) -> Float in
-                let rate = 55.0 + 140 * t
-                let phase = (t * rate).truncatingRemainder(dividingBy: 1)
-                let teeth = t < 0.22 ? (phase < 0.08 ? g.band(0.8, 0.2) : 0) : 0
-                let flop = t > 0.22 ? sin(2 * .pi * 95 * t) * env(t - 0.22, attack: 0.003, decay: 0.03) : 0
+                let rate: Double = 55.0 + 140.0 * t
+                let phase: Double = (t * rate).truncatingRemainder(dividingBy: 1)
+                let teeth: Double = (t < 0.22 && phase < 0.08) ? g.band(0.8, 0.2) : 0
+                let flop: Double = t > 0.22 ? sin(2.0 * Double.pi * 95.0 * t) * env(t - 0.22, attack: 0.003, decay: 0.03) : 0
                 return Float(teeth * 1.2 + flop * 0.6)
             }
         case .land:
