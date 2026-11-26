@@ -225,9 +225,30 @@ extension Game {
 enum ContentFiles {
     static var root: URL? { Bundle.module.url(forResource: "Content", withExtension: nil) }
 
+    static func file(_ path: String) -> Data? {
+        guard let u = root?.appendingPathComponent(path) else { return nil }
+        return try? Data(contentsOf: u)
+    }
+
     static func all(in folder: String) -> [Data] {
         guard let dir = root?.appendingPathComponent(folder),
               let names = try? FileManager.default.contentsOfDirectory(atPath: dir.path) else { return [] }
         return names.filter { $0.hasSuffix(".json") }.sorted().compactMap { try? Data(contentsOf: dir.appendingPathComponent($0)) }
     }
+}
+
+/// Every quest, from Content/story/quests.json, by id.
+public enum Quests {
+    struct Row: Decodable {
+        struct Step: Decodable { var id: String; var text: String }
+        var id: String, title: String, side: Bool, steps: [Step]
+    }
+    public static let all: [String: Quest] = {
+        guard let d = ContentFiles.file("story/quests.json"), let rows = try? JSONDecoder().decode([Row].self, from: d) else { return [:] }
+        var out: [String: Quest] = [:]
+        for r in rows { out[r.id] = Quest(id: r.id, title: r.title, side: r.side, steps: r.steps.map { QuestStep(id: $0.id, text: $0.text) }) }
+        return out
+    }()
+    /// A quest by id. Missing ids come back as an empty side quest (a validation test makes sure none are).
+    public static func get(_ id: String) -> Quest { all[id] ?? Quest(id: id, title: id, side: true, steps: []) }
 }

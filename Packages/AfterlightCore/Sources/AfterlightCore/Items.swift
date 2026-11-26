@@ -244,49 +244,38 @@ extension ItemID {
 }
 
 public enum Recipes {
-    public static let all: [Recipe] = [
-        Recipe(id: "flashlight", name: "Repair flashlight", inputs: [ItemStack(.chargeCrystal)], output: .tool(.flashlight),
-               note: "Bridge the cracked cell with the crystal.", unlockFlag: "sawFlashlight"),
-        Recipe(id: "pick", name: "Short pick", inputs: [ItemStack(.liftTooth), ItemStack(.spareGrip)], output: .tool(.shortPick),
-               note: "Opens soft seams overhead and cuts footholds.", unlockFlag: "needPick"),
-        Recipe(id: "ladder", name: "Ladder section", inputs: [ItemStack(.pipe, 2), ItemStack(.fasteners, 4)], output: .item(.ladderSection, 1),
-               note: "Bridges a tall opening, like the bottom of the shaft.", unlockFlag: "needLadder"),
-        Recipe(id: "lamp", name: "Lantern", inputs: [ItemStack(.lampCell), ItemStack(.wire), ItemStack(.fasteners)], output: .item(.lamp, 1),
-               note: "Stays where you place it. Lights the way home.", unlockFlag: "lampIdea"),
-        Recipe(id: "tank", name: "Water tank", inputs: [ItemStack(.pipe), ItemStack(.fasteners, 2)], output: .item(.waterTank, 1),
-               note: "Stores what the pump sends home.", unlockFlag: "sawPump"),
-        Recipe(id: "meal", name: "Trail meal", inputs: [ItemStack(.greens, 2)], output: .item(.trailMeal, 1),
-               note: "Eat it on a dig to get your strength back.", unlockFlag: "harvested"),
-        Recipe(id: "rope", name: "Rope", inputs: [ItemStack(.wire, 2)], output: .item(.rope, 1),
-               note: "Braid wire into a climbing line.", unlockFlag: "sawChimney"),
-        Recipe(id: "camp", name: "Camp crate", inputs: [ItemStack(.fasteners, 1), ItemStack(.tape, 1)], output: .item(.campCrate, 1),
-               note: "Pitch it far from home to keep things there.", unlockFlag: "sawPlatform", wood: 20, bench: false),
-        Recipe(id: "cell", name: "Ore cell", inputs: [ItemStack(.copperOre, 3), ItemStack(.quartz, 1)], output: .item(.batteryCell, 1),
-               note: "Copper plates and a quartz spacer: a crude battery cell. Powers the generator.", unlockFlag: "genLooked"),
-        Recipe(id: "fieldBench", name: "Field workbench", inputs: [ItemStack(.fasteners, 1), ItemStack(.tape, 1)], output: .item(.workbenchKit, 1),
-               note: "Thirty wood. Set it up anywhere and build there.", unlockFlag: "wood", wood: 30, bench: false),
-        Recipe(id: "cot", name: "Cot", inputs: [ItemStack(.tape, 1)], output: .item(.cotKit, 1),
-               note: "Rest wherever you set it.", unlockFlag: "wood", wood: 25),
-        Recipe(id: "woodLadder", name: "Wooden ladder", inputs: [], output: .item(.woodLadder, 1),
-               note: "Lean it on any ledge up to six tiles high. It stays: a way up and back.", unlockFlag: "wood", wood: 15),
-        Recipe(id: "torch", name: "Root torch", inputs: [], output: .item(.torch, 1),
-               note: "A warm light that keeps burning. No cell needed.", unlockFlag: "wood", wood: 6, bench: false),
-        Recipe(id: "breaker", name: "Rock breaker", inputs: [ItemStack(.ironOre, 4), ItemStack(.fasteners, 2)], output: .tool(.breaker),
-               note: "An iron wedge-hammer. Cracks bedrock into rubble the shovel can clear.", unlockFlag: "hitRock", wood: 10),
-        Recipe(id: "lantern2", name: "Reflector lantern", inputs: [ItemStack(.copperOre, 2), ItemStack(.tape, 1)], output: .upgrade("lantern2"),
-               note: "Level 2. Polished copper behind the flame: every lantern reaches further.", unlockFlag: "lampIdea", wood: 5),
-        Recipe(id: "lantern3", name: "Quartz lantern", inputs: [ItemStack(.quartz, 2), ItemStack(.copperOre, 2)], output: .upgrade("lantern3"),
-               note: "Level 3. A quartz lens spreads the light wide.", unlockFlag: "lampIdea", wood: 10),
-        Recipe(id: "lantern4", name: "Arc lantern", inputs: [ItemStack(.batteryCell, 1), ItemStack(.quartz, 2), ItemStack(.wire, 2)], output: .upgrade("lantern4"),
-               note: "Level 4. A crackling arc instead of a wick.", unlockFlag: "lampIdea"),
-        Recipe(id: "lantern5", name: "Iron beam lantern", inputs: [ItemStack(.ironOre, 4), ItemStack(.quartz, 3), ItemStack(.batteryCell, 1)], output: .upgrade("lantern5"),
-               note: "Level 5. Iron housing, a big lens. Floods a whole cavern with light.", unlockFlag: "lampIdea", wood: 20),
-        Recipe(id: "plot", name: "Garden plot", inputs: [], output: .upgrade("plot"),
-               note: "A raised bed for the quarters. More plots, more food.", unlockFlag: "wood", wood: 12),
-        Recipe(id: "barrel", name: "Bigger barrel", inputs: [ItemStack(.pipe, 1), ItemStack(.tape, 1)], output: .upgrade("barrel"),
-               note: "Doubles what the water barrel holds.", unlockFlag: "wood", wood: 20),
-        Recipe(id: "table", name: "Table and chair", inputs: [ItemStack(.fasteners, 2)], output: .upgrade("table"),
-               note: "Somewhere to sit and eat. Meals at home go further.", unlockFlag: "wood", wood: 30),
+    /// Every recipe, from Content/items/recipes.json.
+    public static let all: [Recipe] = load().recipes
+    /// Anything in the file the game couldn't understand (a validation test keeps this empty).
+    public static let loadErrors: [String] = load().errors
 
-    ]
+    struct Row: Decodable {
+        struct Stack: Decodable { var item: String; var count: Int? }
+        struct Out: Decodable { var item: String?; var count: Int?; var tool: String?; var upgrade: String? }
+        var id: String, name: String, inputs: [Stack], output: Out, note: String, unlock: String
+        var wood: Int?, bench: Bool?
+    }
+
+    static func load() -> (recipes: [Recipe], errors: [String]) {
+        guard let d = ContentFiles.file("items/recipes.json") else { return ([], ["recipes.json is missing"]) }
+        let rows: [Row]
+        do { rows = try JSONDecoder().decode([Row].self, from: d) } catch { return ([], ["recipes.json: \(error)"]) }
+        var out: [Recipe] = [], errs: [String] = []
+        for r in rows {
+            var inputs: [ItemStack] = []
+            for s in r.inputs {
+                guard let id = ItemID(rawValue: s.item) else { errs.append("\(r.id): unknown item \(s.item)"); continue }
+                inputs.append(ItemStack(id, s.count ?? 1))
+            }
+            let output: Recipe.Output
+            if let i = r.output.item, let id = ItemID(rawValue: i) { output = .item(id, r.output.count ?? 1) }
+            else if let t = r.output.tool, let tool = Tool(rawValue: t) { output = .tool(tool) }
+            else if let u = r.output.upgrade { output = .upgrade(u) }
+            else { errs.append("\(r.id): bad output"); continue }
+            out.append(Recipe(id: r.id, name: r.name, inputs: inputs, output: output, note: r.note, unlockFlag: r.unlock,
+                              wood: r.wood ?? 0, bench: r.bench ?? true))
+        }
+        if Set(out.map(\.id)).count != out.count { errs.append("duplicate recipe ids") }
+        return (out, errs)
+    }
 }

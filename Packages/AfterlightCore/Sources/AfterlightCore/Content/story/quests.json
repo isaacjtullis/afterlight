@@ -1,0 +1,246 @@
+[
+  {
+    "key": "farEdge",
+    "id": "far",
+    "title": "The Far Edge",
+    "side": false,
+    "steps": [
+      {
+        "id": "east",
+        "text": "Find a way east off the platform"
+      },
+      {
+        "id": "camp",
+        "text": "Make a camp crate and pitch a camp"
+      },
+      {
+        "id": "cavern",
+        "text": "Reach the great cavern"
+      },
+      {
+        "id": "cell",
+        "text": "Bring a battery cell back to the platform’s signal lamp"
+      }
+    ]
+  },
+  {
+    "key": "homeLight",
+    "id": "homeLight",
+    "title": "Power for Home",
+    "side": false,
+    "steps": [
+      {
+        "id": "look",
+        "text": "Find out why the shelter is dark"
+      },
+      {
+        "id": "free",
+        "text": "Free the seized generator"
+      },
+      {
+        "id": "parts",
+        "text": "Find a battery cell, or build one from ore"
+      },
+      {
+        "id": "fix",
+        "text": "Power the shelter"
+      },
+      {
+        "id": "pack",
+        "text": "Pack food for the road"
+      }
+    ]
+  },
+  {
+    "key": "lantern",
+    "id": "lantern",
+    "title": "Someone Else Down Here",
+    "side": true,
+    "steps": [
+      {
+        "id": "find",
+        "text": "Find whose lantern this is"
+      }
+    ]
+  },
+  {
+    "key": "dryTaps",
+    "id": "outpost",
+    "title": "Dry Taps",
+    "side": false,
+    "steps": [
+      {
+        "id": "pipe",
+        "text": "Follow the warm pipe east"
+      },
+      {
+        "id": "knock",
+        "text": "Find what’s knocking"
+      },
+      {
+        "id": "meet",
+        "text": "Meet whoever keeps the outpost"
+      },
+      {
+        "id": "up",
+        "text": "Find a way up to the next level"
+      }
+    ]
+  },
+  {
+    "key": "outpostWater",
+    "id": "water",
+    "title": "Water for the Outpost",
+    "side": true,
+    "steps": [
+      {
+        "id": "valve",
+        "text": "Bring up the pressure valve from the sump"
+      },
+      {
+        "id": "intake",
+        "text": "Clear the pump’s intake"
+      },
+      {
+        "id": "run",
+        "text": "Get Mara’s water running"
+      }
+    ]
+  },
+  {
+    "key": "blackout",
+    "id": "blackout",
+    "title": "The Blackout",
+    "side": false,
+    "steps": [
+      {
+        "id": "dig",
+        "text": "Cut into the dirt wall"
+      },
+      {
+        "id": "crystal",
+        "text": "Dig out what’s glinting"
+      },
+      {
+        "id": "repair",
+        "text": "Repair the flashlight at the workbench"
+      },
+      {
+        "id": "light",
+        "text": "Switch it on"
+      }
+    ]
+  },
+  {
+    "key": "firstAscent",
+    "id": "ascent",
+    "title": "First Ascent",
+    "side": false,
+    "steps": [
+      {
+        "id": "tooth",
+        "text": "Find something hard enough for a pick"
+      },
+      {
+        "id": "pick",
+        "text": "Make a short pick"
+      },
+      {
+        "id": "ladder",
+        "text": "Build a ladder section"
+      },
+      {
+        "id": "place",
+        "text": "Place the ladder in the shaft"
+      },
+      {
+        "id": "seam",
+        "text": "Climb and open the seam overhead"
+      },
+      {
+        "id": "maint",
+        "text": "See what’s above"
+      }
+    ]
+  },
+  {
+    "key": "placeToReturn",
+    "id": "home",
+    "title": "A Place to Come Back To",
+    "side": false,
+    "steps": [
+      {
+        "id": "pipe",
+        "text": "Follow the warm pipe east"
+      },
+      {
+        "id": "meet",
+        "text": "Find who’s knocking"
+      },
+      {
+        "id": "pump",
+        "text": "Get the old pump running"
+      },
+      {
+        "id": "water",
+        "text": "Decide where the water goes"
+      },
+      {
+        "id": "light",
+        "text": "Light the passage between home and the outpost"
+      }
+    ]
+  },
+  {
+    "key": "seedTin",
+    "id": "seeds",
+    "title": "The Last Seed Tin",
+    "side": true,
+    "steps": [
+      {
+        "id": "decide",
+        "text": "Plant them, give them to a grower, or split them"
+      },
+      {
+        "id": "harvest",
+        "text": "Grow something"
+      }
+    ]
+  },
+  {
+    "key": "lights",
+    "id": "lights",
+    "title": "A Light Every Twenty Feet",
+    "side": true,
+    "steps": [
+      {
+        "id": "make",
+        "text": "Make lamps at the workbench"
+      },
+      {
+        "id": "place",
+        "text": "Place lamps along the warm-pipe passage"
+      },
+      {
+        "id": "used",
+        "text": "See if anyone uses it"
+      }
+    ]
+  },
+  {
+    "key": "power",
+    "id": "power",
+    "title": "A Little Power",
+    "side": true,
+    "steps": [
+      {
+        "id": "cell",
+        "text": "Find a battery cell"
+      },
+      {
+        "id": "bank",
+        "text": "Wake the battery bank"
+      }
+    ]
+  }
+]

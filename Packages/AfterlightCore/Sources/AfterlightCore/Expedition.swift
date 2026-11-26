@@ -1,22 +1,9 @@
 import Foundation
 
 extension Quest {
-    public static let farEdge = Quest(id: "far", title: "The Far Edge", side: false, steps: [
-        QuestStep(id: "east", text: "Find a way east off the platform"),
-        QuestStep(id: "camp", text: "Make a camp crate and pitch a camp"),
-        QuestStep(id: "cavern", text: "Reach the great cavern"),
-        QuestStep(id: "cell", text: "Bring a battery cell back to the platform’s signal lamp"),
-    ])
-    public static let homeLight = Quest(id: "homeLight", title: "Power for Home", side: false, steps: [
-        QuestStep(id: "look", text: "Find out why the shelter is dark"),
-        QuestStep(id: "free", text: "Free the seized generator"),
-        QuestStep(id: "parts", text: "Find a battery cell, or build one from ore"),
-        QuestStep(id: "fix", text: "Power the shelter"),
-        QuestStep(id: "pack", text: "Pack food for the road"),
-    ])
-    public static let lantern = Quest(id: "lantern", title: "Someone Else Down Here", side: true, steps: [
-        QuestStep(id: "find", text: "Find whose lantern this is"),
-    ])
+    public static var farEdge: Quest { Quests.get("far") }
+    public static var homeLight: Quest { Quests.get("homeLight") }
+    public static var lantern: Quest { Quests.get("lantern") }
 }
 
 extension Game {

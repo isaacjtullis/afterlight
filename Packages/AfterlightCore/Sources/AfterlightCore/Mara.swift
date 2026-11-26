@@ -16,17 +16,8 @@ public enum MaraDeal {
 }
 
 extension Quest {
-    public static let dryTaps = Quest(id: "outpost", title: "Dry Taps", side: false, steps: [
-        QuestStep(id: "pipe", text: "Follow the warm pipe east"),
-        QuestStep(id: "knock", text: "Find what’s knocking"),
-        QuestStep(id: "meet", text: "Meet whoever keeps the outpost"),
-        QuestStep(id: "up", text: "Find a way up to the next level"),
-    ])
-    public static let outpostWater = Quest(id: "water", title: "Water for the Outpost", side: true, steps: [
-        QuestStep(id: "valve", text: "Bring up the pressure valve from the sump"),
-        QuestStep(id: "intake", text: "Clear the pump’s intake"),
-        QuestStep(id: "run", text: "Get Mara’s water running"),
-    ])
+    public static var dryTaps: Quest { Quests.get("outpost") }
+    public static var outpostWater: Quest { Quests.get("water") }
 }
 
 extension Game {

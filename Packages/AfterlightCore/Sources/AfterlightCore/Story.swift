@@ -26,40 +26,12 @@ public struct Quest: Codable, Identifiable, Equatable, Sendable {
 
     public var nextStep: QuestStep? { steps.first { !$0.done } }
 
-    public static let blackout = Quest(id: "blackout", title: "The Blackout", side: false, steps: [
-        QuestStep(id: "dig", text: "Cut into the dirt wall"),
-        QuestStep(id: "crystal", text: "Dig out what’s glinting"),
-        QuestStep(id: "repair", text: "Repair the flashlight at the workbench"),
-        QuestStep(id: "light", text: "Switch it on"),
-    ])
-    public static let firstAscent = Quest(id: "ascent", title: "First Ascent", side: false, steps: [
-        QuestStep(id: "tooth", text: "Find something hard enough for a pick"),
-        QuestStep(id: "pick", text: "Make a short pick"),
-        QuestStep(id: "ladder", text: "Build a ladder section"),
-        QuestStep(id: "place", text: "Place the ladder in the shaft"),
-        QuestStep(id: "seam", text: "Climb and open the seam overhead"),
-        QuestStep(id: "maint", text: "See what’s above"),
-    ])
-    public static let placeToReturn = Quest(id: "home", title: "A Place to Come Back To", side: false, steps: [
-        QuestStep(id: "pipe", text: "Follow the warm pipe east"),
-        QuestStep(id: "meet", text: "Find who’s knocking"),
-        QuestStep(id: "pump", text: "Get the old pump running"),
-        QuestStep(id: "water", text: "Decide where the water goes"),
-        QuestStep(id: "light", text: "Light the passage between home and the outpost"),
-    ])
-    public static let seedTin = Quest(id: "seeds", title: "The Last Seed Tin", side: true, steps: [
-        QuestStep(id: "decide", text: "Plant them, give them to a grower, or split them"),
-        QuestStep(id: "harvest", text: "Grow something"),
-    ])
-    public static let lights = Quest(id: "lights", title: "A Light Every Twenty Feet", side: true, steps: [
-        QuestStep(id: "make", text: "Make lamps at the workbench"),
-        QuestStep(id: "place", text: "Place lamps along the warm-pipe passage"),
-        QuestStep(id: "used", text: "See if anyone uses it"),
-    ])
-    public static let power = Quest(id: "power", title: "A Little Power", side: true, steps: [
-        QuestStep(id: "cell", text: "Find a battery cell"),
-        QuestStep(id: "bank", text: "Wake the battery bank"),
-    ])
+    public static var blackout: Quest { Quests.get("blackout") }
+    public static var firstAscent: Quest { Quests.get("ascent") }
+    public static var placeToReturn: Quest { Quests.get("home") }
+    public static var seedTin: Quest { Quests.get("seeds") }
+    public static var lights: Quest { Quests.get("lights") }
+    public static var power: Quest { Quests.get("power") }
 }
 
 public struct Story: Codable, Sendable {

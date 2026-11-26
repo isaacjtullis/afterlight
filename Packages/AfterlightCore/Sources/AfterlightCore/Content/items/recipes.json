@@ -1,0 +1,392 @@
+[
+  {
+    "id": "flashlight",
+    "name": "Repair flashlight",
+    "inputs": [
+      {
+        "item": "chargeCrystal",
+        "count": 1
+      }
+    ],
+    "output": {
+      "tool": "flashlight"
+    },
+    "note": "Bridge the cracked cell with the crystal.",
+    "unlock": "sawFlashlight"
+  },
+  {
+    "id": "pick",
+    "name": "Short pick",
+    "inputs": [
+      {
+        "item": "liftTooth",
+        "count": 1
+      },
+      {
+        "item": "spareGrip",
+        "count": 1
+      }
+    ],
+    "output": {
+      "tool": "shortPick"
+    },
+    "note": "Opens soft seams overhead and cuts footholds.",
+    "unlock": "needPick"
+  },
+  {
+    "id": "ladder",
+    "name": "Ladder section",
+    "inputs": [
+      {
+        "item": "pipe",
+        "count": 2
+      },
+      {
+        "item": "fasteners",
+        "count": 4
+      }
+    ],
+    "output": {
+      "item": "ladderSection",
+      "count": 1
+    },
+    "note": "Bridges a tall opening, like the bottom of the shaft.",
+    "unlock": "needLadder"
+  },
+  {
+    "id": "lamp",
+    "name": "Lantern",
+    "inputs": [
+      {
+        "item": "lampCell",
+        "count": 1
+      },
+      {
+        "item": "wire",
+        "count": 1
+      },
+      {
+        "item": "fasteners",
+        "count": 1
+      }
+    ],
+    "output": {
+      "item": "lamp",
+      "count": 1
+    },
+    "note": "Stays where you place it. Lights the way home.",
+    "unlock": "lampIdea"
+  },
+  {
+    "id": "tank",
+    "name": "Water tank",
+    "inputs": [
+      {
+        "item": "pipe",
+        "count": 1
+      },
+      {
+        "item": "fasteners",
+        "count": 2
+      }
+    ],
+    "output": {
+      "item": "waterTank",
+      "count": 1
+    },
+    "note": "Stores what the pump sends home.",
+    "unlock": "sawPump"
+  },
+  {
+    "id": "meal",
+    "name": "Trail meal",
+    "inputs": [
+      {
+        "item": "greens",
+        "count": 2
+      }
+    ],
+    "output": {
+      "item": "trailMeal",
+      "count": 1
+    },
+    "note": "Eat it on a dig to get your strength back.",
+    "unlock": "harvested"
+  },
+  {
+    "id": "rope",
+    "name": "Rope",
+    "inputs": [
+      {
+        "item": "wire",
+        "count": 2
+      }
+    ],
+    "output": {
+      "item": "rope",
+      "count": 1
+    },
+    "note": "Braid wire into a climbing line.",
+    "unlock": "sawChimney"
+  },
+  {
+    "id": "camp",
+    "name": "Camp crate",
+    "inputs": [
+      {
+        "item": "fasteners",
+        "count": 1
+      },
+      {
+        "item": "tape",
+        "count": 1
+      }
+    ],
+    "output": {
+      "item": "campCrate",
+      "count": 1
+    },
+    "note": "Pitch it far from home to keep things there.",
+    "unlock": "sawPlatform",
+    "wood": 20,
+    "bench": false
+  },
+  {
+    "id": "cell",
+    "name": "Ore cell",
+    "inputs": [
+      {
+        "item": "copperOre",
+        "count": 3
+      },
+      {
+        "item": "quartz",
+        "count": 1
+      }
+    ],
+    "output": {
+      "item": "batteryCell",
+      "count": 1
+    },
+    "note": "Copper plates and a quartz spacer: a crude battery cell. Powers the generator.",
+    "unlock": "genLooked"
+  },
+  {
+    "id": "fieldBench",
+    "name": "Field workbench",
+    "inputs": [
+      {
+        "item": "fasteners",
+        "count": 1
+      },
+      {
+        "item": "tape",
+        "count": 1
+      }
+    ],
+    "output": {
+      "item": "workbenchKit",
+      "count": 1
+    },
+    "note": "Thirty wood. Set it up anywhere and build there.",
+    "unlock": "wood",
+    "wood": 30,
+    "bench": false
+  },
+  {
+    "id": "cot",
+    "name": "Cot",
+    "inputs": [
+      {
+        "item": "tape",
+        "count": 1
+      }
+    ],
+    "output": {
+      "item": "cotKit",
+      "count": 1
+    },
+    "note": "Rest wherever you set it.",
+    "unlock": "wood",
+    "wood": 25
+  },
+  {
+    "id": "woodLadder",
+    "name": "Wooden ladder",
+    "inputs": [],
+    "output": {
+      "item": "woodLadder",
+      "count": 1
+    },
+    "note": "Lean it on any ledge up to six tiles high. It stays: a way up and back.",
+    "unlock": "wood",
+    "wood": 15
+  },
+  {
+    "id": "torch",
+    "name": "Root torch",
+    "inputs": [],
+    "output": {
+      "item": "torch",
+      "count": 1
+    },
+    "note": "A warm light that keeps burning. No cell needed.",
+    "unlock": "wood",
+    "wood": 6,
+    "bench": false
+  },
+  {
+    "id": "breaker",
+    "name": "Rock breaker",
+    "inputs": [
+      {
+        "item": "ironOre",
+        "count": 4
+      },
+      {
+        "item": "fasteners",
+        "count": 2
+      }
+    ],
+    "output": {
+      "tool": "breaker"
+    },
+    "note": "An iron wedge-hammer. Cracks bedrock into rubble the shovel can clear.",
+    "unlock": "hitRock",
+    "wood": 10
+  },
+  {
+    "id": "lantern2",
+    "name": "Reflector lantern",
+    "inputs": [
+      {
+        "item": "copperOre",
+        "count": 2
+      },
+      {
+        "item": "tape",
+        "count": 1
+      }
+    ],
+    "output": {
+      "upgrade": "lantern2"
+    },
+    "note": "Level 2. Polished copper behind the flame: every lantern reaches further.",
+    "unlock": "lampIdea",
+    "wood": 5
+  },
+  {
+    "id": "lantern3",
+    "name": "Quartz lantern",
+    "inputs": [
+      {
+        "item": "quartz",
+        "count": 2
+      },
+      {
+        "item": "copperOre",
+        "count": 2
+      }
+    ],
+    "output": {
+      "upgrade": "lantern3"
+    },
+    "note": "Level 3. A quartz lens spreads the light wide.",
+    "unlock": "lampIdea",
+    "wood": 10
+  },
+  {
+    "id": "lantern4",
+    "name": "Arc lantern",
+    "inputs": [
+      {
+        "item": "batteryCell",
+        "count": 1
+      },
+      {
+        "item": "quartz",
+        "count": 2
+      },
+      {
+        "item": "wire",
+        "count": 2
+      }
+    ],
+    "output": {
+      "upgrade": "lantern4"
+    },
+    "note": "Level 4. A crackling arc instead of a wick.",
+    "unlock": "lampIdea"
+  },
+  {
+    "id": "lantern5",
+    "name": "Iron beam lantern",
+    "inputs": [
+      {
+        "item": "ironOre",
+        "count": 4
+      },
+      {
+        "item": "quartz",
+        "count": 3
+      },
+      {
+        "item": "batteryCell",
+        "count": 1
+      }
+    ],
+    "output": {
+      "upgrade": "lantern5"
+    },
+    "note": "Level 5. Iron housing, a big lens. Floods a whole cavern with light.",
+    "unlock": "lampIdea",
+    "wood": 20
+  },
+  {
+    "id": "plot",
+    "name": "Garden plot",
+    "inputs": [],
+    "output": {
+      "upgrade": "plot"
+    },
+    "note": "A raised bed for the quarters. More plots, more food.",
+    "unlock": "wood",
+    "wood": 12
+  },
+  {
+    "id": "barrel",
+    "name": "Bigger barrel",
+    "inputs": [
+      {
+        "item": "pipe",
+        "count": 1
+      },
+      {
+        "item": "tape",
+        "count": 1
+      }
+    ],
+    "output": {
+      "upgrade": "barrel"
+    },
+    "note": "Doubles what the water barrel holds.",
+    "unlock": "wood",
+    "wood": 20
+  },
+  {
+    "id": "table",
+    "name": "Table and chair",
+    "inputs": [
+      {
+        "item": "fasteners",
+        "count": 2
+      }
+    ],
+    "output": {
+      "upgrade": "table"
+    },
+    "note": "Somewhere to sit and eat. Meals at home go further.",
+    "unlock": "wood",
+    "wood": 30
+  }
+]
