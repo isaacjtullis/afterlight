@@ -186,8 +186,9 @@ extension Game {
         let sinT = max.slope / (1 + max.slope * max.slope).squareRoot()
         let uphill = (dir != 0 && Double(dir) * max.slope < 0) ? abs(sinT) : 0
         // Keep holding a direction on the ground and Max picks up into a run.
-        if dir != 0 && max.ground && !max.swingOn && (max.vx == 0 || (max.vx > 0 ? 1 : -1) == dir) { max.runT += dt } else { max.runT = 0 }
-        max.running = max.runT > Tuning.runAfter
+        if dir != 0 && max.ground && !max.swingOn && runWanted && max.stamina > 1 && (max.vx == 0 || (max.vx > 0 ? 1 : -1) == dir) { max.runT += dt } else { max.runT = 0 }
+        max.running = max.runT > 0.12
+        if max.running { max.stamina = Swift.max(0, max.stamina - Tuning.runCost * dt); max.restT = 0 }
         let vmax = (max.swingOn ? 1.4 : (max.running ? Tuning.runSpeed : Tuning.walkSpeed)) * (1 - 0.35 * uphill)
         if dir != 0 {
             if max.vx != 0 && (max.vx > 0 ? 1 : -1) == -dir {

@@ -277,10 +277,9 @@ struct HUDView: View {
                             }.frame(width: 86, height: 7)
                         }
                     }
-                    HoldButton(id: "climb", onChange: { model.input.up = $0 }) { p in
-                        GlassCircle(size: 66, pressed: p, icon: AnyView(Arrowhead().frame(width: 22, height: 22).rotationEffect(.degrees(-90))), caption: ui.climbing || ui.canClimb ? "CLIMB" : "JUMP")
+                    MoveWheel(climbing: ui.climbing || ui.canClimb) { dx, run, up, down in
+                        model.input.dx = dx; model.input.run = run; model.input.up = up; model.input.climbDown = down
                     }
-                    MovePad { model.input.dx = $0 }
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 14) {
@@ -358,5 +357,91 @@ struct WoodIcon: View {
                 ctx.stroke(Path(ellipseIn: rect.insetBy(dx: r * 0.45, dy: r * 0.45)), with: .color(Color(red: 0.45, green: 0.28, blue: 0.16)), lineWidth: 1)
             }
         }
+    }
+}
+
+
+// MARK: the movement wheel
+
+/// A thumb wheel: the touch sets a direction vector from the wheel's centre (unit = the ring's radius).
+final class StickTouchView: UIView {
+    var onChange: ((CGPoint) -> Void)?
+    var radius: CGFloat = 60
+    private var finger: UITouch?
+    private var running = false
+    override init(frame: CGRect) { super.init(frame: frame); isMultipleTouchEnabled = true; backgroundColor = .clear }
+    required init?(coder: NSCoder) { fatalError() }
+    private func report(_ t: UITouch) {
+        let p = t.location(in: self)
+        let v = CGPoint(x: (p.x - bounds.midX) / radius, y: (p.y - bounds.midY) / radius)
+        let r = abs(v.x) > 1.0
+        if r != running { running = r; if r { UIImpactFeedbackGenerator(style: .medium).impactOccurred(intensity: 0.6) } }
+        onChange?(v)
+    }
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if finger == nil, let t = touches.first { finger = t; UIImpactFeedbackGenerator(style: .light).impactOccurred(intensity: 0.4); report(t) }
+    }
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) { if let f = finger, touches.contains(f) { report(f) } }
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) { release(touches) }
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) { release(touches) }
+    private func release(_ touches: Set<UITouch>) {
+        if let f = finger, touches.contains(f) { finger = nil; running = false; onChange?(.zero) }
+    }
+}
+
+struct StickTouch: UIViewRepresentable {
+    var radius: CGFloat
+    var onChange: (CGPoint) -> Void
+    func makeUIView(context: Context) -> StickTouchView { let v = StickTouchView(); v.radius = radius; v.onChange = onChange; return v }
+    func updateUIView(_ v: StickTouchView, context: Context) { v.radius = radius; v.onChange = onChange }
+}
+
+/// Push the knob left or right to walk; past the ring to run (it costs stamina). Up to jump or climb,
+/// down to climb down a ladder.
+struct MoveWheel: View {
+    var climbing: Bool
+    var onChange: (_ dx: Int, _ run: Bool, _ up: Bool, _ down: Bool) -> Void
+    @State private var v: CGPoint = .zero
+    private let R: CGFloat = 58
+
+    var body: some View {
+        let mag = min(1.35, hypot(v.x, v.y))
+        let ang = atan2(v.y, v.x)
+        let knob = CGPoint(x: cos(ang) * mag * R, y: sin(ang) * mag * R)
+        let running = abs(v.x) > 1.0
+        ZStack {
+            // run ring: lights up when the thumb is past it
+            Circle().stroke(running ? Color.amber : Color.amber.opacity(0.18), style: StrokeStyle(lineWidth: running ? 3 : 1.2, dash: running ? [] : [4, 5]))
+                .frame(width: R * 2.7, height: R * 2.7)
+            Circle().fill(Color.black.opacity(0.42)).frame(width: R * 2, height: R * 2)
+                .background(.ultraThinMaterial.opacity(0.3), in: Circle())
+            Circle().stroke(Color.amber.opacity(0.3), lineWidth: 1.2).frame(width: R * 2, height: R * 2)
+            // direction marks
+            ForEach(0..<4) { i in
+                Arrowhead().fill(Color.cream.opacity(0.35)).frame(width: 12, height: 12)
+                    .rotationEffect(.degrees(Double(i) * 90))
+                    .offset(x: i == 0 ? R - 14 : i == 2 ? -(R - 14) : 0, y: i == 1 ? R - 14 : i == 3 ? -(R - 14) : 0)
+            }
+            Text(running ? "RUN" : (v.y < -0.6 ? (climbing ? "CLIMB" : "JUMP") : ""))
+                .font(.avenir(10, "DemiBold")).tracking(1.2).foregroundStyle(Color.amber)
+                .offset(y: -R - 22)
+            Circle()
+                .fill(RadialGradient(colors: [Color.cream.opacity(0.95), Color.amber.opacity(0.75)], center: .topLeading, startRadius: 2, endRadius: 40))
+                .frame(width: 54, height: 54)
+                .shadow(color: Color.amber.opacity(running ? 0.8 : 0.35), radius: running ? 16 : 8)
+                .offset(x: knob.x, y: knob.y)
+                .animation(.interactiveSpring(response: 0.12, dampingFraction: 0.7), value: knob)
+            // Invisible targets for UI tests and VoiceOver: walking left and right.
+            Color.clear.frame(width: 30, height: 30).offset(x: -R * 0.6)
+                .accessibilityElement().accessibilityAddTraits(.isButton).accessibilityIdentifier("move.left").accessibilityLabel("move.left")
+            Color.clear.frame(width: 30, height: 30).offset(x: R * 0.6)
+                .accessibilityElement().accessibilityAddTraits(.isButton).accessibilityIdentifier("move.right").accessibilityLabel("move.right")
+        }
+        .frame(width: R * 2.9, height: R * 2.9)
+        .overlay(StickTouch(radius: R) { p in
+            v = p
+            let dx = p.x < -0.3 ? -1 : (p.x > 0.3 ? 1 : 0)
+            onChange(dx, abs(p.x) > 1.0, p.y < -0.6, p.y > 0.6)
+        }.accessibilityHidden(true))
     }
 }

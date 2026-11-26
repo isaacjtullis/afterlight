@@ -79,6 +79,7 @@ extension Game {
         w.buried = s.buried
         w.props = s.props
         w.climbs = s.climbs
+        for f in freshProps where Game.addedLater.contains(f.id) && w.propIndex(f.id) == nil { w.props.append(f) }
         var story = s.story
         var maxPos = s.maxPos
         if !story.flags.contains(Game.worldVersionFlag) {

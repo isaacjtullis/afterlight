@@ -92,6 +92,21 @@ enum Art {
             }
             if hasTooth { ActorArt.dot(ctx, -0.05, -0.62, 0.07, c(0xfff1d0, 0.9)) }
             ctx.restoreGState()
+        case .pantry:
+            // A shelf of tins over a water drum with a tin cup on a hook.
+            rect(-0.55, -1.75, 1.1, 0.08, 0x5a3a24); rect(-0.55, -1.35, 1.1, 0.08, 0x5a3a24)
+            rect(-0.5, -1.75, 0.06, 0.48, 0x3a2418); rect(0.44, -1.75, 0.06, 0.48, 0x3a2418)
+            let tins = p.stock.first(where: { $0.id == .ration })?.count ?? 0
+            for k in 0..<min(6, tins) { rect(-0.46 + CGFloat(k % 3) * 0.3, k < 3 ? -1.62 : -2.02, 0.22, 0.27, k % 2 == 0 ? 0x9aa2a8 : 0xb0a070) }
+            ctx.setFillColor(c(0x3f5a66)); ActorArt.rr(ctx, -0.42, -0.95, 0.84, 0.95, 0.12); ctx.fillPath()
+            rect(-0.42, -0.72, 0.84, 0.05, 0x2c4048); rect(-0.42, -0.3, 0.84, 0.05, 0x2c4048)
+            rect(0.22, -0.55, 0.1, 0.12, 0xb8bcc0)                                                    // tap
+            ActorArt.dot(ctx, 0.27, -0.38, 0.03, c(0x8fd0ff, 0.8))
+        case .pile:
+            // Whatever Max set down, in a little heap on a cloth.
+            ctx.setFillColor(c(0x6e5a48)); ctx.fillEllipse(in: CGRect(x: -0.45, y: -0.12, width: 0.9, height: 0.16))
+            ctx.setFillColor(c(0x8a7660)); ActorArt.rr(ctx, -0.25, -0.38, 0.5, 0.3, 0.1); ctx.fillPath()
+            ActorArt.dot(ctx, 0.12, -0.42, 0.1, c(0xa7adb3))
         case .crate:
             // An old tool crate: slats, a rope coiled on the lid, a stencilled mark.
             rect(-0.75, -0.95, 1.5, 0.95, 0x6e4a2e)

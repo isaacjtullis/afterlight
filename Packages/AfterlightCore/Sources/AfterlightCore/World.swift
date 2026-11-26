@@ -62,6 +62,8 @@ public enum PropKind: String, Codable, Sendable {
     case workbench, locker, buckledLocker, bed, storage
     case liftCar, drillRig, gantry           // cave salvage
     case crate                               // a tool crate in the root hollow
+    case pantry                              // food and water at home
+    case pile                                // something Max put down
     case pump, batteryBank, warmPipe         // maintenance room
     case lamp, planter, waterTank            // placed by the player
     case outpostDoor, odiStall

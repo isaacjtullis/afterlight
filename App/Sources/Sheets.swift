@@ -136,6 +136,7 @@ extension ItemID {
         case .waterTank: return "drop.fill"
         case .pressureValve: return "wrench.adjustable.fill"
         case .rope: return "lasso"
+        case .ration: return "fork.knife"
         }
     }
     var tint: Color {
@@ -155,7 +156,7 @@ extension Tool {
         switch self {
         case .shovel: return "Cuts earth sideways and down, hacks roots, digs footholds. Good for beds, too."
         case .flashlight: return "One soft beam. Shows what’s ahead."
-        case .shortPick: return "Hold ▲ and DIG to open soft seams overhead."
+        case .shortPick: return "Dig UP to open soft seams overhead, and packed earth too."
         }
     }
 }
@@ -169,6 +170,7 @@ struct BagSheet: View {
     @EnvironmentObject var model: GameModel
     @State private var picked: Int? = nil
     @State private var shown = false
+    @State private var bump = 0
 
     var body: some View {
         let g = model.game
@@ -207,6 +209,7 @@ struct BagSheet: View {
                         pocket(g.inv.slots[i], index: i)
                     }
                 }
+                .id(bump)
                 .padding(.horizontal, 16)
 
                 // Fixed height, so tapping a pocket never makes the bag jump.
@@ -331,9 +334,22 @@ struct BagSheet: View {
 
     @ViewBuilder private func detail(_ g: Game) -> some View {
         if let i = picked, let s = g.inv.slots[i] {
+            HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(s.count > 1 ? "\(s.id.name) ×\(s.count)" : s.id.name).font(.avenir(16, "DemiBold")).foregroundStyle(Color.cream)
                 Text(s.id.blurb + (s.id.bulky ? " Bulky: takes a whole pocket." : "")).font(.avenir(13)).foregroundStyle(Color.cream.opacity(0.75))
+            }
+            Spacer(minLength: 4)
+            VStack(spacing: 6) {
+                if g.atHome {
+                    Button("Store") { g.storeSlot(i); picked = nil; model.haptics.tap(); bump += 1 }
+                        .font(.avenir(13, "DemiBold")).foregroundStyle(.black)
+                        .padding(.horizontal, 12).frame(height: 30).background(Capsule().fill(Color.amber))
+                }
+                Button("Drop") { g.dropSlot(i); picked = nil; model.haptics.tap(); bump += 1 }
+                    .font(.avenir(13, "DemiBold")).foregroundStyle(Color.cream)
+                    .padding(.horizontal, 12).frame(height: 30).background(Capsule().stroke(Color.cream.opacity(0.5)))
+            }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             .padding(.horizontal, 12)

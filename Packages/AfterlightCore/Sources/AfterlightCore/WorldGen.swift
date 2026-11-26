@@ -185,6 +185,7 @@ public enum WorldGen {
             Prop(id: "locker.ws", kind: .locker, pos: V2(20.7, 30), stock: [ItemStack(.spareGrip), ItemStack(.fasteners, 2), ItemStack(.lampCell), ItemStack(.wire)]),
             Prop(id: "bed", kind: .bed, pos: V2(22.4, 30)),
             Prop(id: "storage", kind: .storage, pos: V2(29.8, 30)),
+            Prop(id: "pantry", kind: .pantry, pos: V2(28.3, 30), stock: [ItemStack(.ration, 12)]),
             Prop(id: "liftcar", kind: .liftCar, pos: Landmarks.liftCarPos, stock: [ItemStack(.liftTooth), ItemStack(.pipe, 2), ItemStack(.fasteners, 4)]),
             Prop(id: "crate.west", kind: .crate, pos: V2(11.6, 30), stock: [ItemStack(.rope), ItemStack(.lampCell), ItemStack(.fasteners, 3), ItemStack(.pressureGauge)]),
             Prop(id: "drill", kind: .drillRig, pos: V2(118.5, floorAt(118)), stock: [ItemStack(.fasteners, 6), ItemStack(.batteryCell), ItemStack(.rope)]),

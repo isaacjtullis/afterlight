@@ -5,6 +5,7 @@ public enum ItemID: String, Codable, CaseIterable, Sendable {
     case seedTin, pressureGauge, batteryCell, greens, trailMeal
     case lamp, ladderSection, waterTank
     case pressureValve, rope
+    case ration
 
     public var name: String {
         switch self {
@@ -25,6 +26,7 @@ public enum ItemID: String, Codable, CaseIterable, Sendable {
         case .waterTank: return "Water tank"
         case .pressureValve: return "Pressure valve"
         case .rope: return "Rope"
+        case .ration: return "Tinned ration"
         }
     }
 
@@ -47,6 +49,7 @@ public enum ItemID: String, Codable, CaseIterable, Sendable {
         case .waterTank: return "Place it in the workshop to store water."
         case .pressureValve: return "Brass, heavy, threaded both ends. A pump won't hold pressure without one."
         case .rope: return "Old climbing line. Two lengths and an anchor will get you up a chimney."
+        case .ration: return "Beans, mostly. Eat one at the pantry to get your strength back."
         }
     }
 

@@ -131,10 +131,12 @@ final class HomeGroundTests: XCTestCase {
         for c in 32...56 { for r in 27...29 { g.world.set(c, r, .dug, back: .earth) }; g.world.set(c, 30, .dirt) }
         g.world.rebuildDensity()
         g.max.pos = V2(32.6, 30)
-        sim(g, GameInput(dx: 1), 0.3)
-        XCTAssertLessThanOrEqual(abs(g.max.vx), Tuning.walkSpeed + 0.01)
-        sim(g, GameInput(dx: 1), 1.0)
+        sim(g, GameInput(dx: 1), 0.6)
+        XCTAssertLessThanOrEqual(abs(g.max.vx), Tuning.walkSpeed + 0.01, "walking unless the wheel is pushed out")
+        let st = g.max.stamina
+        sim(g, GameInput(dx: 1, run: true), 1.0)
         XCTAssertTrue(g.max.running)
+        XCTAssertLessThan(g.max.stamina, st, "running costs stamina")
         XCTAssertGreaterThan(abs(g.max.vx), Tuning.walkSpeed + 0.5)
     }
 
@@ -176,5 +178,35 @@ final class HomeGroundTests: XCTestCase {
         sim(g, GameInput(dx: 1), 2.5)
         XCTAssertGreaterThan(g.max.pos.x, 38, "Max should climb out of the dip and keep going, at \(g.max.pos)")
         XCTAssertEqual(g.max.pos.y, 30, accuracy: 0.2)
+    }
+
+    /// The pantry restores Max's strength with a ration.
+    func testPantryRestoresStamina() {
+        let g = Game()
+        g.begin()
+        g.max.stamina = 20
+        walk(g, to: 28.3)
+        sim(g, GameInput(), 0.2)
+        XCTAssertEqual(g.context?.id, "pantry")
+        g.performContext()
+        XCTAssertEqual(g.max.stamina, g.max.staminaMax, accuracy: 0.5)
+        XCTAssertEqual(g.world.prop("pantry")?.stock.first?.count, 11)
+    }
+
+    /// Something dropped from the bag stays in the world and can be picked up again.
+    func testDropAndPickUp() {
+        let g = Game()
+        g.begin()
+        g.max.pos = V2(23.0, 30); g.max.face = 1
+        g.inv.add(.wire, 2)
+        let i = g.inv.slots.firstIndex { $0?.id == .wire }!
+        g.dropSlot(i)
+        XCTAssertEqual(g.inv.count(.wire), 0)
+        XCTAssertEqual(g.world.props(of: .pile).count, 1)
+        sim(g, GameInput(), 0.2)
+        XCTAssertEqual(g.context?.id.hasPrefix("search:pile"), true)
+        g.performContext()
+        XCTAssertEqual(g.inv.count(.wire), 2)
+        XCTAssertTrue(g.world.props(of: .pile).isEmpty)
     }
 }

@@ -212,7 +212,7 @@ extension Game {
         }
 
         // Chapter 1
-        if !f.contains("moved") && time > 3.2 && time < 40 { hint("Hold ◀ ▶ to walk", 2) }
+        if !f.contains("moved") && time > 3.2 && time < 40 { hint("Push the wheel left or right to walk. Past the ring to run.", 3) }
         if nearBench && time > 2 { once("bench") { later(0.4) { g in if !g.story.flags.contains("inspected") { g.think("The flashlight. Dead since the power went.", 3) } } } }
         if f.contains("moved") && !f.contains("dug") && p.x > 29.3 && max.face > 0 && planning == nil { hint("Hold DIG against the dirt wall", 3) }
         if abs(p.x - Landmarks.crystal.x) < 4.3 && p.y < 31 && !(world.buried.first { $0.id == "crystal" }?.revealed ?? true) {
@@ -238,12 +238,18 @@ extension Game {
                 if f.contains("needPick") { later(3.2) { $0.think("The drive teeth are hard steel. That’s my pick.", 3.4) } }
             }
         }
+        if max.stamina < 18 && !f.contains("said.tired") {
+            story.flags.insert("said.tired")
+            think("I’m running on empty.", 2.4)
+            later(2.6) { $0.hint("Eat and drink at the pantry in the workshop, or rest in bed, to get your strength back.", 7) }
+        }
+        if max.stamina > 60 { story.flags.remove("said.tired") }
         // In a hole with no way to walk out: point at ▲.
         if max.mode == .walk && max.ground && !max.swingOn && Int(time * 2) % 4 == 0 && time - (story.counters["climbHintAt"].map(Double.init) ?? -99) > 14,
            (footholdTop(max.face) != nil || footholdTop(-max.face) != nil), wallBeside(max.face) || wallBeside(-max.face),
            world.solid(max.pos.x - 0.9, max.pos.y - 0.5) && world.solid(max.pos.x + 0.9, max.pos.y - 0.5) {
             story.counters["climbHintAt"] = Int(time)
-            hint("Hold ▲ to cut footholds and climb out.", 4)
+            hint("Push the wheel up against the wall to cut footholds and climb out.", 4)
         }
         // The root door: say what roots are good for the first time Max stands at them.
         if abs(p.x - Double(Landmarks.hollow.door) - 1.2) < 1.2 && abs(p.y - 30) < 0.6 && world.m(Landmarks.hollow.door, 28) == .root {
@@ -465,12 +471,18 @@ extension Game {
                 return act("prepBed", "Prepare a bed", V2(p.x, p.y - 2.4))
             }
         }
+        if let pile = world.props.first(where: { $0.kind == .pile && near($0, 1.1) }), let s = pile.stock.first {
+            return act("search:\(pile.id)", pile.stock.count > 1 ? "Pick up" : "Pick up \(s.id.name.lowercased())", V2(pile.pos.x, pile.pos.y - 1.4))
+        }
+        if let pp = world.prop("pantry"), near(pp, 0.9) { return act("pantry", "Eat and drink", V2(pp.pos.x, pp.pos.y - 2.0), max.stamina < max.staminaMax * 0.6) }
         for pr in world.props where near(pr) {
             switch pr.kind {
             case .locker where !pr.stock.isEmpty: return act("search:\(pr.id)", "Search locker", V2(pr.pos.x, pr.pos.y - 2.2))
             case .buckledLocker: return act("buckled", "Buckled shut", V2(pr.pos.x, pr.pos.y - 2.2))
             case .liftCar, .drillRig, .gantry: if !pr.stock.isEmpty { return act("salvage:\(pr.id)", "Salvage", V2(pr.pos.x, pr.pos.y - 2.4), pr.kind == .liftCar) }
             case .crate: if !pr.stock.isEmpty { return act("search:\(pr.id)", "Open crate", V2(pr.pos.x, pr.pos.y - 1.8), true) }
+            case .pile: if let s = pr.stock.first { return act("search:\(pr.id)", pr.stock.count > 1 ? "Pick up" : "Pick up \(s.id.name.lowercased())", V2(pr.pos.x, pr.pos.y - 1.4)) }
+            case .pantry: return act("pantry", "Eat and drink", V2(pr.pos.x, pr.pos.y - 2.0), max.stamina < max.staminaMax * 0.6)
             case .sunkValve: if !pr.stock.isEmpty { return act("salvage:\(pr.id)", "Take the valve", V2(pr.pos.x, pr.pos.y - 1.8), true) }
             case .storage: return act("storage", "Storage", V2(pr.pos.x, pr.pos.y - 2.0))
             case .pump:
@@ -521,7 +533,7 @@ extension Game {
             world.climbs.append(Climb(id: "ladder.shaft", x: 26.0, top: 25.2, bottom: 30.0, kind: .ladder))
             story.step("ascent", "place")
             emit(.placed("ladder"))
-            hint("Hold ▲ to climb", 5)
+            hint("Push the wheel up to climb", 5)
             emit(.saveNow)
         case "eat":
             inv.remove(.trailMeal, 1)
@@ -591,6 +603,8 @@ extension Game {
         case "rest":
             max.stamina = max.staminaMax
             emit(.openSheet(.mission))
+        case "pantry":
+            eatAndDrink()
         case "plank":
             guard let s = plankSpot() else { break }
             inv.wood -= Inventory.plankCost
@@ -620,6 +634,7 @@ extension Game {
             if n < s.count { left.append(ItemStack(s.id, s.count - n)) }
         }
         world.props[i].stock = left
+        clearEmptyPiles()
         if !got.isEmpty { emit(.chime); emit(.pickup(got.joined(separator: ", "))); explainBag() }
         if !left.isEmpty {
             think("My bag’s full. I’ll leave the rest here and come back.", 3)

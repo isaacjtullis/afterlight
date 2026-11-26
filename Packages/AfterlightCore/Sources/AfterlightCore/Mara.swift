@@ -437,7 +437,7 @@ extension Game {
         var rows: [PanelRow] = []
         var lines = ["An old maintenance chimney. Six metres straight up to the transit platform. The rungs rusted off long ago."]
         if rigged {
-            lines.append("Your rope’s rigged. Hold ▲ to climb.")
+            lines.append("Your rope’s rigged. Push the wheel up to climb.")
         } else {
             let have = MaraDeal.chimneyCost.map { "\($0.id.name) \(available($0.id))/\($0.count)" }.joined(separator: ", ")
             let ok = MaraDeal.chimneyCost.allSatisfy { available($0.id) >= $0.count }
@@ -630,6 +630,6 @@ extension Game {
         story.flags.insert("chimneyRigged")
         max.busy = 1.2
         emit(.placed("rope"))
-        hint("Hold ▲ to climb", 5)
+        hint("Push the wheel up to climb", 5)
     }
 }

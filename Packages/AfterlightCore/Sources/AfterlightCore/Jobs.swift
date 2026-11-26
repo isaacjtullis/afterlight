@@ -150,6 +150,7 @@ extension Game {
 
     /// Start a job now. The caller registers it with Supabase if online and passes the server id.
     public func startJob(_ plan: JobPlan, startedAt: Date, serverID: String? = nil) {
+        standUpForJob()
         var p = plan
         if p.mealsPacked > 0 {
             let k = min(p.mealsPacked, available(.trailMeal))

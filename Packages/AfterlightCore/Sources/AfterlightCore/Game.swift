@@ -7,8 +7,12 @@ public struct GameInput: Equatable, Sendable {
     public var dig = false
     /// The UP dig button: swing overhead.
     public var digUp = false
-    public init(dx: Int = 0, up: Bool = false, down: Bool = false, dig: Bool = false, digUp: Bool = false) {
-        self.dx = dx; self.up = up; self.down = down; self.dig = dig; self.digUp = digUp
+    /// The wheel pushed past its ring: run.
+    public var run = false
+    /// The wheel pulled down: climb down a ladder or rungs (never digs).
+    public var climbDown = false
+    public init(dx: Int = 0, up: Bool = false, down: Bool = false, dig: Bool = false, digUp: Bool = false, run: Bool = false, climbDown: Bool = false) {
+        self.dx = dx; self.up = up; self.down = down; self.dig = dig; self.digUp = digUp; self.run = run; self.climbDown = climbDown
     }
     var any: Bool { dx != 0 || up || down || dig || digUp }
 }
@@ -122,6 +126,8 @@ public final class Game {
     // A quick tap still does something: a short step, or one full swing of the shovel.
     var digLatch = false, downLatch = false, latchT = 0.0
     var walkHold = 0.0, walkHoldDir = 0
+    var runWanted = false
+    var js = JumpState()
     // Never stuck: pushing at something soft for a moment clears a way through it.
     var stuckT = 0.0, stuckX = 0.0
 
@@ -180,6 +186,8 @@ public final class Game {
 
         // Taps: a quick press on an arrow still takes a short step; a quick DIG still lands one swing.
         var input = input
+        if input.climbDown && max.mode == .climb { input.down = true }
+        runWanted = input.run
         if freshDx { walkHold = 0.16; walkHoldDir = input.dx }
         walkHold = Swift.max(0, walkHold - dt)
         if input.dx == 0 && walkHold > 0 && max.mode == .walk { input.dx = walkHoldDir }
@@ -213,7 +221,7 @@ public final class Game {
             }
             dir = input.dx
             if dir != 0 { story.flags.insert("moved"); max.face = dir }
-            if (input.up || input.down) && tryEnterClimb(up: input.up) {
+            if (input.up || input.down || input.climbDown) && tryEnterClimb(up: input.up) {
                 updateFeel(dt); storyTick(dt); return
             }
             // ▲ against an earth ledge cuts footholds and climbs it (in a hole, either wall will do).
@@ -222,8 +230,8 @@ public final class Game {
             if input.up && !input.dig && !input.digUp && max.ground && max.oneShot == nil {
                 climbed = tryFoothold(dir: max.face)
                 if !climbed && wallBeside(max.face) { climbed = tryFoothold(dir: -max.face) }
-                if !climbed && fresh.up && !max.swingOn { jump() }
             }
+            jumpTick(tap: fresh.up && !climbed && !input.dig && !input.digUp, held: input.up, blocked: climbed, dt: dt)
             if (input.digUp || (input.dig && input.up)) && !climbed {
                 swingWanted = .up
             } else if input.dig {
