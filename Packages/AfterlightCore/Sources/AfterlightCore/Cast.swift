@@ -93,7 +93,6 @@ extension Game {
     public func remembers(_ who: String, _ what: String) -> Bool { story.memories[who]?.contains(what) ?? false }
     func remember(_ who: String, _ what: String) { story.memories[who, default: []].insert(what) }
 
-    public func trust(_ who: String) -> Int { story.coop.trust[who] ?? 0 }
 
     /// A bubble over whoever's talking. Max's own lines go to his thoughts.
     func line(_ who: String, _ text: String, _ d: Double = 3.6) {

@@ -12,7 +12,7 @@ extension Game {
         func act(_ id: String, _ label: String, _ at: V2, _ big: Bool = false) -> ContextAction { ContextAction(id: id, label: label, anchor: at, prominent: big) }
         // Mara's cans.
         if inv.count(.fullCan) > 0 {
-            if (abs(p.y - 3) < 1.5 && abs(p.x - Landmarks.transitDrop.x) < 2.5) || nearMara {
+            if (abs(p.y - 3) < 1.5 && abs(p.x - Landmarks.transitDrop.x) < 2.5) || (nearMara && !maraHauling) {
                 return act("can.down", "Set the can down", V2(p.x, p.y - 2.4), true)
             }
         }
