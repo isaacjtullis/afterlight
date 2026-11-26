@@ -113,7 +113,7 @@ public enum WorldGen {
             Prop(id: "bunk.broken", kind: .brokenBunk, pos: V2(16.0, 30), stock: [ItemStack(.strap)]),
             Prop(id: "washstand", kind: .washstand, pos: V2(17.6, 30), stock: [ItemStack(.gasket)]),
             Prop(id: "store.shelf", kind: .storeShelf, pos: V2(36.2, fl), stock: [ItemStack(.waterCan), ItemStack(.filterAssembly)]),
-            Prop(id: "store.locker", kind: .locker, pos: V2(31.4, fl), stock: [ItemStack(.wire, 2), ItemStack(.seedTin), ItemStack(.roster)]),
+            Prop(id: "store.locker", kind: .locker, pos: V2(33.9, fl), stock: [ItemStack(.wire, 2), ItemStack(.seedTin), ItemStack(.roster)]),
             Prop(id: "lm.pipe", kind: .landmark, pos: V2(48.6, Double(sw.floor))),
             Prop(id: "lm.stripes", kind: .landmark, pos: V2(40.4, Double(sw.floor))),
             Prop(id: "lm.mark", kind: .landmark, pos: V2(Double(st.x1) + 0.6, Double(st.floor))),
