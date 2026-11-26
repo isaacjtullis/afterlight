@@ -198,7 +198,7 @@ extension Game {
 
     // MARK: map
 
-    static let mapBlock = 2
+    public static let mapBlock = 2
     public static var mapCols: Int { Landmarks.width / mapBlock }
     public static var mapRows: Int { Landmarks.height / mapBlock }
 
