@@ -140,18 +140,18 @@ final class HomeGroundTests: XCTestCase {
         XCTAssertGreaterThan(abs(g.max.vx), Tuning.walkSpeed + 0.5)
     }
 
-    /// Tap ▲ in the open: Max jumps and lands again.
+    /// JUMP in the open: Max jumps and lands again.
     func testTapUpJumps() {
         let g = Game()
         g.begin()
         g.max.pos = V2(23.5, 30)
         sim(g, GameInput(), 0.3)
         var peak = 30.0
-        for i in 0..<70 { g.update(dt: 1 / 60, input: GameInput(up: i < 25)); _ = g.drainEvents(); peak = min(peak, g.max.pos.y) }
+        for i in 0..<70 { g.update(dt: 1 / 60, input: GameInput(jump: i < 25)); _ = g.drainEvents(); peak = min(peak, g.max.pos.y) }
         XCTAssertLessThan(peak, 29.0, "a held jump clears about a tile")
         // A quick tap is only a hop.
         var hop = 30.0
-        for i in 0..<70 { g.update(dt: 1 / 60, input: GameInput(up: i < 2)); _ = g.drainEvents(); hop = min(hop, g.max.pos.y) }
+        for i in 0..<70 { g.update(dt: 1 / 60, input: GameInput(jump: i < 2)); _ = g.drainEvents(); hop = min(hop, g.max.pos.y) }
         XCTAssertGreaterThan(hop, peak + 0.3, "a tap is a smaller hop than a held jump")
         XCTAssertEqual(g.max.pos.y, 30, accuracy: 0.1)
         XCTAssertTrue(g.max.ground)
@@ -222,7 +222,7 @@ final class HomeGroundTests: XCTestCase {
         var peak = 30.0
         for i in 0..<90 {
             let up = i < 12 || (i >= 16 && i < 28) || (i >= 32 && i < 40)
-            g.update(dt: 1 / 60, input: GameInput(up: up)); _ = g.drainEvents(); peak = min(peak, g.max.pos.y)
+            g.update(dt: 1 / 60, input: GameInput(jump: up)); _ = g.drainEvents(); peak = min(peak, g.max.pos.y)
         }
         XCTAssertLessThan(peak, 28.1, "the second jump carries Max higher than one jump")
         XCTAssertGreaterThan(peak, 26.0, "but there is no third")
@@ -238,5 +238,42 @@ final class HomeGroundTests: XCTestCase {
         var roots = 0
         for r in 12..<55 { for c in 40..<150 where w.m(c, r) == .root { roots += 1 } }
         XCTAssertGreaterThan(roots, 20, "roots run through the earth away from home too")
+    }
+
+    /// Holding the wheel up next to a short bank doesn't start a climb: that's a jump, not a climb.
+    func testNoClimbUpShortBanks() {
+        let g = Game()
+        g.begin()
+        for c in 32...44 { for r in 26...29 { g.world.set(c, r, .dug, back: .earth) }; g.world.set(c, 30, .dirt) }
+        for c in 32...36 { g.world.set(c, 30, .dug, back: .earth); g.world.set(c, 31, .dirt) }
+        g.world.rebuildDensity()
+        g.max.pos = V2(36.5, 31); g.max.face = 1; g.max.ground = true
+        sim(g, GameInput(), 0.3)
+        sim(g, GameInput(up: true), 1.5)
+        XCTAssertEqual(g.max.mode, .walk, "a one-tile bank is jumped or walked up, not climbed")
+    }
+
+    /// One DIG button: aiming the wheel down digs the floor, up digs overhead.
+    func testWheelAimsTheDig() {
+        let g = Game()
+        g.begin()
+        walk(g, to: 31.3)
+        sim(g, GameInput(dig: true), 4)
+        let y0 = g.max.pos.y
+        sim(g, GameInput(dig: true, climbDown: true), 2)
+        XCTAssertGreaterThan(g.max.pos.y, y0 + 0.5, "DIG with the wheel down digs down")
+    }
+
+    /// A single tap of DIG opens a full body-height bite in front of Max.
+    func testOneChompClearsHeadToToe() {
+        let g = Game()
+        g.begin()
+        walk(g, to: 31.3)
+        g.max.face = 1
+        let x = g.max.pos.x + Tuning.halfWidth + 0.46
+        g.update(dt: 1 / 60, input: GameInput(dig: true)); _ = g.drainEvents()
+        sim(g, GameInput(), 0.6)
+        XCTAssertFalse(g.world.solid(x, 29.4), "low earth cleared")
+        XCTAssertFalse(g.world.solid(x, 28.4), "high earth cleared in the same chomp")
     }
 }

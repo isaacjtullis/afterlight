@@ -19,7 +19,8 @@ enum ActorArt {
     }
 
     /// Max: cream cloak, red scarf, dusty-purple beanie with a bouncing pom-pom.
-    static func drawMax(_ ctx: CGContext, _ m: Max, time: Double, flashlight: Bool, flashOn: Bool, carrying: Bool, wood: Int = 0) {
+    static func drawMax(_ ctx: CGContext, _ m: Max, time: Double, flashlight: Bool, flashOn: Bool, carrying: Bool, wood: Int = 0, back: Bool = false) {
+        if back { drawMaxFromBehind(ctx, m, time: time, wood: wood); return }
         ctx.saveGState()
         ctx.scaleBy(x: CGFloat(m.face), y: 1)
         if m.mode == .climb {
@@ -142,6 +143,46 @@ enum ActorArt {
         // front arm
         line(ctx, [CGPoint(x: 0.05, y: shY + 0.08), hf], c(0xe3d1ae), 0.11)
         dot(ctx, hf.x, hf.y, 0.05, c(0xf0c9a0))
+        ctx.restoreGState()
+    }
+
+    /// Max on a ladder, seen from behind: pack and shovel on his back, hands and feet working the rungs in turn.
+    static func drawMaxFromBehind(_ ctx: CGContext, _ m: Max, time: Double, wood: Int) {
+        ctx.saveGState()
+        ctx.translateBy(x: 0, y: -1.75); ctx.rotate(by: CGFloat(m.lean) * 0.5); ctx.translateBy(x: 0, y: 1.75)
+        let hipY: CGFloat = -0.6, shY: CGFloat = -1.08, headY: CGFloat = -1.4
+        // legs: one knee up on a rung while the other pushes
+        for i in [0, 1] {
+            let side: CGFloat = i == 0 ? -1 : 1
+            let up = CGFloat(max(0, sin(m.phase + Double(i) * .pi)))
+            let fx = side * 0.13, fy = -up * 0.42
+            line(ctx, [CGPoint(x: side * 0.08, y: hipY), CGPoint(x: side * 0.17, y: (hipY + fy) / 2 - up * 0.05), CGPoint(x: fx, y: fy - 0.04)], c(0x2f2329), 0.12)
+            ctx.setFillColor(c(0x1c1418)); rr(ctx, fx - 0.08, fy - 0.1, 0.16, 0.1, 0.04); ctx.fillPath()
+        }
+        // cloak from behind
+        ctx.setFillColor(c(0xe3d1ae))
+        ctx.move(to: CGPoint(x: -0.17, y: shY)); ctx.addLine(to: CGPoint(x: 0.17, y: shY))
+        ctx.addLine(to: CGPoint(x: 0.26, y: hipY + 0.28)); ctx.addLine(to: CGPoint(x: -0.26, y: hipY + 0.28)); ctx.closePath(); ctx.fillPath()
+        // arms reaching up for the rungs, alternating
+        for i in [0, 1] {
+            let side: CGFloat = i == 0 ? -1 : 1
+            let reach = CGFloat(max(0, sin(m.phase + Double(i) * .pi + .pi / 2)))
+            let hand = CGPoint(x: side * 0.24, y: headY - 0.2 - reach * 0.3)
+            line(ctx, [CGPoint(x: side * 0.15, y: shY + 0.05), CGPoint(x: side * 0.27, y: (shY + hand.y) / 2), hand], c(0xd8c6a2), 0.1)
+            dot(ctx, hand.x, hand.y, 0.055, c(0xf0c9a0))
+        }
+        // pack, shovel slung across it, wood if any
+        ctx.setFillColor(c(0x7a5a44)); rr(ctx, -0.16, shY + 0.04, 0.32, 0.42, 0.08); ctx.fillPath()
+        ctx.setFillColor(c(0x5c4232)); ctx.fill(CGRect(x: -0.16, y: shY + 0.2, width: 0.32, height: 0.04))
+        line(ctx, [CGPoint(x: -0.3, y: shY + 0.5), CGPoint(x: 0.25, y: shY - 0.3)], c(0x8a6440), 0.05)
+        ctx.setFillColor(c(0xa7adb3)); rr(ctx, 0.2, shY - 0.5, 0.13, 0.22, 0.04); ctx.fillPath()
+        if wood > 0 { ctx.setFillColor(c(0x8a5a34)); rr(ctx, -0.22, shY + 0.42, 0.44, 0.09, 0.045); ctx.fillPath() }
+        ctx.setFillColor(c(0xc8462f)); rr(ctx, -0.15, shY - 0.1, 0.3, 0.13, 0.06); ctx.fillPath()       // scarf, from behind
+        // back of the head, beanie and pom
+        dot(ctx, 0, headY, 0.22, c(0x3a2a22))
+        ctx.setFillColor(c(0x4a3a5c)); ctx.addArc(center: CGPoint(x: 0, y: headY - 0.03), radius: 0.235, startAngle: .pi, endAngle: 2 * .pi, clockwise: false); ctx.fillPath()
+        ctx.fill(CGRect(x: -0.235, y: headY - 0.06, width: 0.47, height: 0.08))
+        dot(ctx, CGFloat(m.pom) * 0.5, headY - 0.3, 0.075, c(0xe8a33a))
         ctx.restoreGState()
     }
 

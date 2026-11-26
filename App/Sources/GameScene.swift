@@ -32,6 +32,7 @@ final class GameScene: SKScene {
     private var dropNodes: [SKSpriteNode] = []
     private let planNode = SKNode()
     private let markerNode = SKSpriteNode(texture: Art.radial)
+    private var lanternK = 1.0
     private let guideNode = SKShapeNode()
     private let bubble = SKShapeNode()
     private let bubbleLabel = SKLabelNode(fontNamed: "AvenirNext-MediumItalic")
@@ -383,7 +384,7 @@ final class GameScene: SKScene {
 
     private func bodyPt(_ lx: Double, _ ly: Double, _ m: Max) -> (Double, Double) {
         let a = m.lean + m.tilt, c = cos(a), s = sin(a)
-        return (m.pos.x + Double(m.face) * (lx * c - ly * s), m.pos.y + lx * s + ly * c)
+        return (m.pos.x + m.visOff.x + Double(m.face) * (lx * c - ly * s), m.pos.y + m.visOff.y + lx * s + ly * c)
     }
 
     private func resetScarf() {
@@ -439,6 +440,8 @@ final class GameScene: SKScene {
             m.swing = (g.time / 0.5).truncatingRemainder(dividingBy: 1)
             m.shovel = m.swingOn ? -2.3 + sin(g.time * 12) * 1.2 : -2.2
         }
+        lanternK = damp(lanternK, g.lanternOut ? g.candle : 0, 6, 1.0 / 60)
+        let backView = m.mode == .climb && (g.world.climbs.first { $0.id == m.climbID }.map { $0.kind == .ladder || $0.kind == .rungs } ?? false)
         let ppt = min(90, S * 2.2)
         let ox = 2.6, oy = 3.4
         let flick = g.flicker * 0.35 * sin(g.time * 31) + 0.05 * sin(g.time * 13)
@@ -447,15 +450,15 @@ final class GameScene: SKScene {
         let scarfPts = scarf.map { CGPoint(x: $0.x - m.pos.x, y: $0.y - m.pos.y) }
         let img = Art.image(widthTiles: 5.2, heightTiles: 4.6, ppt: ppt, originX: CGFloat(ox), originY: CGFloat(oy)) { ctx in
             ActorArt.drawScarf(ctx, scarfPts)
-            ActorArt.drawMax(ctx, m, time: g.time, flashlight: g.inv.has(.flashlight), flashOn: g.story.flags.contains("flashOn"), carrying: g.inv.count(.chargeCrystal) > 0, wood: g.inv.wood)
-            if g.candle > 0 {
+            ActorArt.drawMax(ctx, m, time: g.time, flashlight: g.inv.has(.flashlight), flashOn: g.story.flags.contains("flashOn"), carrying: g.inv.count(.chargeCrystal) > 0, wood: g.inv.wood, back: backView)
+            if lanternK > 0.02 {
                 ActorArt.drawLantern(ctx, hook: CGPoint(x: hx - m.pos.x, y: hy - m.pos.y), lamp: CGPoint(x: lampX - m.pos.x, y: lampY - m.pos.y), swing: m.lant, flicker: flick)
             }
         }
         if let img { maxNode.texture = SKTexture(cgImage: img) }
         maxNode.size = CGSize(width: 5.2 * S, height: 4.6 * S)
         maxNode.anchorPoint = CGPoint(x: ox / 5.2, y: 1 - oy / 4.6)
-        maxNode.position = sp(m.pos.x, m.pos.y)
+        maxNode.position = sp(m.pos.x + m.visOff.x, m.pos.y + m.visOff.y)
         maxNode.isHidden = !g.started
 
         // Mara
@@ -641,7 +644,7 @@ final class GameScene: SKScene {
     private func lightAt(_ x: Double, _ y: Double) -> Double {
         var v = 0.0
         let (lx, ly) = lanternPos()
-        let R = 4.8 * game.candle
+        let R = 4.8 * lanternK
         let d = ((x - lx) * (x - lx) + (y - ly) * (y - ly)).squareRoot()
         if d < R { v += pow(1 - d / R, 1.4) }
         if game.max.flashI > 0 {
@@ -686,7 +689,7 @@ final class GameScene: SKScene {
         }
         let (lx, ly) = lanternPos()
         let flick = 0.05 * sin(g.time * 13) + 0.035 * sin(g.time * 29 + 1) + g.flicker * 0.35 * sin(g.time * 31)
-        let R = 4.9 * (1 + flick) * g.candle
+        let R = 4.9 * (1 + flick) * lanternK
         light(lx, ly, R, 0.98, rays: g.world.castLight(from: V2(lx, ly), radius: R, a0: 0, a1: 2 * .pi, rays: 64))
         var beam: [V2]? = nil
         if g.inv.has(.flashlight) && g.max.flashI > 0 {
@@ -718,7 +721,7 @@ final class GameScene: SKScene {
         candleGlow.position = sp(lx, ly)
         let gr = 4.8 * (1 + flick) * S
         candleGlow.size = CGSize(width: gr, height: gr)
-        candleGlow.alpha = 0.22 * CGFloat(g.candle)
+        candleGlow.alpha = 0.22 * CGFloat(lanternK)
         if let beam {
             let p = CGMutablePath()
             p.addLines(between: beam.map { sp($0.x, $0.y) }); p.closeSubpath()

@@ -139,7 +139,15 @@ extension Game {
             }
             emit(.whoosh); return
         }
-        let res = world.carve(center: c, radius: R, floorY: floor, tool: tool)
+        var res = world.carve(center: c, radius: R, floorY: floor, tool: tool)
+        if kind == .side {
+            // One chomp clears head to toe, so a single swing always opens room to step into.
+            let other = V2(c.x, max.digFloor - (max.biteHigh ? 0.55 : 1.55))
+            let r2 = world.carve(center: other, radius: max.biteHigh ? 0.72 : 0.82, floorY: floor, tool: tool)
+            res.changed = res.changed || r2.changed
+            res.cleared += r2.cleared; res.revealed += r2.revealed
+            if res.touchedOpen == nil { res.touchedOpen = r2.touchedOpen }
+        }
         emit(.bite(at: c, kind: kind, carved: res.changed, face: max.face))
         max.lantV += Double(max.face) * 1.3
         max.squash = 0.09
@@ -212,6 +220,7 @@ extension Game {
         max.ax = clampD((max.vx - prevVx) / Swift.max(dt, 1e-3), -25, 25)
 
         let prevX = max.pos.x
+        max.pushing = false
         if max.vx != 0 {
             let nx = max.pos.x + max.vx * dt
             let sgn: Double = max.vx > 0 ? 1 : -1
@@ -241,6 +250,7 @@ extension Game {
                 } else if max.ground {
                     if abs(max.vx) > 4.5 { emit(.land(speed: 3)) }
                     max.vx = 0
+                    max.pushing = dir != 0
                 }
                 // In the air against a wall: hold position sideways but keep the push, so a jump or
                 // scramble carries over the top as soon as Max clears it.
@@ -263,10 +273,14 @@ extension Game {
                     // The rounded foot of a wall is not a ramp: stop against the wall instead of riding up it.
                     max.pos.x = prevX
                     max.vx = 0
+                    max.pushing = dir != 0
                 } else if !(max.swingOn && max.swingKind == .side) && g < max.pos.y - (Swift.min(Swift.abs(max.vx), Tuning.walkSpeed) * dt * 1.8 + 0.035) {
                     // Too steep to walk up in one step: a small lip gets a little hop, anything taller is a wall.
                     let h = max.pos.y - g
-                    if h < 0.85 && dir != 0 && !wallHit(max.pos.x, g) {
+                    if h < 0.22 && !wallHit(max.pos.x, g) {
+                        // A crumb or a lip: just step onto it (the drawing glides the difference).
+                        max.pos.y = g; max.vyG = 0
+                    } else if h < 0.85 && dir != 0 && !wallHit(max.pos.x, g) {
                         max.ground = false
                         max.vy = -(2 * Tuning.gravity * (h + 0.12)).squareRoot()
                         max.air = 0
@@ -274,6 +288,7 @@ extension Game {
                     } else {
                         max.pos.x = prevX
                         max.vx = 0
+                        max.pushing = dir != 0
                     }
                 } else {
                     // While cutting sideways the floor is held level: uncut crumbs never lift Max.
@@ -303,7 +318,11 @@ extension Game {
                     max.pos.y = ny
                 }
             } else if world.solid(max.pos.x, ny - Tuning.height) {
-                max.vy = 0
+                var nudged = false
+                for off in [0.18, -0.18, 0.32, -0.32] where !world.solid(max.pos.x + off, ny - Tuning.height) && !wallHit(max.pos.x + off, max.pos.y) {
+                    max.pos.x += off; max.pos.y = ny; nudged = true; break
+                }
+                if !nudged { max.vy = 0 }
             } else {
                 max.pos.y = ny
             }
@@ -321,6 +340,8 @@ extension Game {
     // MARK: feel
 
     func updateFeel(_ dt: Double) {
+        let k = exp(-13 * dt)
+        max.visOff = V2(max.visOff.x * k, max.visOff.y * k)
         let L = 0.3
         let acc = max.ax * 0.8 + cos(max.phase * 2) * 5 * max.walkAmp
         max.lantV += (-(26 * sin(max.lant) + acc * cos(max.lant)) / L - 2.4 * max.lantV) * dt
@@ -365,17 +386,18 @@ extension Game {
             tA = -0.25 + sin(time * 16) * 0.12; tLean = 0.12; tCr = 0.05; stance = 0.12; rate = 12
         } else if max.mode == .climb {
             tA = -2.4; tLean = max.sway; stance = 0.05; rate = 0
+            max.lean = damp(max.lean, tLean, 10, dt)
         } else if max.sliding {
             tA = -2.95; tCr = 0.17; tLean = -0.06; stance = 0.22; rate = 6
         } else if !max.ground && max.air > 0.08 {
             tA = -3.05 + sin(time * 6) * 0.1; tCr = 0.03; tLean = clampD(-max.vy * 0.03, -0.25, 0.25); stance = 0.15; rate = 5
         }
         if rate > 0 { max.shovel = damp(max.shovel, tA, rate, dt) }
-        max.lean = max.mode == .climb ? tLean : damp(max.lean, tLean, 13, dt)
+        if max.mode != .climb { max.lean = damp(max.lean, tLean, 13, dt) }
         max.crK = damp(max.crK, 0, 7, dt)
         max.crouch = damp(max.crouch, tCr + max.crK, 16, dt)
         max.stance = damp(max.stance, stance, 10, dt)
-        let moving = !(max.swingOn || max.sliding || !max.ground || max.mode == .climb)
+        let moving = !(max.swingOn || max.sliding || !max.ground || max.mode == .climb || max.pushing)
         max.walkAmp = damp(max.walkAmp, moving ? Swift.min(1.45, abs(max.vx) / Tuning.walkSpeed) : 0, 8, dt)
         max.tilt = damp(max.tilt, max.ground && max.mode == .walk ? clampD(atan(max.slope * Double(max.face)) * 0.35, -0.16, 0.16) : 0, max.ground ? 8 : 3, dt)
         let breathe = (max.walkAmp < 0.2 && max.ground && !max.swingOn) ? 0.012 * sin(time * 2.4) : 0
@@ -401,7 +423,7 @@ extension Game {
     func tryEnterClimb(up: Bool) -> Bool {
         guard let c = reachableClimb(up: up) else { return false }
         max.mode = .climb; max.climbID = c.id
-        max.swayV += Double(max.face) * 1.6 + max.vx * 0.3
+        max.swayV += Double(max.face) * 0.4
         max.vx = 0; max.vy = 0; max.ground = false
         max.swingOn = false
         story.flags.insert("climbed")
@@ -418,11 +440,13 @@ extension Game {
         max.phase += abs(max.vy) * dt * 3.2
         if Int((max.phase / .pi).rounded(.down)) != cph { emit(.climbStep) }
         // Pendulum sway: each reach pulls the body to one side; stopping lets it swing out and settle.
-        let reach = abs(max.vy) > 0.1 ? sin(max.phase) * 7.5 : 0
-        if wasMoving && abs(max.vy) < 0.1 { max.swayV += (max.sway >= 0 ? 1 : -1) * 0.9 }
-        max.swayV += (reach - 26 * max.sway - 2.2 * max.swayV) * dt
-        max.sway = clampD(max.sway + max.swayV * dt, -0.32, 0.32)
-        max.lantV += max.swayV * 0.6 * dt
+        // Ladders and rungs hold Max square; footholds and rope let him swing a little.
+        let loose = c.kind == .foothold || c.kind == .rope
+        let reach = abs(max.vy) > 0.1 ? sin(max.phase) * (loose ? 3.5 : 1.2) : 0
+        if wasMoving && abs(max.vy) < 0.1 && loose { max.swayV += (max.sway >= 0 ? 1 : -1) * 0.4 }
+        max.swayV += (reach - 18 * max.sway - 6 * max.swayV) * dt
+        max.sway = clampD(max.sway + max.swayV * dt, -0.14, 0.14)
+        max.lantV += max.swayV * 0.4 * dt
         var ny = max.pos.y + max.vy * dt
         // head room: pick away the seam above
         if input.dig || input.digUp {
@@ -454,11 +478,12 @@ extension Game {
                 }
             }
         }
-        if (max.pos.y >= c.bottom - 0.01 && input.down) || input.dx != 0 {
+        let sideways = input.dx != 0 && !input.up && !input.down
+        if (max.pos.y >= c.bottom - 0.01 && input.down) || sideways {
             if let g = world.groundY(max.pos.x, from: max.pos.y - 0.3, to: max.pos.y + 0.35) {
                 max.pos.y = g; exitClimb()
-                if input.dx != 0 { max.face = input.dx }
-            } else if input.dx != 0 {
+                if sideways { max.face = input.dx }
+            } else if sideways {
                 // Let go: drop off the climb with a little push to the side.
                 exitClimb()
                 max.ground = false
@@ -470,6 +495,7 @@ extension Game {
 
     func exitClimb() {
         max.mode = .walk; max.climbID = nil; max.ground = true; max.vy = 0; max.vyG = 0; max.swingOn = false
+        climbCooldown = 0.3; needUpRelease = true; max.sway = 0; max.swayV = 0
     }
 
     /// Is there earth right against Max on this side?
@@ -487,7 +513,7 @@ extension Game {
         while y > max.pos.y - 8.5 {
             if world.hardAt(x, y) { return nil }
             if !world.solid(x, y) && !world.solid(x, y - 0.6) && !world.solid(x, y - 1.2) {
-                guard let t = world.groundY(x, from: y, to: max.pos.y), max.pos.y - t > 0.9 else { return nil }
+                guard let t = world.groundY(x, from: y, to: max.pos.y), max.pos.y - t > 1.45 else { return nil }
                 // Room to stand at the top, and a clear line for Max's own body on the way up.
                 if world.solid(x + Double(dir) * 0.4, t - 1.2) { return nil }
                 let lineX = max.pos.x + Double(dir) * 0.08

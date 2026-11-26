@@ -33,6 +33,10 @@ public struct Max: Codable, Sendable {
 
     // climbing: the body swings like a pendulum under the hands
     public var sway = 0.0, swayV = 0.0
+    /// Drawing offset that glides away after a snap, so Max never visibly jumps.
+    public var visOff = V2(0, 0)
+    /// Pushing into something that won't give: stand braced instead of twitching the walk cycle.
+    public var pushing = false
 
     // digging
     public var swing = 0.0, swingOn = false, swingKind: SwingKind = .side

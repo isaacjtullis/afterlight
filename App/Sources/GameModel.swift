@@ -22,6 +22,9 @@ struct UIState: Equatable {
     var jobTotal = 0
     var packUsed = 0
     var wood = 0
+    var hasFlashlight = false
+    var aim = 0          // -1 the wheel points up, 1 down, 0 ahead
+    var flashOn = false
     var pulseDown = false
     var ordersOK = false
     var speech: String? = nil
@@ -201,6 +204,9 @@ final class GameModel: ObservableObject {
         }
         u.packUsed = Inventory.capacity - g.inv.freeSlots
         u.wood = g.inv.wood
+        u.hasFlashlight = g.inv.has(.flashlight) && g.story.flags.contains("sawShaft")
+        u.flashOn = g.story.flags.contains("flashOn")
+        u.aim = input.up ? -1 : (input.climbDown ? 1 : 0)
         if g.speechT > 0 && !g.speechText.isEmpty { u.speech = g.speechText; u.speaker = g.speechWho == "mara" ? "Mara" : g.speechWho }
         if let id = g.activeJobID(for: "mara"), let j = g.job(id), j.status == .working {
             let s = Int(j.secondsLeft.rounded(.up))

@@ -74,7 +74,6 @@ enum TerrainArt {
                     if q.solid && q != .metal { t = q; cc = c + dc; break }
                 }
             }
-            if t == .root { return 0x5e3b26 }
             if t == .loose { return 0x86604a }
             if t == .seam { return 0x7a5a48 }
             return cc >= Landmarks.caveStart - 1 ? 0x55323d : 0x66412f
@@ -147,19 +146,6 @@ enum TerrainArt {
                     ctx.setFillColor(color(0x3a3036))
                     ctx.fillEllipse(in: CGRect(x: X + 0.12, y: Y + 0.12, width: 0.07, height: 0.07))
                     ctx.fillEllipse(in: CGRect(x: X + 0.8, y: Y + 0.12, width: 0.07, height: 0.07))
-                } else if t == .root {
-                    // Bark: long dark grain lines and a few pale knots.
-                    ctx.setStrokeColor(color(0x3a2216, 0.8)); ctx.setLineWidth(0.05)
-                    for i in 0..<3 {
-                        let ox = Double(c) + 0.15 + Double(i) * 0.3, oy = Double(r) + hash2(c + i, r) * 0.3
-                        if w.solid(ox, oy + 0.3) {
-                            ctx.move(to: CGPoint(x: ox, y: oy)); ctx.addQuadCurve(to: CGPoint(x: ox + 0.12, y: oy + 0.8), control: CGPoint(x: ox - 0.12, y: oy + 0.4))
-                        }
-                    }
-                    ctx.strokePath()
-                    if hash2(c, r * 7) < 0.35 && w.solid(Double(c) + 0.5, Double(r) + 0.5) {
-                        ctx.setFillColor(color(0x8a5c3a)); ctx.fillEllipse(in: CGRect(x: X + 0.4, y: Y + 0.4, width: 0.18, height: 0.12))
-                    }
                 } else if t == .loose || t == .seam {
                     ctx.setFillColor(color(0xffe6c8, 0.14))
                     for i in 0..<4 {
@@ -169,6 +155,51 @@ enum TerrainArt {
                 }
             }
         }
+        // Roots: thick, knotted, bark-ringed limbs threading through the earth, drawn along each root's run.
+        var roots: [(Int, Int)] = []
+        for r in (r0 - 1)...(r1 + 1) { for c in (c0 - 1)...(c1 + 1) where w.m(c, r) == .root { roots.append((c, r)) } }
+        if !roots.isEmpty {
+            func center(_ c: Int, _ r: Int) -> CGPoint {
+                CGPoint(x: CGFloat(c) + 0.5 + CGFloat(hash2(c, r * 3) - 0.5) * 0.25, y: CGFloat(r) + 0.5)
+            }
+            let limbs = CGMutablePath()
+            for (c, r) in roots {
+                let p = center(c, r)
+                limbs.move(to: p); limbs.addLine(to: p)
+                for (dc, dr) in [(1, 0), (0, 1), (1, 1), (-1, 1)] where w.m(c + dc, r + dr) == .root {
+                    let q = center(c + dc, r + dr)
+                    limbs.move(to: p)
+                    limbs.addQuadCurve(to: q, control: CGPoint(x: (p.x + q.x) / 2 + 0.15, y: (p.y + q.y) / 2))
+                }
+            }
+            ctx.setLineCap(.round); ctx.setLineJoin(.round)
+            ctx.addPath(limbs); ctx.setStrokeColor(color(0x2a170d)); ctx.setLineWidth(1.0); ctx.strokePath()
+            ctx.addPath(limbs); ctx.setStrokeColor(color(0x6e4529)); ctx.setLineWidth(0.8); ctx.strokePath()
+            ctx.addPath(limbs); ctx.setStrokeColor(color(0x8f5f39)); ctx.setLineWidth(0.36); ctx.strokePath()
+            for (c, r) in roots {
+                let p = center(c, r)
+                // bark rings and grain across the limb
+                ctx.setStrokeColor(color(0x3a2214, 0.85)); ctx.setLineWidth(0.05)
+                for k in 0..<2 {
+                    let y = p.y - 0.25 + CGFloat(k) * 0.45 + CGFloat(hash2(c + k, r)) * 0.1
+                    ctx.move(to: CGPoint(x: p.x - 0.36, y: y)); ctx.addQuadCurve(to: CGPoint(x: p.x + 0.36, y: y + 0.05), control: CGPoint(x: p.x, y: y + 0.12))
+                }
+                ctx.strokePath()
+                ctx.setStrokeColor(color(0xb07a4c, 0.6)); ctx.setLineWidth(0.04)
+                ctx.move(to: CGPoint(x: p.x - 0.12, y: p.y - 0.4)); ctx.addLine(to: CGPoint(x: p.x - 0.08, y: p.y + 0.4)); ctx.strokePath()
+                if hash2(c * 7, r) < 0.3 {
+                    ctx.setFillColor(color(0x4a2c1a)); ctx.fillEllipse(in: CGRect(x: p.x + 0.05, y: p.y - 0.1, width: 0.2, height: 0.14))
+                    ctx.setFillColor(color(0x9a6a40)); ctx.fillEllipse(in: CGRect(x: p.x + 0.09, y: p.y - 0.07, width: 0.1, height: 0.07))
+                }
+                // rootlets
+                if hash2(c, r * 11) < 0.4 {
+                    ctx.setStrokeColor(color(0x5a3820)); ctx.setLineWidth(0.06)
+                    let s: CGFloat = hash2(c, r) < 0.5 ? -1 : 1
+                    ctx.move(to: CGPoint(x: p.x + s * 0.35, y: p.y)); ctx.addQuadCurve(to: CGPoint(x: p.x + s * 0.85, y: p.y + 0.45), control: CGPoint(x: p.x + s * 0.7, y: p.y)); ctx.strokePath()
+                }
+            }
+        }
+
         // Finds showing through the earth: little flecks of colour where something is buried.
         for b in w.buried where !b.revealed && b.id != "crystal" && b.pos.x >= Double(c0) - 1 && b.pos.x <= Double(c1) + 2 && b.pos.y >= Double(r0) - 1 && b.pos.y <= Double(r1) + 2 {
             let col: UInt32

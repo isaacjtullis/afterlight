@@ -9,12 +9,14 @@ public struct GameInput: Equatable, Sendable {
     public var digUp = false
     /// The wheel pushed past its ring: run.
     public var run = false
-    /// The wheel pulled down: climb down a ladder or rungs (never digs).
+    /// The wheel pulled down: climb down a ladder or rungs, or aim DIG down.
     public var climbDown = false
-    public init(dx: Int = 0, up: Bool = false, down: Bool = false, dig: Bool = false, digUp: Bool = false, run: Bool = false, climbDown: Bool = false) {
-        self.dx = dx; self.up = up; self.down = down; self.dig = dig; self.digUp = digUp; self.run = run; self.climbDown = climbDown
+    /// The JUMP button.
+    public var jump = false
+    public init(dx: Int = 0, up: Bool = false, down: Bool = false, dig: Bool = false, digUp: Bool = false, run: Bool = false, climbDown: Bool = false, jump: Bool = false) {
+        self.dx = dx; self.up = up; self.down = down; self.dig = dig; self.digUp = digUp; self.run = run; self.climbDown = climbDown; self.jump = jump
     }
-    var any: Bool { dx != 0 || up || down || dig || digUp }
+    var any: Bool { dx != 0 || up || down || dig || digUp || jump }
 }
 
 /// Things that happened this frame, for sound, haptics, particles and UI.
@@ -128,6 +130,11 @@ public final class Game {
     var walkHold = 0.0, walkHoldDir = 0
     var runWanted = false
     var js = JumpState()
+    // Holding the wheel up or down for a moment takes hold of a climb; a brush doesn't.
+    var upHeld = 0.0, downHeld = 0.0
+    var climbCooldown = 0.0
+    /// After stepping off a climb, ▲ must be let go before Max grabs another one.
+    var needUpRelease = false
     // Never stuck: pushing at something soft for a moment clears a way through it.
     var stuckT = 0.0, stuckX = 0.0
 
@@ -183,7 +190,10 @@ public final class Game {
         let freshDx = input.dx != 0 && input.dx != prev.dx
         if order != nil && input.any && !prev.any { stopOrder("player") }
         let freshDigUp = input.digUp && !prev.digUp
+        let freshJump = input.jump && !prev.jump
         prev = input
+        let prePos = max.pos
+        defer { smoothSnaps(from: prePos) }
 
         // Taps: a quick press on an arrow still takes a short step; a quick DIG still lands one swing.
         var input = input
@@ -222,30 +232,37 @@ public final class Game {
             }
             dir = input.dx
             if dir != 0 { story.flags.insert("moved"); max.face = dir }
-            if (input.up || input.down || input.climbDown) && tryEnterClimb(up: input.up) {
+            if !input.up { needUpRelease = false }
+            upHeld = input.up && !needUpRelease ? upHeld + dt : 0
+            downHeld = (input.climbDown && !input.dig) ? downHeld + dt : 0
+            climbCooldown = Swift.max(0, climbCooldown - dt)
+            // Take hold of a ladder or rungs only on a deliberate hold of the wheel, never mid-dig.
+            if climbCooldown <= 0 && !input.dig && (upHeld > 0.14 || downHeld > 0.14) && tryEnterClimb(up: upHeld > 0.14) {
                 updateFeel(dt); storyTick(dt); return
             }
-            // ▲ against an earth ledge cuts footholds and climbs it (in a hole, either wall will do).
-            // Anywhere else, a tap of ▲ is a jump.
+            // Footholds only up earth too tall to jump, and only after holding the wheel up against it.
             var climbed = false
-            if input.up && !input.dig && !input.digUp && max.ground && max.oneShot == nil {
+            if upHeld > 0.3 && !input.dig && max.ground && max.oneShot == nil && climbCooldown <= 0 {
                 climbed = tryFoothold(dir: max.face)
                 if !climbed && wallBeside(max.face) { climbed = tryFoothold(dir: -max.face) }
             }
-            jumpTick(tap: fresh.up && !climbed && !input.dig && !input.digUp, held: input.up, blocked: climbed, dt: dt)
-            if (input.digUp || (input.dig && input.up)) && !climbed {
-                swingWanted = .up
+            jumpTick(tap: freshJump, held: input.jump, blocked: climbed, dt: dt)
+            // One DIG button: the wheel aims it. Up digs overhead, down digs the floor, otherwise straight ahead.
+            let aimUp = input.up || input.digUp
+            let aimDown = input.climbDown || (input.down && !input.dig)
+            if (input.dig && aimUp) || input.digUp {
+                if !climbed { swingWanted = .up }
+            } else if aimDown && (input.dig || input.down) && max.ground {
+                let below = V2(max.pos.x, max.pos.y + 0.25)
+                if world.hardAt(below.x, below.y) {
+                    if fresh.dig || fresh.down { startOneShot(.clankDown, at: V2(max.pos.x, max.pos.y + 0.05)) }
+                } else if world.solid(below.x, below.y) || buriedBelow() != nil {
+                    swingWanted = .down
+                }
             } else if input.dig {
                 if let pr = frontProbe(max.face) {
                     if !pr.hard { swingWanted = .side } else if pr.d < 0.45 && fresh.dig { startOneShot(.clank, at: pr.point) }
                 } else if fresh.dig { startOneShot(.air, at: nil) }
-            } else if input.down && max.ground {
-                let below = V2(max.pos.x, max.pos.y + 0.25)
-                if world.hardAt(below.x, below.y) {
-                    if fresh.down { startOneShot(.clankDown, at: V2(max.pos.x, max.pos.y + 0.05)) }
-                } else if world.solid(below.x, below.y) || buriedBelow() != nil {
-                    swingWanted = .down
-                }
             }
         }
 
@@ -277,7 +294,7 @@ public final class Game {
         let want = (lookUp || (story.flags.contains("sawShaft") && underShaft && idle && planning == nil && order == nil)) ? 1.0 : 0.0
         max.lookUp = damp(max.lookUp, want, 3, dt)
         max.beamA = damp(max.beamA, lerpD(0.05, -1.5, max.lookUp) + sin(max.phase * 2) * 0.025 * max.walkAmp, 6, dt)
-        if inv.has(.flashlight) && story.flags.contains("flashOn") { max.flashI = 1 }
+        if inv.has(.flashlight) { max.flashI = damp(max.flashI, story.flags.contains("flashOn") ? 1 : 0, 18, dt) }
     }
 
     public var underShaft: Bool { max.pos.x > 24.7 && max.pos.x < 27.3 && abs(max.pos.y - 30) < 0.5 }

@@ -229,6 +229,10 @@ struct HUDView: View {
             }
             Spacer()
             HStack(spacing: 10) {
+                if ui.hasFlashlight {
+                    Button { model.game.toggleFlashlight(); model.haptics.tap() } label: { circleIcon(ui.flashOn ? "flashlight.on.fill" : "flashlight.off.fill") }
+                        .accessibilityIdentifier("flashlight")
+                }
                 if ui.ordersOK {
                     Button { model.sheet = .mission } label: { circleIcon("sun.horizon") }
                 }
@@ -292,18 +296,19 @@ struct HUDView: View {
                         }
                         .transition(.scale.combined(with: .opacity))
                     }
-                    // Three ways to dig, laid out the way they point.
-                    VStack(spacing: 10) {
-                        HoldButton(id: "dig.up", onChange: { model.input.digUp = $0 }) { p in
-                            GlassCircle(size: 66, pressed: p, icon: AnyView(DigIcon().frame(width: 30, height: 30).rotationEffect(.degrees(-90))), caption: "UP")
+                    // One DIG: it cuts wherever the wheel points (ahead, up or down). JUMP beside it.
+                    HStack(alignment: .bottom, spacing: 14) {
+                        HoldButton(id: "jump", onChange: { model.input.jump = $0 }) { p in
+                            GlassCircle(size: 64, pressed: p, icon: AnyView(Arrowhead().frame(width: 20, height: 20).rotationEffect(.degrees(-90))), caption: "JUMP")
                         }
-                        HStack(alignment: .center, spacing: 12) {
-                            HoldButton(id: "dig.down", onChange: { model.input.down = $0 }) { p in
-                                GlassCircle(size: 66, pressed: p, pulse: ui.pulseDown, icon: AnyView(DigIcon().frame(width: 30, height: 30).rotationEffect(.degrees(90))), caption: "DOWN")
-                            }
-                            HoldButton(id: "dig", onChange: { model.input.dig = $0 }) { p in
-                                GlassCircle(size: 66, pressed: p, icon: AnyView(DigIcon().frame(width: 30, height: 30).scaleEffect(x: CGFloat(ui.facing), y: 1)), caption: "DIG")
-                            }
+                        .padding(.bottom, 34)
+                        HoldButton(id: "dig", onChange: { model.input.dig = $0 }) { p in
+                            GlassCircle(size: 86, pressed: p, pulse: ui.pulseDown,
+                                        icon: AnyView(DigIcon().frame(width: 38, height: 38)
+                                            .rotationEffect(.degrees(Double(ui.aim) * 90))
+                                            .scaleEffect(x: ui.aim != 0 ? 1 : CGFloat(ui.facing), y: 1)
+                                            .animation(.spring(duration: 0.2), value: ui.aim)),
+                                        caption: "DIG")
                         }
                     }
                 }
@@ -422,7 +427,7 @@ struct MoveWheel: View {
                     .rotationEffect(.degrees(Double(i) * 90))
                     .offset(x: i == 0 ? R - 14 : i == 2 ? -(R - 14) : 0, y: i == 1 ? R - 14 : i == 3 ? -(R - 14) : 0)
             }
-            Text(running ? "RUN" : (v.y < -0.6 ? (climbing ? "CLIMB" : "JUMP") : ""))
+            Text(running ? "RUN" : (v.y < -0.6 ? (climbing ? "CLIMB" : "UP") : (v.y > 0.6 ? "DOWN" : "")))
                 .font(.avenir(10, "DemiBold")).tracking(1.2).foregroundStyle(Color.amber)
                 .offset(y: -R - 22)
             Circle()
