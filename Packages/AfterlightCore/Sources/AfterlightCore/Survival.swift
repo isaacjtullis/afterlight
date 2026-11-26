@@ -19,15 +19,24 @@ extension Game {
             }
         }
         if battery > 30 { story.flags.remove("said.lowBattery") }
-        // Working with nothing left costs health.
-        if max.stamina <= 0.5 && (max.swingOn || max.running) { hurt(3 * dt, why: "exhausted") }
+        // Hunger: slow, steady. Fed, Max heals a little over time; starving, he weakens.
+        max.hunger = Swift.max(0, max.hunger - Tuning.hungerPerMinute / 60 * dt)
+        if max.hunger > 50 && max.health < max.healthMax { max.health = Swift.min(max.healthMax, max.health + 0.08 * dt) }
+        if max.hunger <= 0 { hurt(0.4 * dt, why: "starving") }
+        if max.hunger < 25 && !story.flags.contains("said.hungry") {
+            story.flags.insert("said.hungry")
+            think(packedFood ? "I’m hungry. Good thing I packed food." : "I’m hungry. I should have packed food.", 2.6)
+            later(2.8) { $0.hint("Open your bag and tap food to eat it. Pack rations at the pantry before heading out.", 7) }
+        }
+        if max.hunger > 50 { story.flags.remove("said.hungry") }
+        if max.hammerT > 0 { max.hammerT = Swift.max(0, max.hammerT - dt) }
     }
 
     func hurt(_ amount: Double, why: String) {
         guard amount > 0 else { return }
         max.health = Swift.max(0, max.health - amount)
         if why == "fall" && amount > 3 { think("Ow.", 1.2) }
-        if why == "exhausted" && !story.flags.contains("said.exhausted") {
+        if why == "starving" && !story.flags.contains("said.exhausted") {
             story.flags.insert("said.exhausted")
             think("I’m pushing too hard. I need to eat.", 2.6)
         }
@@ -64,5 +73,40 @@ extension Game {
     public func recover(stamina s: Double, health h: Double) {
         max.stamina = Swift.min(max.staminaMax, max.stamina + s)
         max.health = Swift.min(max.healthMax, max.health + h)
+    }
+
+    public var packedFood: Bool { inv.slots.contains { $0?.id.food != nil } }
+
+    /// Eat something from the bag.
+    public func eat(_ id: ItemID) {
+        guard let f = id.food, inv.count(id) > 0 else { return }
+        guard max.hunger < 95 || max.stamina < max.staminaMax - 5 else { think("I’m full.", 1.2); return }
+        inv.remove(id, 1)
+        max.hunger = Swift.min(100, max.hunger + f.hunger)
+        recover(stamina: f.stamina, health: f.health)
+        think(["Better.", "That helps.", "Mm. Cold, but it helps."][Int(time) % 3], 1.6)
+        emit(.chime)
+        emit(.saveNow)
+    }
+
+    /// Take a ration from the pantry into the bag.
+    public func packRation() {
+        guard let i = world.propIndex("pantry"), let si = world.props[i].stock.firstIndex(where: { $0.id == .ration }) else { think("No tins left.", 1.6); return }
+        guard inv.add(.ration, 1) == 1 else { think("My bag’s full.", 1.6); return }
+        world.props[i].stock[si].count -= 1
+        if world.props[i].stock[si].count <= 0 { world.props[i].stock.remove(at: si) }
+        story.flags.insert("packedFood")
+        if !story.flags.contains("said.packed") {
+            story.flags.insert("said.packed")
+            hint("Packed. When the hunger meter runs low out there, open the bag and tap the ration to eat it.", 7)
+        }
+        emit(.saveNow)
+    }
+
+    /// Hammer at something: Max swings, sparks fly.
+    func hammer(at p: V2, for t: Double = 1.2) {
+        max.hammerT = t
+        max.busy = Swift.max(max.busy, t)
+        for i in 0..<Int(t / 0.3) { later(Double(i) * 0.3 + 0.15) { g in g.emit(.spark(at: p)); g.emit(.hammerHit) } }
     }
 }

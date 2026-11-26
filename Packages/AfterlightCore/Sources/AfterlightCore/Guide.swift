@@ -7,9 +7,11 @@ extension Game {
     public var guide: V2? {
         guard started, cine == nil else { return nil }
         let f = story.flags
-        if f.contains("flashOn") && !f.contains("shelterLit") && story.chapter <= 2, let sl = world.prop("shelter.light") {
-            if available(.lampCell) == 0 || available(.wire) == 0, let l = world.prop("locker.ws"), !l.stock.isEmpty { return V2(l.pos.x, l.pos.y - 1.5) }
-            return V2(sl.pos.x, sl.pos.y + 0.6)
+        if f.contains("flashOn") && !f.contains("shelterLit") && story.chapter <= 2, let gen = world.prop("generator") {
+            if f.contains("genFreed") && available(.batteryCell) == 0, let car = world.prop("liftcar"), car.stock.contains(where: { $0.id == .batteryCell }) {
+                return V2(car.pos.x, car.pos.y - 1.5)
+            }
+            return V2(gen.pos.x, gen.pos.y - 1.5)
         }
         guard story.chapter == 2 else { return nil }
         let ladderIn = world.climbs.contains { $0.id == "ladder.shaft" }

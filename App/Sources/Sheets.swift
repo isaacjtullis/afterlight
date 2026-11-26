@@ -31,6 +31,7 @@ struct SheetHost: View {
                         case .pack, .journal: EmptyView()
                         case .mission: MissionView()
                         case .camp: CampView()
+                        case .pantry: PantryView()
                         case .map: MapView()
                         }
                     }
@@ -47,13 +48,14 @@ struct SheetHost: View {
 
     var title: String {
         switch sheet {
-        case .workbench: return "Workbench"
+        case .workbench: return "Build"
         case .storage: return "Workshop storage"
         case .pack: return "Belt and pack"
         case .journal: return "Journal"
         case .mission: return "Today’s job for Max"
         case .camp: return model.game.openCamp.flatMap { id in model.game.world.prop(id)?.flags.first { $0.hasPrefix("name:") }.map { String($0.dropFirst(5)) } } ?? "Camp crate"
         case .map: return "Map"
+        case .pantry: return "Pantry"
         }
     }
 }
@@ -76,44 +78,282 @@ struct Row<Right: View>: View {
     }
 }
 
+/// Build: every recipe Max knows, with its art, what it takes, and what's missing.
 struct WorkbenchView: View {
     @EnvironmentObject var model: GameModel
     @State private var tick = 0
     var body: some View {
         let g = model.game
+        Text(g.atBench ? "At a workbench: everything can be built here." : "Away from a workbench: only field builds. The rest need a bench.")
+            .font(.avenir(13)).foregroundStyle(g.atBench ? Color.amber : Color.cream.opacity(0.7))
+        HStack(spacing: 6) {
+            WoodIcon().frame(width: 18, height: 14)
+            Text("\(g.inv.wood) wood").font(.avenir(13, "DemiBold")).foregroundStyle(Color.cream)
+        }
         if g.knownRecipes.isEmpty {
-            Text("Nothing to make yet. Recipes appear once Max has seen the problem they solve.").font(.avenir(15)).foregroundStyle(Color.cream.opacity(0.8))
+            Text("Nothing to build yet. Ideas come once Max has seen the problem they solve.").font(.avenir(15)).foregroundStyle(Color.cream.opacity(0.8))
         }
         ForEach(g.knownRecipes, id: \.id) { r in
-            let parts = r.inputs.map { "\($0.id.name) \(min(g.available($0.id), $0.count))/\($0.count)" }.joined(separator: " · ")
-            Row(title: r.name, detail: r.note + "\n" + parts) {
-                VStack(spacing: 6) {
-                    Button("Make") { g.craft(r.id); tick += 1 }
-                        .buttonStyle(PillStyle(prominent: true)).disabled(!g.canCraft(r)).opacity(g.canCraft(r) ? 1 : 0.4)
-                    Button(g.pinnedRecipe == r.id ? "Pinned" : "Pin") { g.pinnedRecipe = r.id; tick += 1 }
-                        .font(.avenir(13)).foregroundStyle(Color.amber)
+            RecipeCard(recipe: r, blocker: g.buildBlocker(r), game: g) { g.craft(r.id); flush(); tick += 1 }
+        }
+        Text("At home, the bench pulls parts from storage as well as your bag.").font(.avenir(12)).foregroundStyle(Color.cream.opacity(0.5))
+            .id(tick)
+    }
+    private func flush() { for e in model.game.drainEvents() { model.handleExternal(e) } }
+}
+
+/// One thing to build: drawn on leather, with its parts in pockets underneath.
+struct RecipeCard: View {
+    var recipe: Recipe
+    var blocker: String?
+    var game: Game
+    var build: () -> Void
+    var body: some View {
+        let ok = blocker == nil
+        HStack(alignment: .top, spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 14).fill(Color(red: 0.2, green: 0.13, blue: 0.09))
+                RoundedRectangle(cornerRadius: 14).stroke(Color(red: 0.85, green: 0.68, blue: 0.45).opacity(0.4), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                ItemArt(recipe: recipe).padding(10)
+            }
+            .frame(width: 74, height: 74)
+            .saturation(ok ? 1 : 0.2).opacity(ok ? 1 : 0.6)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text(recipe.name).font(.avenir(16, "DemiBold")).foregroundStyle(Color.cream)
+                    if !recipe.bench { Text("FIELD").font(.avenir(9, "Bold")).tracking(1).foregroundStyle(.black).padding(.horizontal, 5).padding(.vertical, 2).background(Capsule().fill(Color.amber)) }
+                }
+                Text(recipe.note).font(.avenir(12)).foregroundStyle(Color.cream.opacity(0.7)).fixedSize(horizontal: false, vertical: true)
+                // the parts, each in a little pocket
+                FlowRow {
+                    if recipe.wood > 0 { part(icon: AnyView(WoodIcon()), name: "Wood", have: game.inv.wood, need: recipe.wood) }
+                    ForEach(recipe.inputs, id: \.self) { s in
+                        part(icon: AnyView(Image(systemName: s.id.symbol).resizable().scaledToFit().foregroundStyle(s.id.tint)), name: s.id.name, have: game.available(s.id), need: s.count)
+                    }
+                }
+                HStack {
+                    if let b = blocker { Text(b).font(.avenir(12, "DemiBold")).foregroundStyle(Color(red: 0.95, green: 0.55, blue: 0.45)) }
+                    Spacer()
+                    Button("Build") { build() }.buttonStyle(PillStyle(prominent: true)).disabled(!ok).opacity(ok ? 1 : 0.35)
                 }
             }
         }
-        Text("At home, the bench pulls parts from storage as well as your pack.").font(.avenir(13)).foregroundStyle(Color.cream.opacity(0.55))
-            .id(tick)
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: 18).fill(LinearGradient(colors: [Color(red: 0.27, green: 0.17, blue: 0.11), Color(red: 0.17, green: 0.1, blue: 0.07)], startPoint: .top, endPoint: .bottom)))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.black.opacity(0.4)))
+    }
+    private func part(icon: AnyView, name: String, have: Int, need: Int) -> some View {
+        let enough = have >= need
+        return HStack(spacing: 4) {
+            icon.frame(width: 14, height: 14)
+            Text("\(min(have, need))/\(need)").font(.avenir(11, "DemiBold")).monospacedDigit()
+        }
+        .foregroundStyle(enough ? Color.cream : Color(red: 0.95, green: 0.55, blue: 0.45))
+        .padding(.horizontal, 7).frame(height: 24)
+        .background(RoundedRectangle(cornerRadius: 8).fill(Color.black.opacity(0.3)))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(enough ? Color.amber.opacity(0.4) : Color.red.opacity(0.4)))
+        .accessibilityLabel("\(name) \(have) of \(need)")
     }
 }
 
+/// Wraps its children onto new lines when they run out of width.
+struct FlowRow: Layout {
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let w = proposal.width ?? 300
+        var x: CGFloat = 0, y: CGFloat = 0, row: CGFloat = 0
+        for v in subviews { let s = v.sizeThatFits(.unspecified); if x + s.width > w { x = 0; y += row + 6; row = 0 }; x += s.width + 6; row = max(row, s.height) }
+        return CGSize(width: w, height: y + row)
+    }
+    func placeSubviews(in b: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var x = b.minX, y = b.minY, row: CGFloat = 0
+        for v in subviews { let s = v.sizeThatFits(.unspecified); if x + s.width > b.maxX { x = b.minX; y += row + 6; row = 0 }; v.place(at: CGPoint(x: x, y: y), proposal: .unspecified); x += s.width + 6; row = max(row, s.height) }
+    }
+}
+
+/// Small drawings of the things Max builds.
+struct ItemArt: View {
+    var recipe: Recipe
+    var body: some View {
+        Canvas { ctx, size in
+            let s = min(size.width, size.height)
+            func R(_ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat) -> CGRect { CGRect(x: x * s, y: y * s, width: w * s, height: h * s) }
+            func fill(_ p: Path, _ c: Color) { ctx.fill(p, with: .color(c)) }
+            let wood = Color(red: 0.62, green: 0.42, blue: 0.26), dark = Color(red: 0.25, green: 0.17, blue: 0.12), steel = Color(red: 0.62, green: 0.65, blue: 0.7)
+            switch recipe.id {
+            case "lamp":
+                fill(Path(roundedRect: R(0.3, 0.08, 0.4, 0.1), cornerRadius: 3), dark)
+                ctx.stroke(Path(ellipseIn: R(0.4, 0.0, 0.2, 0.14)), with: .color(dark), lineWidth: 2)
+                fill(Path(roundedRect: R(0.28, 0.18, 0.44, 0.58), cornerRadius: 6), dark)
+                fill(Path(roundedRect: R(0.34, 0.24, 0.32, 0.46), cornerRadius: 4), Color(red: 1, green: 0.82, blue: 0.45))
+                fill(Path(ellipseIn: R(0.43, 0.36, 0.14, 0.22)), Color(red: 1, green: 0.95, blue: 0.75))
+                fill(Path(roundedRect: R(0.24, 0.76, 0.52, 0.1), cornerRadius: 3), dark)
+            case "ladder":
+                fill(Path(R(0.25, 0.05, 0.08, 0.9)), steel); fill(Path(R(0.67, 0.05, 0.08, 0.9)), steel)
+                for i in 0..<5 { fill(Path(R(0.25, 0.15 + CGFloat(i) * 0.17, 0.5, 0.06)), steel.opacity(0.8)) }
+            case "camp":
+                fill(Path(roundedRect: R(0.1, 0.4, 0.8, 0.5), cornerRadius: 4), wood)
+                for i in 0..<2 { fill(Path(R(0.1, 0.55 + CGFloat(i) * 0.15, 0.8, 0.03)), dark) }
+                fill(Path(roundedRect: R(0.18, 0.22, 0.64, 0.2), cornerRadius: 8), Color(red: 0.35, green: 0.43, blue: 0.42))
+            case "fieldBench":
+                fill(Path(roundedRect: R(0.05, 0.35, 0.9, 0.12), cornerRadius: 3), wood)
+                fill(Path(R(0.12, 0.47, 0.08, 0.45)), dark); fill(Path(R(0.8, 0.47, 0.08, 0.45)), dark)
+                fill(Path(R(0.15, 0.7, 0.7, 0.05)), dark)
+                fill(Path(roundedRect: R(0.55, 0.18, 0.08, 0.18), cornerRadius: 2), steel)
+                fill(Path(roundedRect: R(0.25, 0.25, 0.2, 0.1), cornerRadius: 2), Color(red: 0.8, green: 0.6, blue: 0.3))
+            case "cot":
+                fill(Path(roundedRect: R(0.05, 0.45, 0.9, 0.14), cornerRadius: 5), Color(red: 0.42, green: 0.5, blue: 0.48))
+                fill(Path(roundedRect: R(0.08, 0.38, 0.22, 0.12), cornerRadius: 5), Color(red: 0.88, green: 0.82, blue: 0.7))
+                fill(Path(R(0.1, 0.59, 0.06, 0.25)), wood); fill(Path(R(0.84, 0.59, 0.06, 0.25)), wood)
+            case "cell":
+                fill(Path(roundedRect: R(0.25, 0.15, 0.5, 0.72), cornerRadius: 6), Color(red: 0.3, green: 0.55, blue: 0.5))
+                fill(Path(R(0.4, 0.07, 0.2, 0.09)), steel)
+                fill(Path(R(0.32, 0.35, 0.36, 0.06)), Color(red: 0.85, green: 0.95, blue: 1))
+                fill(Path(R(0.32, 0.55, 0.36, 0.06)), Color(red: 0.85, green: 0.95, blue: 1))
+            case "pick":
+                var p = Path(); p.move(to: CGPoint(x: 0.2 * s, y: 0.9 * s)); p.addLine(to: CGPoint(x: 0.62 * s, y: 0.3 * s))
+                ctx.stroke(p, with: .color(wood), lineWidth: 0.09 * s)
+                var h = Path(); h.move(to: CGPoint(x: 0.35 * s, y: 0.15 * s)); h.addQuadCurve(to: CGPoint(x: 0.92 * s, y: 0.45 * s), control: CGPoint(x: 0.75 * s, y: 0.12 * s))
+                ctx.stroke(h, with: .color(steel), lineWidth: 0.11 * s)
+            case "rope":
+                for i in 0..<3 { ctx.stroke(Path(ellipseIn: R(0.15 + CGFloat(i) * 0.04, 0.25 + CGFloat(i) * 0.04, 0.7 - CGFloat(i) * 0.08, 0.5 - CGFloat(i) * 0.08)), with: .color(Color(red: 0.85, green: 0.7, blue: 0.5)), lineWidth: 0.06 * s) }
+            case "tank":
+                fill(Path(roundedRect: R(0.2, 0.1, 0.6, 0.8), cornerRadius: 10), Color(red: 0.25, green: 0.4, blue: 0.48))
+                fill(Path(R(0.2, 0.35, 0.6, 0.05)), dark); fill(Path(R(0.2, 0.65, 0.6, 0.05)), dark)
+                fill(Path(ellipseIn: R(0.62, 0.5, 0.1, 0.1)), Color(red: 0.6, green: 0.85, blue: 1))
+            case "meal":
+                fill(Path(roundedRect: R(0.15, 0.35, 0.7, 0.45), cornerRadius: 8), Color(red: 0.75, green: 0.62, blue: 0.45))
+                ctx.stroke(Path(R(0.15, 0.5, 0.7, 0.01)), with: .color(dark), lineWidth: 2)
+                fill(Path(ellipseIn: R(0.35, 0.2, 0.3, 0.2)), Color(red: 0.55, green: 0.8, blue: 0.4))
+            case "flashlight":
+                fill(Path(roundedRect: R(0.1, 0.4, 0.55, 0.2), cornerRadius: 4), dark)
+                fill(Path(R(0.65, 0.33, 0.12, 0.34)), steel)
+                var beam = Path(); beam.move(to: CGPoint(x: 0.77 * s, y: 0.38 * s)); beam.addLine(to: CGPoint(x: s, y: 0.2 * s)); beam.addLine(to: CGPoint(x: s, y: 0.8 * s)); beam.addLine(to: CGPoint(x: 0.77 * s, y: 0.62 * s))
+                fill(beam, Color(red: 1, green: 0.9, blue: 0.6).opacity(0.6))
+            default:
+                if case .item(let it, _) = recipe.output {
+                    ctx.draw(Text(Image(systemName: it.symbol)).font(.system(size: s * 0.6)).foregroundColor(it.tint), at: CGPoint(x: size.width / 2, y: size.height / 2))
+                }
+            }
+        }
+    }
+}
+
+/// The pantry: eat now, or pack food for the road.
+struct PantryView: View {
+    @EnvironmentObject var model: GameModel
+    @State private var tick = 0
+    var body: some View {
+        let g = model.game
+        let tins = g.world.prop("pantry")?.stock.first { $0.id == .ration }?.count ?? 0
+        Text("Hunger drops slowly while you work. Eat here, or pack food and eat it from the bag when you’re out digging.")
+            .font(.avenir(14)).foregroundStyle(Color.cream.opacity(0.8))
+        Text("\(tins) tins left · hunger \(Int(g.max.hunger))").font(.avenir(14, "DemiBold")).foregroundStyle(Color.amber)
+        HStack {
+            Button("Eat now") { g.eatAndDrink(); flush(); tick += 1 }.buttonStyle(PillStyle(prominent: true))
+            Button("Pack a ration") { g.packRation(); flush(); tick += 1 }.buttonStyle(PillStyle(prominent: false)).disabled(tins == 0)
+        }
+        Text("Packed in your bag: \(g.inv.count(.ration)) ration\(g.inv.count(.ration) == 1 ? "" : "s"), \(g.inv.count(.trailMeal)) trail meal\(g.inv.count(.trailMeal) == 1 ? "" : "s")")
+            .font(.avenir(13)).foregroundStyle(Color.cream.opacity(0.7)).id(tick)
+    }
+    private func flush() { for e in model.game.drainEvents() { model.handleExternal(e) } }
+}
+
+/// Tap Max: what he's been thinking, and what's next.
+struct ThoughtsCard: View {
+    @EnvironmentObject var model: GameModel
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.35).ignoresSafeArea().onTapGesture { close() }
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(spacing: 10) {
+                    ZStack {
+                        Circle().fill(LinearGradient(colors: [Color(red: 0.36, green: 0.28, blue: 0.45), Color(red: 0.2, green: 0.15, blue: 0.26)], startPoint: .top, endPoint: .bottom))
+                        Text("M").font(.avenir(18, "DemiBold")).foregroundStyle(Color.cream)
+                    }
+                    .frame(width: 40, height: 40)
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("Max").font(.avenir(17, "DemiBold")).foregroundStyle(Color.amber)
+                        Text("thinking out loud").font(.avenir(12)).foregroundStyle(Color.cream.opacity(0.5))
+                    }
+                    Spacer()
+                    Button { close() } label: { Image(systemName: "xmark").foregroundStyle(Color.cream).frame(width: 40, height: 40) }
+                }
+                let log = model.thoughtLog.suffix(4)
+                if log.isEmpty { Text("Quiet down here.").font(.avenir(17)).italic().foregroundStyle(Color.cream) }
+                ForEach(Array(log.enumerated()), id: \.offset) { i, t in
+                    Text("“\(t)”").font(.avenir(i == log.count - 1 ? 19 : 15)).italic()
+                        .foregroundStyle(Color.cream.opacity(i == log.count - 1 ? 1 : 0.55))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if let c = model.ui.clue {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("WHAT’S NEXT").font(.avenir(11, "DemiBold")).tracking(1.5).foregroundStyle(Color.amber)
+                        Text(c).font(.avenir(16, "DemiBold")).foregroundStyle(Color.cream)
+                    }
+                    .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+                    .background(RoundedRectangle(cornerRadius: 16).fill(Color(red: 0.33, green: 0.21, blue: 0.14)))
+                }
+                HStack {
+                    Button("Journal") { close(); model.sheet = .journal }.buttonStyle(PillStyle(prominent: false))
+                    Button("Build") { close(); model.sheet = .workbench }.buttonStyle(PillStyle(prominent: false))
+                    Button("Bag") { close(); model.sheet = .pack }.buttonStyle(PillStyle(prominent: false))
+                }
+            }
+            .padding(20)
+            .background(RoundedRectangle(cornerRadius: 26).fill(LinearGradient(colors: [Color(red: 0.13, green: 0.09, blue: 0.1), Color(red: 0.09, green: 0.06, blue: 0.07)], startPoint: .top, endPoint: .bottom)))
+            .overlay(RoundedRectangle(cornerRadius: 26).stroke(Color.amber.opacity(0.25)))
+            .padding(.horizontal, 18)
+        }
+    }
+    private func close() { withAnimation(.easeOut(duration: 0.2)) { model.showThoughts = false } }
+}
+
+/// Workshop storage and the bag, side by side. Tap something to move it across.
 struct StorageView: View {
     @EnvironmentObject var model: GameModel
     @State private var tick = 0
     var body: some View {
         let g = model.game
-        Button("Put everything from the pack away") { g.depositAll(); tick += 1 }.buttonStyle(PillStyle(prominent: true))
-        let items = ItemID.allCases.filter { g.storage.count($0) > 0 }
-        if items.isEmpty { Text("Empty.").font(.avenir(15)).foregroundStyle(Color.cream.opacity(0.7)) }
-        ForEach(items, id: \.self) { id in
-            Row(title: "\(id.name) ×\(g.storage.count(id))", detail: id.blurb) {
-                Button("Take") { g.take(id, id.maxStack); tick += 1 }.buttonStyle(PillStyle(prominent: false))
+        let stored = ItemID.allCases.filter { g.storage.count($0) > 0 }
+        Text("Tap an item to move it. Bag holds \(Inventory.capacity) pockets; storage holds everything else.")
+            .font(.avenir(13)).foregroundStyle(Color.cream.opacity(0.7))
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("BAG · \(Inventory.capacity - g.inv.freeSlots)/\(Inventory.capacity)").font(.avenir(11, "DemiBold")).tracking(1.4).foregroundStyle(Color.amber)
+                ForEach(Array(g.inv.slots.enumerated()), id: \.offset) { i, s in
+                    if let s { tile(s.id, s.count, arrow: "arrow.right") { g.storeSlot(i); tick += 1 } }
+                }
+                if g.inv.freeSlots == Inventory.capacity { Text("Empty").font(.avenir(13)).foregroundStyle(Color.cream.opacity(0.4)) }
+                Button("Store all") { g.depositAll(); tick += 1 }.buttonStyle(PillStyle(prominent: false))
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("STORAGE").font(.avenir(11, "DemiBold")).tracking(1.4).foregroundStyle(Color.amber)
+                ForEach(stored, id: \.self) { id in
+                    tile(id, g.storage.count(id), arrow: "arrow.left") { g.take(id, id.maxStack); tick += 1 }
+                }
+                if stored.isEmpty { Text("Empty").font(.avenir(13)).foregroundStyle(Color.cream.opacity(0.4)) }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .id(tick)
+    }
+    private func tile(_ id: ItemID, _ n: Int, arrow: String, _ act: @escaping () -> Void) -> some View {
+        Button(action: { act(); model.haptics.tap() }) {
+            HStack(spacing: 8) {
+                Image(systemName: id.symbol).foregroundStyle(id.tint).frame(width: 22)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(id.name).font(.avenir(13, "DemiBold")).foregroundStyle(Color.cream).lineLimit(1).minimumScaleFactor(0.8)
+                    Text("×\(n)").font(.avenir(11)).foregroundStyle(Color.cream.opacity(0.6))
+                }
+                Spacer(minLength: 2)
+                Image(systemName: arrow).font(.system(size: 11, weight: .bold)).foregroundStyle(Color.amber)
+            }
+            .padding(.horizontal, 10).frame(height: 44)
+            .background(RoundedRectangle(cornerRadius: 12).fill(Color(red: 0.2, green: 0.13, blue: 0.09)))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(red: 0.85, green: 0.68, blue: 0.45).opacity(0.35), style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -143,6 +383,10 @@ extension ItemID {
         case .ration: return "fork.knife"
         case .campCrate: return "shippingbox.fill"
         case .glowcap: return "leaf.fill"
+        case .workbenchKit: return "hammer.fill"
+        case .cotKit: return "bed.double.fill"
+        case .woodLadder: return "stairs"
+        case .torch: return "flame.fill"
         case .copperOre: return "circle.hexagongrid.fill"
         case .ironOre: return "hexagon.fill"
         case .quartz: return "rhombus.fill"
@@ -175,6 +419,7 @@ extension Tool {
         case .shovel: return "Cuts earth sideways and down, hacks roots, digs footholds. Good for beds, too."
         case .flashlight: return "One soft beam. Shows what’s ahead."
         case .shortPick: return "Dig UP to open soft seams overhead, and packed earth too."
+        case .hammer: return "For fixing things: seized machines, stuck panels, setting things up."
         }
     }
 }
@@ -310,6 +555,7 @@ struct BagSheet: View {
         case .shovel: DigIcon().rotationEffect(.degrees(-45))
         case .flashlight: Image(systemName: "flashlight.on.fill").resizable().scaledToFit()
         case .shortPick: Image(systemName: "hammer.fill").resizable().scaledToFit()
+        case .hammer: Image(systemName: "hammer").resizable().scaledToFit()
         }
     }
 
@@ -363,6 +609,11 @@ struct BagSheet: View {
                     Button("Store") { g.storeSlot(i); picked = nil; model.haptics.tap(); bump += 1 }
                         .font(.avenir(13, "DemiBold")).foregroundStyle(.black)
                         .padding(.horizontal, 12).frame(height: 30).background(Capsule().fill(Color.amber))
+                }
+                if s.id.food != nil {
+                    Button("Eat") { g.eat(s.id); picked = g.inv.slots[i] == nil ? nil : i; model.haptics.tap(); bump += 1 }
+                        .font(.avenir(13, "DemiBold")).foregroundStyle(.black)
+                        .padding(.horizontal, 12).frame(height: 30).background(Capsule().fill(Color(red: 0.7, green: 0.85, blue: 0.45)))
                 }
                 Button("Drop") { g.dropSlot(i); picked = nil; model.haptics.tap(); bump += 1 }
                     .font(.avenir(13, "DemiBold")).foregroundStyle(Color.cream)

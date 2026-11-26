@@ -35,6 +35,10 @@ struct QuartersView: View {
                     } }
                     // rug
                     ctx.fill(Path(roundedRect: CGRect(x: room.minX + unit * 3, y: room.minY + unit * 4.3, width: unit * 3, height: unit * 1.8), cornerRadius: unit * 0.3), with: .color(Color(red: 0.55, green: 0.25, blue: 0.2).opacity(0.55)))
+                    if g.quarters.decor.contains("table") {
+                        ctx.fill(Path(roundedRect: CGRect(x: room.minX + unit * 4.0, y: room.minY + unit * 4.7, width: unit * 1.2, height: unit * 0.8), cornerRadius: unit * 0.12), with: .color(Color(red: 0.55, green: 0.37, blue: 0.22)))
+                        ctx.fill(Path(ellipseIn: CGRect(x: room.minX + unit * 5.35, y: room.minY + unit * 4.85, width: unit * 0.5, height: unit * 0.5)), with: .color(Color(red: 0.45, green: 0.3, blue: 0.18)))
+                    }
                     // door gap
                     ctx.fill(Path(CGRect(x: room.minX + unit * 4, y: room.maxY - 2, width: unit, height: unit * 0.4)), with: .color(Color.black))
                 }
@@ -110,12 +114,12 @@ struct QuartersView: View {
             RoundedRectangle(cornerRadius: unit * 0.22).stroke(need ? Color.amber : Color.white.opacity(0.12), lineWidth: need ? 2 : 1)
                 .frame(width: unit * (s == .garden ? 1.6 : 1.3), height: unit * (s == .garden ? 2.8 : 1.1))
             if s == .garden {
-                VStack(spacing: unit * 0.12) {
-                    ForEach(0..<3, id: \.self) { i in
+                VStack(spacing: unit * 0.06) {
+                    ForEach(0..<g.quarters.plots.count, id: \.self) { i in
                         let p = g.quarters.plots[i]
                         RoundedRectangle(cornerRadius: 6).fill(g.plotDry(i, now: Date()) ? Color(red: 0.42, green: 0.3, blue: 0.22) : Color(red: 0.25, green: 0.17, blue: 0.12))
                             .overlay(Image(systemName: p.crop == nil ? "circle.dotted" : (g.plotReady(i) ? "leaf.fill" : "leaf")).foregroundStyle(p.crop == .spores ? Color(red: 0.6, green: 1, blue: 0.75) : Color(red: 0.55, green: 0.85, blue: 0.45)).font(.system(size: unit * 0.3)))
-                            .frame(width: unit * 1.3, height: unit * 0.7)
+                            .frame(width: unit * 1.3, height: unit * (g.quarters.plots.count > 3 ? 0.38 : 0.7))
                     }
                 }
             } else {
@@ -159,7 +163,7 @@ struct QuartersView: View {
         switch s {
         case .water: return g.quarters.filter < 30 || g.quarters.water < 10
         case .lamps: return g.quarters.charge < 15
-        case .garden: return (0..<3).contains { g.plotReady($0) || g.plotDry($0, now: Date()) }
+        case .garden: return (0..<g.quarters.plots.count).contains { g.plotReady($0) || g.plotDry($0, now: Date()) }
         case .pantry: return g.max.stamina < g.max.staminaMax * 0.4
         default: return false
         }
@@ -213,12 +217,12 @@ struct QuartersView: View {
         case .bed:
             Text("Rest a while. It brings back some strength and heals a little.").font(.avenir(14)).foregroundStyle(Color.cream.opacity(0.8))
             bar("Health", g.max.health, Color(red: 0.95, green: 0.42, blue: 0.4)); bar("Stamina", g.max.stamina, Color.amber)
-            action("Rest") { g.recover(stamina: 35, health: 25); g.think("Better.", 1.2) }
+            action("Sleep until rested") { g.recover(stamina: 100, health: 60); g.think("Slept like a stone. Better.", 2) }
         case .pantry:
             let tins = g.world.prop("pantry")?.stock.first { $0.id == .ration }?.count ?? 0
             Text("\(tins) tins left. Greens and trail meals work too.").font(.avenir(14)).foregroundStyle(Color.cream.opacity(0.8))
             bar("Stamina", g.max.stamina, Color.amber)
-            action("Eat") { g.eatAndDrink() }
+            HStack { action("Eat") { g.eatAndDrink() }; action("Pack a ration", prominent: false) { g.packRation() } }
         case .stove:
             Text("Two greens or two glowcaps cook into a trail meal for the road.").font(.avenir(14)).foregroundStyle(Color.cream.opacity(0.8))
             Text("Greens \(g.available(.greens)) · Glowcaps \(g.available(.glowcap))").font(.avenir(13, "DemiBold")).foregroundStyle(Color.amber)
@@ -235,7 +239,7 @@ struct QuartersView: View {
                 action("Battery cell (\(g.available(.batteryCell)))", g.available(.batteryCell) > 0, prominent: false) { g.chargeLamps(with: .batteryCell) }
             }
         case .garden:
-            ForEach(0..<3, id: \.self) { i in
+            ForEach(0..<g.quarters.plots.count, id: \.self) { i in
                 let p = g.quarters.plots[i]
                 HStack {
                     Text(p.crop == nil ? "Plot \(i + 1): empty" : (g.plotReady(i) ? "Plot \(i + 1): ready" : "Plot \(i + 1): \(Int(min(100, p.grown / Quarters.growMinutes * 100)))% \(g.plotDry(i, now: now) ? "· dry" : "")"))

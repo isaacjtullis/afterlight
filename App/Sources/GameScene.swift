@@ -708,7 +708,8 @@ final class GameScene: SKScene {
         let (vx0, vy0, vx1, vy1) = visibleTileRect(margin: 6)
         for l in g.world.props where l.kind == .lamp && l.pos.x > Double(vx0) && l.pos.x < Double(vx1) && l.pos.y > Double(vy0) && l.pos.y < Double(vy1) {
             let o = V2(l.pos.x, l.pos.y - 1.2)
-            light(o.x, o.y, 6.5, 0.95, rays: g.world.castLight(from: o, radius: 6.5, a0: 0, a1: 2 * .pi, rays: 48))
+            let r = l.flags.contains("torch") ? 4.8 * (1 + 0.06 * sin(g.time * 9 + l.pos.x)) : 6.5
+            light(o.x, o.y, r, 0.95, rays: g.world.castLight(from: o, radius: r, a0: 0, a1: 2 * .pi, rays: 48))
         }
         if g.story.flags.contains("shelterLit") { light(23.6, 26.6, 10, 0.97, rays: g.world.castLight(from: V2(23.6, 26.6), radius: 10, a0: 0, a1: 2 * .pi, rays: 56)) }
         if g.world.prop("signal")?.flags.contains("lit") == true { light(Landmarks.signalLampX, 0.2, 9, 0.95, rays: g.world.castLight(from: V2(Landmarks.signalLampX, 0.2), radius: 9, a0: 0, a1: 2 * .pi, rays: 48)) }

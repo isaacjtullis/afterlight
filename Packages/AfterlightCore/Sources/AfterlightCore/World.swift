@@ -67,6 +67,8 @@ public enum PropKind: String, Codable, Sendable {
     case signalLamp, lanternClue             // the transit platform
     case camp                                // a camp crate Max pitched
     case shelterLight                        // the workshop's own light
+    case generator                           // powers the shelter
+    case fieldBench, cot                     // things Max built and set down
     case pump, batteryBank, warmPipe         // maintenance room
     case lamp, planter, waterTank            // placed by the player
     case outpostDoor, odiStall

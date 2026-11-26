@@ -27,6 +27,7 @@ struct RootView: View {
                         .ignoresSafeArea()
                         .gesture(SpatialTapGesture().onEnded { v in
                             if model.game.planning != nil { model.pickPlanTarget(worldX: scene.worldX(fromScreenX: v.location.x)) }
+                            else if abs(scene.worldX(fromScreenX: v.location.x) - model.game.max.pos.x) < 2.2 { withAnimation(.spring(duration: 0.3)) { model.showThoughts = true } }
                         })
                         .simultaneousGesture(LongPressGesture(minimumDuration: 0.45).onEnded { _ in
                             if model.ui.ordersOK && model.game.planning == nil && model.game.order == nil { model.beginPlan() }
@@ -36,6 +37,7 @@ struct RootView: View {
                     HUDView()
                         .transition(.opacity)
                 }
+                if model.showThoughts { ThoughtsCard().transition(.scale(scale: 0.95).combined(with: .opacity)) }
                 if model.showQuarters { QuartersView().transition(.opacity) }
                 if let b = model.banner { ChapterBanner(text: b).transition(.opacity) }
                 if model.showTitle { TitleView().transition(.opacity) }

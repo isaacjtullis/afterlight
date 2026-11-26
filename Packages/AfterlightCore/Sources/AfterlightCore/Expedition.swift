@@ -7,9 +7,12 @@ extension Quest {
         QuestStep(id: "cavern", text: "Reach the great cavern"),
         QuestStep(id: "cell", text: "Bring a battery cell back to the platform’s signal lamp"),
     ])
-    public static let homeLight = Quest(id: "homeLight", title: "A Light at Home", side: false, steps: [
-        QuestStep(id: "parts", text: "Find a lamp cell and some wire"),
-        QuestStep(id: "fix", text: "Fix the shelter’s light"),
+    public static let homeLight = Quest(id: "homeLight", title: "Power for Home", side: false, steps: [
+        QuestStep(id: "look", text: "Find out why the shelter is dark"),
+        QuestStep(id: "free", text: "Free the seized generator"),
+        QuestStep(id: "parts", text: "Find a battery cell, or build one from ore"),
+        QuestStep(id: "fix", text: "Power the shelter"),
+        QuestStep(id: "pack", text: "Pack food for the road"),
     ])
     public static let lantern = Quest(id: "lantern", title: "Someone Else Down Here", side: true, steps: [
         QuestStep(id: "find", text: "Find whose lantern this is"),
@@ -24,6 +27,33 @@ extension Game {
         if p.x >= 108 { return "Cavern camp" }
         if p.y < 10 { return "Passage camp" }
         return "Camp"
+    }
+
+    /// Why a built thing can't be set down here, or nil if it can.
+    func placeObstruction() -> String? {
+        guard max.ground, max.mode == .walk else { return "I need my feet on the ground." }
+        let p = max.pos
+        for dx in [-0.7, 0.0, 0.7] {
+            guard let g = world.groundY(p.x + dx, from: p.y - 0.6, to: p.y + 0.6), abs(g - p.y) < 0.25 else { return "Too uneven." }
+        }
+        if world.solid(p.x, p.y - 1.9) { return "Too cramped." }
+        if world.props.contains(where: { ($0.kind == .fieldBench || $0.kind == .cot || $0.kind == .camp) && $0.pos.dist(p) < 1.6 }) { return "Something’s already here." }
+        return nil
+    }
+
+    /// Is Max at a workbench: the one at home, or a field workbench he set up?
+    public var atBench: Bool {
+        nearBench || (atHome && abs(max.pos.y - 30) < 0.6) || world.props.contains { $0.kind == .fieldBench && $0.pos.dist(max.pos) < 2.0 }
+    }
+
+    /// Why a recipe can't be built right now (nil if it can).
+    public func buildBlocker(_ r: Recipe) -> String? {
+        if case .tool(let t) = r.output, inv.has(t) { return "Already made" }
+        if case .upgrade(let u) = r.output, !upgradeOpen(u) { return u == "plot" ? "The room’s full of plots" : "Already built" }
+        if r.bench && !atBench { return "Needs a workbench" }
+        if inv.wood < r.wood { return "Needs \(r.wood) wood" }
+        if let miss = r.inputs.first(where: { available($0.id) < $0.count }) { return "Needs \(miss.id.name.lowercased())" }
+        return nil
     }
 
     /// Why a camp can't go here, or nil if it can.
@@ -61,10 +91,21 @@ extension Game {
             default: break
             }
         }
-        // The shelter's own light: the first thing that makes home feel like home.
-        if let sl = world.prop("shelter.light"), !f.contains("shelterLit"), abs(p.x - sl.pos.x) < 1.4, abs(p.y - 30) < 0.5, f.contains("flashOn") {
-            if available(.lampCell) > 0 && available(.wire) > 0 { return act("fixLight", "Fix the light", V2(sl.pos.x, 27.4), true) }
-            return act("lookLight", "Light fixture", V2(sl.pos.x, 27.4))
+        // The generator: the first thing to fix, so home feels like home.
+        if let gen = world.prop("generator"), !f.contains("shelterLit"), abs(p.x - gen.pos.x) < 0.8, abs(p.y - 30) < 0.5, f.contains("flashOn") {
+            if !f.contains("genLooked") { return act("genLook", "Look at the generator", V2(gen.pos.x, 27.4), true) }
+            if !f.contains("genFreed") { return act("genFree", "Hammer it loose", V2(gen.pos.x, 27.4), true) }
+            if available(.batteryCell) > 0 { return act("genPower", "Fit the battery cell", V2(gen.pos.x, 27.4), true) }
+            return act("genLook", "Generator", V2(gen.pos.x, 27.4))
+        }
+        if let spot = ladderSpot() { return act("setLadder", "Lean the ladder here", V2(spot.x, spot.top - 0.8), true) }
+        if inv.count(.torch) > 0 && max.ground && !atHome { return act("placeTorch", "Set a torch here", V2(p.x, p.y - 2.2)) }
+        // Placing things you've built
+        for (item, label) in [(ItemID.workbenchKit, "Set up the workbench"), (.cotKit, "Set up the cot")] where inv.count(item) > 0 && max.ground {
+            if placeObstruction() == nil { return act("place:\(item.rawValue)", label + " here", V2(p.x, p.y - 2.4), true) }
+        }
+        for pr in world.props where (pr.kind == .fieldBench || pr.kind == .cot) && abs(pr.pos.x - p.x) < 1.2 && abs(pr.pos.y - p.y) < 1.0 {
+            return pr.kind == .fieldBench ? act("fieldBench", "Workbench", V2(pr.pos.x, pr.pos.y - 1.8)) : act("cotRest", "Rest", V2(pr.pos.x, pr.pos.y - 1.4))
         }
         // The optional first lamp, at the tunnel mouth
         if inv.count(.lamp) > 0 && f.contains("lampIdea") && abs(p.x - Landmarks.lampSpot.x) < 1.2 && abs(p.y - 30) < 0.5
@@ -87,19 +128,64 @@ extension Game {
             think("\(name). Somewhere to leave things.", 2.6)
             emit(.placed("camp"))
             emit(.saveNow)
-        case "fixLight":
-            guard available(.lampCell) > 0, available(.wire) > 0 else { return true }
-            consume(.lampCell, 1); consume(.wire, 1)
-            story.flags.insert("shelterLit")
-            story.step("homeLight", "parts"); story.step("homeLight", "fix")
-            if let i = world.propIndex("shelter.light") { world.props[i].flags.insert("lit") }
-            max.busy = 1.0
-            think("There. Home looks like home again.", 3.4)
-            emit(.flashOn); emit(.swell)
+        case "genLook":
+            story.flags.insert("genLooked")
+            story.step("homeLight", "look")
+            if !story.flags.contains("genFreed") {
+                think("The generator. Seized solid, and its cell is dead. That’s why the lights are out.", 3.8)
+                later(4) { $0.think("A few good knocks with the hammer, then a battery cell.", 3) }
+            } else {
+                think("Free and turning, but nothing to run on. It needs a battery cell.", 3.4)
+                later(3.6) { $0.hint("Battery cells: the wrecked lift car just east has one. Or build an Ore cell from 3 copper ore and 1 quartz you dig up.", 8) }
+            }
+        case "genFree":
+            guard let gen = world.prop("generator") else { return true }
+            hammer(at: V2(gen.pos.x, 28.4), for: 1.5)
+            story.flags.insert("genFreed")
+            story.step("homeLight", "free")
+            later(1.6) { g in
+                g.think("It turns. Now it needs something to run on.", 2.8)
+                g.later(3) { $0.hint("Battery cells: the wrecked lift car just east has one. Or build an Ore cell from 3 copper ore and 1 quartz you dig up.", 8) }
+            }
             emit(.saveNow)
-        case "lookLight":
-            think("The shelter light. A dead cell and a cut wire. A lamp cell and some wire would fix it.", 3.8)
-            later(4) { g in if g.available(.lampCell) == 0 { g.hint("The locker by the door has lamp cells and wire.", 6) } }
+        case "genPower":
+            guard let gen = world.prop("generator"), available(.batteryCell) > 0 else { return true }
+            consume(.batteryCell, 1)
+            hammer(at: V2(gen.pos.x, 28.4), for: 0.9)
+            later(1.0) { g in
+                g.story.flags.insert("shelterLit")
+                g.story.step("homeLight", "parts"); g.story.step("homeLight", "fix")
+                if let i = g.world.propIndex("shelter.light") { g.world.props[i].flags.insert("lit") }
+                if let i = g.world.propIndex("generator") { g.world.props[i].flags.insert("on") }
+                g.quarters.charge = 100
+                g.think("Light. Home looks like home again.", 3.4)
+                g.emit(.flashOn); g.emit(.swell)
+                g.later(4) { g2 in
+                    if !g2.packedFood { g2.hint("Before heading out, pack food: the pantry by the storage has tins. Hunger drops while you work.", 8) }
+                }
+                g.emit(.saveNow)
+            }
+            _ = gen
+        case "setLadder":
+            guard let spot = ladderSpot() else { return true }
+            inv.remove(.woodLadder, 1)
+            world.climbs.append(Climb(id: "wladder.\(Int(time * 1000))", x: spot.x, top: spot.top, bottom: max.pos.y, kind: .ladder))
+            hammer(at: V2(spot.x, max.pos.y - 1), for: 0.9)
+            emit(.placed("ladder"))
+            emit(.saveNow)
+        case "placeTorch":
+            inv.remove(.torch, 1)
+            var pr = Prop(id: "torch.\(Int(time * 1000))", kind: .lamp, pos: max.pos)
+            pr.flags = ["torch"]
+            world.props.append(pr)
+            emit(.placed("lamp"))
+            emit(.saveNow)
+        case "fieldBench":
+            emit(.openSheet(.workbench))
+        case "cotRest":
+            recover(stamina: 100, health: 35)
+            think("A short rest. Better.", 1.8)
+            emit(.saveNow)
         case "campSpot":
             think(campObstruction() ?? "This’ll do.", 2.4)
         case "signal":
@@ -125,6 +211,15 @@ extension Game {
             later(3.6) { $0.think("Chalk by the shaft: “gardens,” and an O.", 3) }
             emit(.saveNow)
         default:
+            if id.hasPrefix("place:"), let item = ItemID(rawValue: String(id.dropFirst(6))) {
+                guard placeObstruction() == nil, inv.count(item) > 0 else { return true }
+                inv.remove(item, 1)
+                world.props.append(Prop(id: "\(item.rawValue).\(Int(time * 1000))", kind: item == .workbenchKit ? .fieldBench : .cot, pos: max.pos))
+                hammer(at: V2(max.pos.x + Double(max.face) * 0.6, max.pos.y - 0.4), for: 0.9)
+                emit(.placed("camp"))
+                emit(.saveNow)
+                return true
+            }
             if id.hasPrefix("camp:") {
                 openCamp = String(id.dropFirst(5))
                 emit(.openSheet(.camp))
@@ -148,7 +243,15 @@ extension Game {
                 }
             }
         }
-        if available(.lampCell) > 0 && available(.wire) > 0 { story.step("homeLight", "parts") }
+        if available(.batteryCell) > 0 { story.step("homeLight", "parts") }
+        if packedFood { story.step("homeLight", "pack") }
+        if inv.wood > 0 { story.flags.insert("wood") }
+        // Leaving home without food, once: a nudge.
+        if story.flags.contains("shelterLit") && !packedFood && p.x > 34 && p.y > 26 && !story.flags.contains("said.noFood") {
+            story.flags.insert("said.noFood")
+            think("I didn’t bring anything to eat.", 2.4)
+            later(2.6) { $0.hint("Hunger drops as you work. Pack a ration at the pantry, then eat it from the bag when you need to.", 7) }
+        }
         // Optional first build, once the flashlight works.
         if story.flags.contains("flashOn") && story.flags.contains("sawShaft") && !story.flags.contains("said.lampIdea") && time > 20 {
             story.flags.formUnion(["said.lampIdea", "lampIdea"])
@@ -212,5 +315,42 @@ extension Game {
                 story.explored.insert(y * Game.mapCols + x)
             }
         }
+    }
+
+    // MARK: home upgrades
+
+    func upgradeOpen(_ u: String) -> Bool {
+        switch u {
+        case "plot": return quarters.plots.count < 6
+        case "barrel": return quarters.barrelCap < 200
+        default: return !quarters.decor.contains(u)
+        }
+    }
+
+    func applyUpgrade(_ u: String) {
+        switch u {
+        case "plot": quarters.plots.append(GardenPlot()); think("Another bed for the garden.", 2)
+        case "barrel": quarters.barrelCap = 200; think("Twice the water now.", 2)
+        default: quarters.decor.insert(u); think("A table. Like a real home.", 2.4)
+        }
+    }
+
+    /// Where a wooden ladder would go: against the ledge Max is facing.
+    func ladderSpot() -> (x: Double, top: Double)? {
+        guard max.ground, max.mode == .walk, inv.count(.woodLadder) > 0 else { return nil }
+        for dir in [max.face, -max.face] {
+            let x = max.pos.x + Double(dir) * 0.75
+            guard world.solid(x, max.pos.y - 0.5) else { continue }
+            var y = max.pos.y - 0.5
+            while y > max.pos.y - 6.5 {
+                if !world.solid(x, y) && !world.solid(x, y - 0.6) && !world.solid(x, y - 1.2) {
+                    guard let t = world.groundY(x, from: y, to: max.pos.y), max.pos.y - t > 0.9 else { break }
+                    if world.solid(max.pos.x, t - 1.0) { break }
+                    return (max.pos.x + Double(dir) * 0.15, t)
+                }
+                y -= 0.1
+            }
+        }
+        return nil
     }
 }

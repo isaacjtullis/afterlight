@@ -2,31 +2,32 @@ import Foundation
 
 extension Game {
     /// Props added to the home after saves already existed; old saves get them on load.
-    static let addedLater = ["pantry", "signal", "lantern.clue", "shelter.light"]
+    static let addedLater = ["pantry", "signal", "lantern.clue", "shelter.light", "generator"]
 
     // MARK: eating and drinking
 
     /// Eat and drink at the pantry. A ration (or home-grown greens) restores Max fully; plain water helps a little.
     public func eatAndDrink() {
-        guard max.stamina < max.staminaMax - 1 || max.health < max.healthMax - 1 else { think("Not hungry. Not yet.", 1.8); return }
+        guard max.hunger < 95 || max.health < max.healthMax - 1 else { think("Not hungry. Not yet.", 1.8); return }
         if let i = world.propIndex("pantry"), let si = world.props[i].stock.firstIndex(where: { $0.id == .ration }) {
             world.props[i].stock[si].count -= 1
             if world.props[i].stock[si].count <= 0 { world.props[i].stock.remove(at: si) }
-            recover(stamina: 45, health: 15)
+            recover(stamina: 30, health: 10); max.hunger = Swift.min(100, max.hunger + 50)
             let left = world.props[i].stock.first(where: { $0.id == .ration })?.count ?? 0
             think(left > 0 ? "Beans and cold water. Better. \(left) tins left." : "That was the last tin. I’ll need to grow something.", 3)
         } else if available(.greens) > 0 {
             consume(.greens, 1)
-            recover(stamina: 35, health: 10)
+            recover(stamina: 15, health: 5); max.hunger = Swift.min(100, max.hunger + 25)
             think("Greens from the beds. Better.", 2.4)
         } else if available(.trailMeal) > 0 {
             consume(.trailMeal, 1)
-            recover(stamina: 55, health: 10)
+            recover(stamina: 30, health: 10); max.hunger = Swift.min(100, max.hunger + 60)
             think("Better.", 1.5)
         } else {
             recover(stamina: 15, health: 3)
             think("Just water. It helps a little.", 2.4)
         }
+        if quarters.decor.contains("table") { max.hunger = Swift.min(100, max.hunger + 10) }
         max.restT = 0
         emit(.chime)
         emit(.saveNow)

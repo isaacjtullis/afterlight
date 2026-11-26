@@ -128,6 +128,23 @@ enum ActorArt {
             ctx.restoreGState()
             return
         }
+        if m.hammerT > 0 {
+            // Hammering: shovel slung on the back, the hammer coming down in short strokes.
+            line(ctx, [CGPoint(x: -0.4, y: shY + 0.5), CGPoint(x: -0.08, y: shY - 0.42)], c(0x8a6440), 0.06)
+            let k = CGFloat(abs(sin(time * 11)))
+            let a = -2.3 + k * 1.7
+            let sh = CGPoint(x: 0.06, y: shY + 0.06)
+            let hand = CGPoint(x: sh.x + cos(a) * 0.42, y: sh.y + sin(a) * 0.42)
+            line(ctx, [sh, hand], c(0xe3d1ae), 0.11)
+            let end = CGPoint(x: hand.x + cos(a) * 0.5, y: hand.y + sin(a) * 0.5)
+            line(ctx, [hand, end], c(0x7a5634), 0.05)
+            ctx.saveGState(); ctx.translateBy(x: end.x, y: end.y); ctx.rotate(by: a)
+            ctx.setFillColor(c(0x8f949a)); ctx.fill(CGRect(x: -0.04, y: -0.13, width: 0.12, height: 0.26))
+            ctx.restoreGState()
+            dot(ctx, hand.x, hand.y, 0.055, c(0xf0c9a0))
+            ctx.restoreGState()
+            return
+        }
         // shovel or pick
         let s0 = CGPoint(x: P.x - dx * 0.26, y: P.y - dy * 0.26), e = CGPoint(x: P.x + dx * 0.82, y: P.y + dy * 0.82)
         let nx = -dy, ny = dx

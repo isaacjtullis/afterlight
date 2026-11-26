@@ -46,6 +46,10 @@ public struct Max: Codable, Sendable {
     // body
     public var stamina = 100.0, staminaMax = 100.0, restT = 9.0, busy = 0.0
     public var health = 100.0, healthMax = 100.0
+    /// Food in the belly, 0…100. Separate from stamina, which is digging energy.
+    public var hunger = 100.0
+    /// Swinging the hammer at something.
+    public var hammerT = 0.0
 
     // light
     public var lookUp = 0.0, beamA = 0.05, flashI = 0.0
@@ -61,7 +65,7 @@ public enum Tuning {
     public static let runSpeed = 5.4
     public static let runAfter = 0.55
     /// Stamina per second while running.
-    public static let runCost = 6.0
+    public static let runCost = 4.0
     /// Takeoff speed for a jump about 1.35 tiles high.
     public static let jumpSpeed = (2.0 * 34.0 * 1.35).squareRoot()
     public static let accel = 16.0
@@ -71,10 +75,12 @@ public enum Tuning {
     public static let climbSpeed = 2.4
     public static let swingPeriod = 0.36
     public static let tiredSwingPeriod = 0.62
-    public static let biteCost = 5.0
+    public static let biteCost = 3.0
     /// Standing still brings stamina back only this far; food and rest do the rest.
-    public static let restCap = 0.5
-    public static let restRegen = 5.0
+    public static let restCap = 1.0
+    public static let restRegen = 9.0
+    /// Hunger lost per minute of play.
+    public static let hungerPerMinute = 1.1
     /// Minutes of light in a full flashlight battery.
     public static let batteryMinutes = 25.0
     /// Stamina per tile column, used by order previews. Measured from the bite loop.

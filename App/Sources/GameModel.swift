@@ -26,6 +26,7 @@ struct UIState: Equatable {
     var health = 100
     var battery = 100
     var started = false
+    var hunger = 100
     var depth = ""
     var canGoInside = false
     var aim = 0          // -1 the wheel points up, 1 down, 0 ahead
@@ -44,6 +45,9 @@ final class GameModel: ObservableObject {
     @Published var showIntro = false
     /// The top-down living quarters.
     @Published var showQuarters = false
+    /// Max's recent thoughts, and whether the thoughts card is open.
+    @Published var showThoughts = false
+    var thoughtLog: [String] = []
     /// UI tests read Max's state through an invisible label.
     @Published var debugState = ""
     var smokeSkipIntro = false
@@ -195,8 +199,10 @@ final class GameModel: ObservableObject {
         u.health = Int((g.max.health / g.max.healthMax * 100).rounded())
         u.battery = Int(g.battery.rounded())
         u.started = g.started
+        u.hunger = Int(g.max.hunger.rounded())
+        if g.thoughtT > 0, !g.thoughtText.isEmpty, thoughtLog.last != g.thoughtText { thoughtLog.append(g.thoughtText); if thoughtLog.count > 8 { thoughtLog.removeFirst() } }
         u.depth = Depth.label(atY: g.max.pos.y)
-        u.canGoInside = g.atHome && g.max.pos.y > 25 && g.story.flags.contains("flashOn") && g.max.mode == .walk
+        u.canGoInside = g.atHome && g.max.pos.y > 25 && g.max.mode == .walk
         u.staminaMax = Int(g.max.staminaMax)
         u.showStamina = g.story.flags.contains("dug") && (g.max.stamina < g.max.staminaMax - 0.5 || g.planning != nil || g.order != nil)
         u.climbing = g.max.mode == .climb
@@ -275,6 +281,7 @@ final class GameModel: ObservableObject {
             if let c = game.conversation(id) { lineIndex = 0; conversation = c }
         case .placed(let what): audio.play(what == "plank" ? .plank : .scoop); haptics.bite()
         case .wood: audio.play(.chop); haptics.bite()
+        case .hammerHit: audio.play(.pick); haptics.bite()
         case .panel(let id):
             confirming = nil
             if let p = game.panel(id) { panelPoint = scene?.viewPoint(p.anchor) ?? .zero; panel = p }

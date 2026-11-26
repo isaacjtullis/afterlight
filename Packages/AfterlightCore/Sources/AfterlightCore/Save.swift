@@ -26,6 +26,7 @@ public struct SaveGame: Codable, Sendable {
     public var health: Double?
     public var battery: Double?
     public var quarters: Quarters?
+    public var hunger: Double?
 }
 
 enum RLE {
@@ -64,7 +65,7 @@ extension Game {
                         inventory: inv, storage: storage, story: story, odi: odi,
                         mat: RLE.encode(matBytes), dens: RLE.encode(densBytes),
                         buried: world.buried, props: world.props, climbs: world.climbs,
-                        appliedJobs: Array(appliedJobs).sorted(), activeJob: activeJob, pinnedRecipe: pinnedRecipe, mara: mara, health: max.health, battery: battery, quarters: quarters)
+                        appliedJobs: Array(appliedJobs).sorted(), activeJob: activeJob, pinnedRecipe: pinnedRecipe, mara: mara, health: max.health, battery: battery, quarters: quarters, hunger: max.hunger)
     }
 
     /// Restore a saved game on top of a freshly generated world.
@@ -94,6 +95,16 @@ extension Game {
         story.flags.insert("world3")
         // The steel over the warm-pipe patch was low enough to catch Max's head: it's packed earth now.
         if w.m(35, 6) == .metal { w.mat[6 * w.w + 35] = Mat.dirt }
+        if !story.flags.contains("gen1") {
+            // The generator mission came later: give the lift car its battery cell and lay in the ore near home.
+            if !story.flags.contains("shelterLit"), let i = w.propIndex("liftcar"), !w.props[i].stock.contains(where: { $0.id == .batteryCell }) {
+                w.props[i].stock.insert(ItemStack(.batteryCell), at: 0)
+            }
+            for b in [Buried(id: "home.cu1", item: ItemStack(.copperOre), pos: V2(33.6, 31.4)), Buried(id: "home.cu2", item: ItemStack(.copperOre), pos: V2(34.5, 31.6)),
+                      Buried(id: "home.cu3", item: ItemStack(.copperOre), pos: V2(35.3, 31.3)), Buried(id: "home.qz", item: ItemStack(.quartz), pos: V2(39.4, 27.4))]
+            where !w.buried.contains(where: { $0.id == b.id }) && w.m(Int(b.pos.x), Int(b.pos.y)).solid { w.buried.append(b) }
+            story.flags.insert("gen1")
+        }
         if !story.flags.contains("finds1") {
             let have = Set(w.buried.map(\.id))
             for b in WorldGen.scatterFinds(w) where !have.contains(b.id) && w.m(Int(b.pos.x), Int(b.pos.y)) == .dirt { w.buried.append(b) }
@@ -128,6 +139,7 @@ extension Game {
         g.max.health = s.health ?? 100
         g.battery = s.battery ?? 100
         if let q = s.quarters { g.quarters = q }
+        g.max.hunger = s.hunger ?? 100
         g.max.digFloor = maxPos.y
         g.inv = s.inventory
         g.storage = s.storage

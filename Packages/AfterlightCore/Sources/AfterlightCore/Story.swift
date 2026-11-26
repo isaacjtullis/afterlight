@@ -254,10 +254,10 @@ extension Game {
                 if f.contains("needPick") { later(3.2) { $0.think("The drive teeth are hard steel. That’s my pick.", 3.4) } }
             }
         }
-        if max.stamina < 18 && !f.contains("said.tired") {
+        if max.stamina < 15 && !f.contains("said.tired") {
             story.flags.insert("said.tired")
-            think("I’m running on empty.", 2.4)
-            later(2.6) { $0.hint("Eat and drink at the pantry in the workshop, or rest in bed, to get your strength back.", 7) }
+            think("Out of breath.", 1.8)
+            later(2) { $0.hint("Stand still a moment to catch your breath.", 4) }
         }
         if max.stamina > 60 { story.flags.remove("said.tired") }
         // In a hole with no way to walk out: point at ▲.
@@ -491,7 +491,7 @@ extension Game {
         if let pile = world.props.first(where: { $0.kind == .pile && near($0, 1.1) }), let s = pile.stock.first {
             return act("search:\(pile.id)", pile.stock.count > 1 ? "Pick up" : "Pick up \(s.id.name.lowercased())", V2(pile.pos.x, pile.pos.y - 1.4))
         }
-        if let pp = world.prop("pantry"), near(pp, 0.9) { return act("pantry", "Eat and drink", V2(pp.pos.x, pp.pos.y - 2.0), max.stamina < max.staminaMax * 0.6) }
+        if let pp = world.prop("pantry"), near(pp, 0.9) { return act("pantry", "Pantry", V2(pp.pos.x, pp.pos.y - 2.0), max.hunger < 60) }
         for pr in world.props where near(pr) {
             switch pr.kind {
             case .locker where !pr.stock.isEmpty: return act("search:\(pr.id)", "Search locker", V2(pr.pos.x, pr.pos.y - 2.2))
@@ -499,7 +499,7 @@ extension Game {
             case .liftCar, .drillRig, .gantry: if !pr.stock.isEmpty { return act("salvage:\(pr.id)", "Salvage", V2(pr.pos.x, pr.pos.y - 2.4), pr.kind == .liftCar) }
             case .crate: if !pr.stock.isEmpty { return act("search:\(pr.id)", "Open crate", V2(pr.pos.x, pr.pos.y - 1.8), true) }
             case .pile: if let s = pr.stock.first { return act("search:\(pr.id)", pr.stock.count > 1 ? "Pick up" : "Pick up \(s.id.name.lowercased())", V2(pr.pos.x, pr.pos.y - 1.4)) }
-            case .pantry: return act("pantry", "Eat and drink", V2(pr.pos.x, pr.pos.y - 2.0), max.stamina < max.staminaMax * 0.6)
+            case .pantry: return act("pantry", "Pantry", V2(pr.pos.x, pr.pos.y - 2.0), max.hunger < 60)
             case .sunkValve: if !pr.stock.isEmpty { return act("salvage:\(pr.id)", "Take the valve", V2(pr.pos.x, pr.pos.y - 1.8), true) }
             case .storage: return act("storage", "Storage", V2(pr.pos.x, pr.pos.y - 2.0))
             case .pump:
@@ -619,10 +619,10 @@ extension Game {
                 emit(.saveNow)
             }
         case "rest":
-            recover(stamina: 35, health: 25)
+            recover(stamina: 100, health: 50)
             emit(.openSheet(.mission))
         case "pantry":
-            eatAndDrink()
+            emit(.openSheet(.pantry))
         case "plank":
             guard let s = plankSpot() else { break }
             inv.wood -= Inventory.plankCost

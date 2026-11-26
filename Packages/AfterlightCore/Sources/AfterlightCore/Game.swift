@@ -41,11 +41,12 @@ public enum GameEvent: Equatable, Sendable {
     case placed(String)
     case wood(Int)
     case climbStep
+    case hammerHit
     case panel(String)
     case saveNow
 }
 
-public enum Sheet: String, Sendable { case workbench, storage, pack, journal, mission, camp, map }
+public enum Sheet: String, Sendable { case workbench, storage, pack, journal, mission, camp, map, pantry }
 
 /// One contextual action shown near the work.
 public struct ContextAction: Equatable, Sendable {
@@ -154,6 +155,7 @@ public final class Game {
         story.flags.insert(Game.worldVersionFlag)
         story.flags.insert("finds1")
         story.flags.insert("world3")
+        story.flags.insert("gen1")
     }
 
     public func drainEvents() -> [GameEvent] { defer { events.removeAll() }; return events }
@@ -284,24 +286,30 @@ public final class Game {
         updateFeel(dt)
         if !max.swingOn && max.oneShot == nil {
             max.restT += dt
-            let cap = max.staminaMax * Tuning.restCap
-            if max.restT > 0.9 && order == nil && max.stamina < cap { max.stamina = Swift.min(cap, max.stamina + Tuning.restRegen * dt) }
+            // Catching his breath brings stamina back; an empty belly slows it down.
+            let regen = Tuning.restRegen * (max.hunger < 20 ? 0.35 : 1)
+            if max.restT > 0.9 && order == nil && max.stamina < max.staminaMax { max.stamina = Swift.min(max.staminaMax, max.stamina + regen * dt) }
         }
         pickupsTick(dt)
         survivalTick(dt)
-        aimTick(dt, lookUp: input.up && max.mode == .walk && !inv.has(.shortPick))
+        aimTick(dt, lookUp: input.up && max.mode == .walk, input: input)
         odiTick(dt)
         maraTick(dt)
         storyTick(dt)
         context = computeContext()
     }
 
-    func aimTick(_ dt: Double, lookUp: Bool) {
+    func aimTick(_ dt: Double, lookUp: Bool, input: GameInput = GameInput()) {
         guard cine == nil else { return }
         let idle = abs(max.vx) < 0.25 && !max.swingOn
         let want = (lookUp || (story.flags.contains("sawShaft") && underShaft && idle && planning == nil && order == nil)) ? 1.0 : 0.0
-        max.lookUp = damp(max.lookUp, want, 3, dt)
-        max.beamA = damp(max.beamA, lerpD(0.05, -1.5, max.lookUp) + sin(max.phase * 2) * 0.025 * max.walkAmp, 6, dt)
+        max.lookUp = damp(max.lookUp, want, 6, dt)
+        // The beam follows the wheel: up, down, or the diagonals between.
+        let down = input.climbDown && max.mode == .walk
+        var target = lerpD(0.05, -1.45, max.lookUp)
+        if lookUp && input.dx != 0 { target = -0.75 }
+        if down { target = input.dx != 0 ? 0.6 : 1.15 }
+        max.beamA = damp(max.beamA, target + sin(max.phase * 2) * 0.025 * max.walkAmp, 9, dt)
         if inv.has(.flashlight) { max.flashI = damp(max.flashI, story.flags.contains("flashOn") ? 1 : 0, 18, dt) }
     }
 
@@ -349,13 +357,14 @@ public final class Game {
 
     public func canCraft(_ r: Recipe) -> Bool {
         if case .tool(let t) = r.output, inv.has(t) { return false }
+        if case .upgrade(let u) = r.output, !upgradeOpen(u) { return false }
         return inv.wood >= r.wood && r.inputs.allSatisfy { available($0.id) >= $0.count }
     }
 
     public var knownRecipes: [Recipe] { Recipes.all.filter { story.flags.contains($0.unlockFlag) } }
 
     public func craft(_ id: String) {
-        guard let r = Recipes.all.first(where: { $0.id == id }), canCraft(r) else { return }
+        guard let r = Recipes.all.first(where: { $0.id == id }), canCraft(r), buildBlocker(r) == nil else { return }
         for i in r.inputs { consume(i.id, i.count) }
         inv.wood -= r.wood
         switch r.output {
@@ -364,6 +373,8 @@ public final class Game {
         case .item(let it, let n):
             let added = inv.add(it, n)
             if added < n { storage.add(it, n - added) }
+        case .upgrade(let u):
+            applyUpgrade(u)
         }
         if pinnedRecipe == id { pinnedRecipe = nil }
         emit(.chime)

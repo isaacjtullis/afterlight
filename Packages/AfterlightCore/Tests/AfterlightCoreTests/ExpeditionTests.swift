@@ -90,19 +90,54 @@ final class ExpeditionTests: XCTestCase {
         XCTAssertEqual(Depth.label(atY: 30), "−2,600 ft")
     }
 
-    func testFixingTheShelterLight() throws {
+    func testPoweringTheShelter() throws {
         let g = Game()
         g.begin()
         g.inv.belt.append(.flashlight); g.story.flags.formUnion(["flashOn", "sawShaft"])
         sim(g, GameInput(), 0.2)
         XCTAssertNotNil(g.story.quests.first { $0.id == "homeLight" })
-        g.inv.add(.lampCell); g.inv.add(.wire)
-        walk(g, to: 23.6)
-        XCTAssertEqual(g.context?.id, "fixLight")
+        walk(g, to: 21.55)
+        XCTAssertEqual(g.context?.id, "genLook")
         g.performContext()
+        sim(g, GameInput(), 0.3)
+        XCTAssertEqual(g.context?.id, "genFree")
+        g.performContext()
+        sim(g, GameInput(), 2.0)
+        XCTAssertTrue(g.knownRecipes.contains { $0.id == "cell" }, "the ore cell recipe is known once Max has seen the generator")
+        g.inv.add(.batteryCell)
+        sim(g, GameInput(), 0.2)
+        XCTAssertEqual(g.context?.id, "genPower")
+        g.performContext()
+        sim(g, GameInput(), 1.5)
         XCTAssertTrue(g.story.flags.contains("shelterLit"))
         let back = Game.load(try Game.decodeSave(try g.encodeSave()))
         XCTAssertTrue(back.story.isDone("homeLight", "fix"))
+    }
+
+    func testHungerIsItsOwnMeterAndFoodFromTheBagHelps() {
+        let g = Game()
+        g.begin()
+        sim(g, GameInput(), 60)
+        XCTAssertLessThan(g.max.hunger, 99, "hunger drops with time")
+        XCTAssertGreaterThan(g.max.stamina, 95, "standing still doesn't tire Max")
+        g.max.hunger = 20
+        g.packRation()
+        XCTAssertEqual(g.inv.count(.ration), 1)
+        g.eat(.ration)
+        XCTAssertGreaterThan(g.max.hunger, 60)
+        XCTAssertEqual(g.inv.count(.ration), 0)
+    }
+
+    func testBuildAnywhereNeedsABench() {
+        let g = Game()
+        g.begin()
+        g.story.flags.formUnion(["wood", "sawPlatform"])
+        g.inv.wood = 60; g.inv.add(.fasteners, 6)
+        g.max.pos = V2(36, 30)
+        let bench = Recipes.all.first { $0.id == "fieldBench" }!
+        XCTAssertNil(g.buildBlocker(bench), "a field workbench can be built anywhere")
+        let cot = Recipes.all.first { $0.id == "cot" }!
+        XCTAssertEqual(g.buildBlocker(cot), "Needs a workbench")
     }
 
     func testOldSavesCanGetThroughTheWarmPipePatch() throws {

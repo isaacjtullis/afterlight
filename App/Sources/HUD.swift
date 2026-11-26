@@ -239,6 +239,8 @@ struct HUDView: View {
                         .accessibilityIdentifier("quarters")
                 }
                 if ui.started {
+                    Button { model.sheet = .workbench } label: { circleIcon("hammer.fill") }
+                        .accessibilityIdentifier("build")
                     Button { model.sheet = .map } label: { circleIcon("map") }
                         .accessibilityIdentifier("map")
                 }
@@ -274,6 +276,7 @@ struct HUDView: View {
             VStack(alignment: .leading, spacing: 6) {
                 meter("heart.fill", ui.health, Color(red: 0.95, green: 0.42, blue: 0.4), id: "meter.health")
                 meter("bolt.fill", ui.stamina, Color.amber, id: "meter.stamina")
+                meter("fork.knife", ui.hunger, Color(red: 0.7, green: 0.85, blue: 0.45), id: "meter.hunger")
                 Text(ui.depth).font(.avenir(11, "DemiBold")).monospacedDigit().foregroundStyle(Color.cream.opacity(0.75))
                 if ui.hasFlashlight {
                     Button { model.game.swapCell(); model.haptics.tap() } label: {

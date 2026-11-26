@@ -193,7 +193,11 @@ public enum WorldGen {
         // Buried things.
         w.set(36, 30, .loose); w.set(37, 30, .loose); w.set(38, 30, .loose)
         w.rebuildDensity()
-        w.buried = [Buried(id: "crystal", item: ItemStack(.chargeCrystal), pos: Landmarks.crystal)] + scatterFinds(w)
+        w.buried = [Buried(id: "crystal", item: ItemStack(.chargeCrystal), pos: Landmarks.crystal),
+                    Buried(id: "home.cu1", item: ItemStack(.copperOre), pos: V2(33.6, 31.4)),
+                    Buried(id: "home.cu2", item: ItemStack(.copperOre), pos: V2(34.5, 31.6)),
+                    Buried(id: "home.cu3", item: ItemStack(.copperOre), pos: V2(35.3, 31.3)),
+                    Buried(id: "home.qz", item: ItemStack(.quartz), pos: V2(39.4, 27.4))] + scatterFinds(w)
         scatterRoots(w)
         w.rebuildDensity()
 
@@ -207,10 +211,11 @@ public enum WorldGen {
             Prop(id: "bench", kind: .workbench, pos: Landmarks.bench),
             Prop(id: "locker.ws", kind: .locker, pos: V2(20.7, 30), stock: [ItemStack(.spareGrip), ItemStack(.fasteners, 3), ItemStack(.lampCell, 3), ItemStack(.wire, 3)]),
             Prop(id: "shelter.light", kind: .shelterLight, pos: V2(23.6, 26.0)),
+            Prop(id: "generator", kind: .generator, pos: V2(21.55, 30)),
             Prop(id: "bed", kind: .bed, pos: V2(22.4, 30)),
             Prop(id: "storage", kind: .storage, pos: V2(29.8, 30)),
             Prop(id: "pantry", kind: .pantry, pos: V2(28.3, 30), stock: [ItemStack(.ration, 12)]),
-            Prop(id: "liftcar", kind: .liftCar, pos: Landmarks.liftCarPos, stock: [ItemStack(.liftTooth), ItemStack(.pipe, 2), ItemStack(.fasteners, 4)]),
+            Prop(id: "liftcar", kind: .liftCar, pos: Landmarks.liftCarPos, stock: [ItemStack(.batteryCell), ItemStack(.liftTooth), ItemStack(.pipe, 2), ItemStack(.fasteners, 4)]),
             Prop(id: "crate.west", kind: .crate, pos: V2(11.6, 30), stock: [ItemStack(.rope), ItemStack(.lampCell, 2), ItemStack(.fasteners, 3), ItemStack(.pressureGauge)]),
             Prop(id: "drill", kind: .drillRig, pos: V2(118.5, floorAt(118)), stock: [ItemStack(.fasteners, 6), ItemStack(.batteryCell), ItemStack(.rope)]),
             Prop(id: "gantry", kind: .gantry, pos: V2(136.5, floorAt(136)), stock: [ItemStack(.pipe, 2), ItemStack(.wire, 2), ItemStack(.rope)]),

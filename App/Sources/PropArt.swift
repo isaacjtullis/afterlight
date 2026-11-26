@@ -180,7 +180,20 @@ enum Art {
         case .warmPipe:
             rect(0, -0.12, 44, 0.22, 0x7a4e3a); rect(0, -0.12, 44, 0.05, 0xc9805a, 0.6)
         case .lamp:
-            rect(-0.05, -1.1, 0.1, 1.1, 0x2c2724); rect(-0.14, -1.35, 0.28, 0.3, 0x2c2724); rect(-0.1, -1.31, 0.2, 0.22, 0xffd08a)
+            if p.flags.contains("torch") {
+                // A root torch: a knotted stake with a resin-soaked head burning.
+                ActorArt.line(ctx, [CGPoint(x: -0.02, y: 0), CGPoint(x: 0.04, y: -1.0)], c(0x6e4529), 0.1)
+                ctx.setFillColor(c(0x3a2214)); ActorArt.rr(ctx, -0.1, -1.22, 0.24, 0.26, 0.08); ctx.fillPath()
+                ActorArt.dot(ctx, 0.02, -1.36, 0.13, c(0xff9a3a)); ActorArt.dot(ctx, 0.02, -1.42, 0.08, c(0xffe08a))
+            } else {
+                // A lantern on a stake: handle, cap, glass, flame.
+                rect(-0.04, -1.0, 0.08, 1.0, 0x2c2724)
+                ActorArt.line(ctx, [CGPoint(x: -0.1, y: -1.5), CGPoint(x: 0, y: -1.62), CGPoint(x: 0.1, y: -1.5)], c(0x2c2724), 0.04)
+                rect(-0.17, -1.52, 0.34, 0.07, 0x2c2724)
+                rect(-0.15, -1.45, 0.3, 0.38, 0x2c2724); rect(-0.11, -1.41, 0.22, 0.3, 0xffd08a)
+                ActorArt.dot(ctx, 0, -1.26, 0.06, c(0xfff4d0))
+                rect(-0.18, -1.08, 0.36, 0.07, 0x2c2724)
+            }
         case .planter:
             rect(-0.8, -0.35, 1.6, 0.35, 0x4a2f24); rect(-0.8, -0.38, 1.6, 0.06, 0x6b4636)
             if crop > 0 {
@@ -248,6 +261,19 @@ enum Art {
             ctx.setFillColor(c(0x2c2724)); ActorArt.rr(ctx, -0.16, -0.55, 0.32, 0.5, 0.06); ctx.fillPath()
             rect(-0.11, -0.48, 0.22, 0.34, 0xffd08a, p.flags.contains("taken") ? 0.2 : 0.55)
             rect(-0.2, -0.06, 0.4, 0.06, 0x2c2724)
+        case .generator:
+            // A squat generator on the wall: housing, flywheel, a cable up to the ceiling light.
+            let on = p.flags.contains("on")
+            rect(-0.5, -1.2, 1.0, 1.2, 0x3e3a44); rect(-0.5, -1.2, 1.0, 0.1, 0x55505c)
+            ActorArt.dot(ctx, -0.12, -0.6, 0.3, c(0x2a2730)); ActorArt.dot(ctx, -0.12, -0.6, 0.1, c(0x6a6470))
+            rect(0.22, -1.0, 0.18, 0.3, 0x2a2730); ActorArt.dot(ctx, 0.31, -0.85, 0.05, c(on ? 0x9cff9c : 0xff5a4a))
+            ActorArt.line(ctx, [CGPoint(x: 0.3, y: -1.2), CGPoint(x: 0.4, y: -2.6), CGPoint(x: 1.2, y: -3.8), CGPoint(x: 2.05, y: -3.95)], c(0x2a2420), 0.05)
+        case .fieldBench:
+            rect(-0.9, -0.95, 1.8, 0.14, 0x9a6a40); rect(-0.8, -0.82, 0.12, 0.82, 0x5a3a22); rect(0.68, -0.82, 0.12, 0.82, 0x5a3a22)
+            rect(-0.7, -0.35, 1.4, 0.06, 0x5a3a22); rect(0.2, -1.2, 0.08, 0.25, 0xa7adb3); rect(-0.5, -1.1, 0.4, 0.15, 0xc9925a)
+        case .cot:
+            rect(-0.9, -0.5, 1.8, 0.18, 0x5a6e6a); rect(-0.85, -0.62, 0.45, 0.14, 0xe0d2b4)
+            rect(-0.85, -0.32, 0.08, 0.32, 0x6e4529); rect(0.77, -0.32, 0.08, 0.32, 0x6e4529)
         case .shelterLight:
             // A caged ceiling lamp on a short chain.
             let lit = p.flags.contains("lit")
@@ -291,6 +317,9 @@ enum Art {
         case .signalLamp: return (-0.6, -3.7, 1.2, 3.8)
         case .camp: return (-0.8, -2.2, 1.9, 2.3)
         case .shelterLight: return (-0.6, -0.1, 1.2, 1.2)
+        case .generator: return (-0.7, -4.2, 3.0, 4.3)
+        case .fieldBench: return (-1.0, -1.4, 2.0, 1.5)
+        case .cot: return (-1.0, -0.8, 2.0, 0.9)
         default: return (-1.0, -2.2, 2.0, 2.3)
         }
     }

@@ -16,6 +16,21 @@ public struct Quarters: Codable, Equatable, Sendable {
     public var filter = 100.0             // how clean the filter is, 0…100
     public var charge = 60.0              // the lamp rack's battery, 0…100
     public var last: Date? = nil
+    /// Things Max built for the room.
+    public var decor: Set<String> = []
+    public var barrelCap = 100.0
+
+    enum CodingKeys: String, CodingKey { case plots, water, filter, charge, last, decor, barrelCap }
+    public init(from d: Decoder) throws {
+        let c = try d.container(keyedBy: CodingKeys.self)
+        plots = try c.decodeIfPresent([GardenPlot].self, forKey: .plots) ?? [GardenPlot(), GardenPlot(), GardenPlot()]
+        water = try c.decodeIfPresent(Double.self, forKey: .water) ?? 40
+        filter = try c.decodeIfPresent(Double.self, forKey: .filter) ?? 100
+        charge = try c.decodeIfPresent(Double.self, forKey: .charge) ?? 60
+        last = try c.decodeIfPresent(Date.self, forKey: .last)
+        decor = try c.decodeIfPresent(Set<String>.self, forKey: .decor) ?? []
+        barrelCap = try c.decodeIfPresent(Double.self, forKey: .barrelCap) ?? 100
+    }
 
     public static let growMinutes = 45.0
     public static let dryHours = 12.0
@@ -36,7 +51,7 @@ extension Game {
         quarters.last = now
         let piped = homeWater
         // Water: a steady drip from the rock (and much more once a pump sends water home).
-        quarters.water = Swift.min(100, quarters.water + hours * (piped ? 12 : 2))
+        quarters.water = Swift.min(quarters.barrelCap, quarters.water + hours * (piped ? 12 : 2))
         quarters.filter = Swift.max(0, quarters.filter - hours * 3)
         // Lamps: wired to power they stay full; otherwise they drain.
         quarters.charge = story.flags.contains("power") ? 100 : Swift.max(0, quarters.charge - hours * 4)
@@ -51,8 +66,12 @@ extension Game {
         }
     }
 
-    public func plotReady(_ i: Int) -> Bool { quarters.plots[i].crop != nil && quarters.plots[i].grown >= Quarters.growMinutes }
+    public func plotReady(_ i: Int) -> Bool {
+        guard quarters.plots.indices.contains(i) else { return false }
+        return quarters.plots[i].crop != nil && quarters.plots[i].grown >= Quarters.growMinutes
+    }
     public func plotDry(_ i: Int, now: Date) -> Bool {
+        guard quarters.plots.indices.contains(i) else { return false }
         guard quarters.plots[i].crop != nil else { return false }
         guard let w = quarters.plots[i].watered else { return true }
         return now.timeIntervalSince(w) > Quarters.dryHours * 3600

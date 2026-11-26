@@ -190,7 +190,7 @@ final class HomeGroundTests: XCTestCase {
     func testPantryRestoresStamina() {
         let g = Game()
         g.begin()
-        g.max.stamina = 20
+        g.max.stamina = 20; g.max.hunger = 30
         walk(g, to: 28.3)
         sim(g, GameInput(), 0.2)
         XCTAssertEqual(g.context?.id, "pantry")

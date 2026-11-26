@@ -10,6 +10,8 @@ public enum ItemID: String, Codable, CaseIterable, Sendable {
     case copperOre, ironOre, quartz, coin, photo, toy, spores
     case campCrate
     case glowcap
+    case workbenchKit, cotKit
+    case woodLadder, torch
 
     public var name: String {
         switch self {
@@ -40,6 +42,10 @@ public enum ItemID: String, Codable, CaseIterable, Sendable {
         case .spores: return "Glowcap spores"
         case .campCrate: return "Camp crate"
         case .glowcap: return "Glowcap"
+        case .workbenchKit: return "Field workbench"
+        case .cotKit: return "Cot"
+        case .woodLadder: return "Wooden ladder"
+        case .torch: return "Root torch"
         }
     }
 
@@ -72,13 +78,17 @@ public enum ItemID: String, Codable, CaseIterable, Sendable {
         case .spores: return "A pinch of dust that glows faintly. They grow in the dark."
         case .campCrate: return "Pitch it somewhere flat to make a camp: a crate to stash things in, far from home."
         case .glowcap: return "A pale mushroom with a faint glow. Two of them, cooked, make a meal."
+        case .workbenchKit: return "Set it up anywhere and build there, not just at home."
+        case .cotKit: return "A place to lie down and get your strength back, wherever you set it."
+        case .woodLadder: return "Lean it against any ledge and it stays there: a way up and back down."
+        case .torch: return "Bundled root fibre soaked in resin. Set it down for a warm light that keeps burning."
         }
     }
 
     /// Bulky things take a whole backpack slot and don't stack.
     public var bulky: Bool {
         switch self {
-        case .pipe, .batteryCell, .ladderSection, .waterTank, .campCrate: return true
+        case .pipe, .batteryCell, .ladderSection, .waterTank, .campCrate, .workbenchKit, .cotKit, .woodLadder: return true
         default: return false
         }
     }
@@ -92,12 +102,13 @@ public struct ItemStack: Codable, Equatable, Hashable, Sendable {
 }
 
 public enum Tool: String, Codable, CaseIterable, Sendable {
-    case shovel, flashlight, shortPick
+    case shovel, flashlight, shortPick, hammer
     public var name: String {
         switch self {
         case .shovel: return "Shovel"
         case .flashlight: return "Flashlight"
         case .shortPick: return "Short pick"
+        case .hammer: return "Hammer"
         }
     }
 }
@@ -109,7 +120,7 @@ public struct Inventory: Codable, Equatable, Sendable {
     public static let woodPerRootTile = 10
     public static let plankCost = 5
     public var slots: [ItemStack?] = Array(repeating: nil, count: Inventory.capacity)
-    public var belt: [Tool] = [.shovel]
+    public var belt: [Tool] = [.shovel, .hammer]
     /// Wood rides lashed to the outside of the bag and doesn't take a slot.
     public var wood = 0
 
@@ -123,6 +134,8 @@ public struct Inventory: Codable, Equatable, Sendable {
         if s.count < Inventory.capacity { s += Array(repeating: nil, count: Inventory.capacity - s.count) }
         slots = s
         belt = try c.decodeIfPresent([Tool].self, forKey: .belt) ?? [.shovel]
+        // Max always carries his father's hammer.
+        if !belt.contains(.hammer) { belt.insert(.hammer, at: Swift.min(1, belt.count)) }
         wood = try c.decodeIfPresent(Int.self, forKey: .wood) ?? 0
     }
 
@@ -194,7 +207,7 @@ public struct Storage: Codable, Equatable, Sendable {
 }
 
 public struct Recipe: Identifiable, Sendable {
-    public enum Output: Sendable { case item(ItemID, Int), tool(Tool) }
+    public enum Output: Sendable { case item(ItemID, Int), tool(Tool), upgrade(String) }
     public var id: String
     public var name: String
     public var inputs: [ItemStack]
@@ -204,6 +217,21 @@ public struct Recipe: Identifiable, Sendable {
     public var unlockFlag: String
     /// Wood from the bundle on the bag.
     public var wood = 0
+    /// Needs a workbench nearby (home, or a field workbench).
+    public var bench = true
+}
+
+extension ItemID {
+    /// What eating it does: hunger filled, stamina and health restored.
+    public var food: (hunger: Double, stamina: Double, health: Double)? {
+        switch self {
+        case .ration: return (45, 20, 8)
+        case .trailMeal: return (60, 30, 10)
+        case .greens: return (25, 10, 5)
+        case .glowcap: return (15, 5, 3)
+        default: return nil
+        }
+    }
 }
 
 public enum Recipes {
@@ -223,6 +251,23 @@ public enum Recipes {
         Recipe(id: "rope", name: "Rope", inputs: [ItemStack(.wire, 2)], output: .item(.rope, 1),
                note: "Braid wire into a climbing line.", unlockFlag: "sawChimney"),
         Recipe(id: "camp", name: "Camp crate", inputs: [ItemStack(.fasteners, 2)], output: .item(.campCrate, 1),
-               note: "Twenty wood and two fasteners. Pitch it far from home to keep things there.", unlockFlag: "sawPlatform", wood: 20),
+               note: "Pitch it far from home to keep things there.", unlockFlag: "sawPlatform", wood: 20, bench: false),
+        Recipe(id: "cell", name: "Ore cell", inputs: [ItemStack(.copperOre, 3), ItemStack(.quartz, 1)], output: .item(.batteryCell, 1),
+               note: "Copper plates and a quartz spacer: a crude battery cell. Powers the generator.", unlockFlag: "genLooked"),
+        Recipe(id: "fieldBench", name: "Field workbench", inputs: [ItemStack(.fasteners, 2)], output: .item(.workbenchKit, 1),
+               note: "Thirty wood. Set it up anywhere and build there.", unlockFlag: "wood", wood: 30, bench: false),
+        Recipe(id: "cot", name: "Cot", inputs: [ItemStack(.fasteners, 1)], output: .item(.cotKit, 1),
+               note: "Rest wherever you set it.", unlockFlag: "wood", wood: 25),
+        Recipe(id: "woodLadder", name: "Wooden ladder", inputs: [ItemStack(.fasteners, 1)], output: .item(.woodLadder, 1),
+               note: "Lean it on any ledge up to six tiles high. It stays: a way up and back.", unlockFlag: "wood", wood: 15),
+        Recipe(id: "torch", name: "Root torch", inputs: [], output: .item(.torch, 1),
+               note: "A warm light that keeps burning. No cell needed.", unlockFlag: "wood", wood: 6, bench: false),
+        Recipe(id: "plot", name: "Garden plot", inputs: [], output: .upgrade("plot"),
+               note: "A raised bed for the quarters. More plots, more food.", unlockFlag: "wood", wood: 12),
+        Recipe(id: "barrel", name: "Bigger barrel", inputs: [ItemStack(.pipe, 1)], output: .upgrade("barrel"),
+               note: "Doubles what the water barrel holds.", unlockFlag: "wood", wood: 20),
+        Recipe(id: "table", name: "Table and chair", inputs: [ItemStack(.fasteners, 2)], output: .upgrade("table"),
+               note: "Somewhere to sit and eat. Meals at home go further.", unlockFlag: "wood", wood: 30),
+
     ]
 }
