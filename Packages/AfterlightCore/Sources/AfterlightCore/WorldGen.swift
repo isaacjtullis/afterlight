@@ -80,6 +80,8 @@ public enum WorldGen {
         }
         // The roof caved in at the west end: packed earth a shovel can get through.
         for c in st.x0...(st.x0 + 2) { w.set(c, st.top - 1, .loose, back: .room) }
+        // ...and the rubble that came down with it, piled up to the hole.
+        for r in st.top...(st.floor - 1) { w.set(st.x0 + 1, r, .loose, back: .room) }
         // The door onto the walk.
         for r in (st.floor - 2)...(st.floor - 1) { w.set(st.x1 + 1, r, .air, back: .room) }
         // The service walk east to the ladder shaft, with a span fallen into a pit.

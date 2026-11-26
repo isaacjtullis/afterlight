@@ -595,13 +595,15 @@ extension Game {
     func tryShaftClimb() -> Bool {
         let x = max.pos.x
         let left = world.solid(x - 0.95, max.pos.y - 0.6), right = world.solid(x + 0.95, max.pos.y - 0.6)
-        guard left && right, !world.solid(x, max.pos.y - 2.2) else { return false }
+        // Both walls (a shaft he dug), or one (scrambling up a rubble pile) as long as it leads somewhere to stand.
+        guard left || right, !world.solid(x, max.pos.y - 2.2) else { return false }
+        let braced = left && right
         if world.climbs.contains(where: { abs($0.x - x) < 0.45 && $0.bottom > max.pos.y - 0.6 && $0.top < max.pos.y - 0.5 }) { return false }
         // Up the column to where it opens out sideways (a tunnel floor) or meets a ceiling.
         var y = max.pos.y - 1.0
         var top: Double? = nil
         while y > max.pos.y - 60 && y > 1 {
-            if world.solid(x, y - 1.8) { top = y; break }
+            if world.solid(x, y - 1.8) { if braced { top = y }; break }
             let lip = (!world.solid(x - 1.0, y - 0.5) && world.solid(x - 1.0, y + 0.2)) || (!world.solid(x + 1.0, y - 0.5) && world.solid(x + 1.0, y + 0.2))
             if lip { top = (world.groundY(x + (world.solid(x - 1.0, y + 0.2) && !world.solid(x - 1.0, y - 0.5) ? -1.0 : 1.0), from: y - 0.6, to: y + 0.6) ?? y); break }
             y -= 0.1
