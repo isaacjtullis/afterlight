@@ -83,6 +83,9 @@ final class HomeGroundTests: XCTestCase {
         XCTAssertGreaterThan(g.max.pos.y, 32.2, "Max should be able to dig down more than two tiles")
         sim(g, GameInput(), 0.5)
         sim(g, GameInput(up: true), 6)
+        sim(g, GameInput(), 0.3)
+        // Whatever lip is left is short enough to walk or scramble up.
+        sim(g, GameInput(dx: -1), 1.5)
         sim(g, GameInput(), 0.6)
         XCTAssertEqual(g.max.mode, .walk)
         XCTAssertLessThan(g.max.pos.y, 30.4, "Max should climb back out of his hole; he's at \(g.max.pos), started at x \(x)")
