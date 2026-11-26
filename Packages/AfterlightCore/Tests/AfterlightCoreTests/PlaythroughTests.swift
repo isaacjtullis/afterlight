@@ -40,6 +40,8 @@ final class Bot {
             let ahead = g.max.pos.x + Double(d) * 0.9
             let hole = g.max.ground && !g.world.solid(ahead, g.max.pos.y + 0.35) && !g.world.solid(ahead, g.max.pos.y + 1.2) && abs(ahead - x) > 0.6
             if g.max.stamina < 5 && dig { idle(6) }
+            // A hole in the way: bridge it with a plank if there's wood, else jump it.
+            if hole && g.context?.id == "plank" { g.performContext(); note("planked a hole at x\(String(format: "%.1f", ahead))"); idle(0.3); continue }
             step(GameInput(dx: d, dig: dig, jump: hole)); k += 1 / 60
         }
         let ok = abs(g.max.pos.x - x) < 0.35
