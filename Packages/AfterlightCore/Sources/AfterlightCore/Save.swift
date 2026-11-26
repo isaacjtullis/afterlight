@@ -76,7 +76,12 @@ extension Game {
             for i in d.indices { w.dens[i] = Float(d[i]) / 255 }
         }
         w.buried = s.buried
+        let freshProps = w.props
         w.props = s.props
+        // Older builds buried the cavern wrecks above the ceiling. Put them back where a fresh world has them.
+        for id in ["liftcar", "drill", "gantry"] {
+            if let i = w.propIndex(id), let f = freshProps.first(where: { $0.id == id }), w.props[i].pos.y < 20 { w.props[i].pos = f.pos }
+        }
         w.climbs = s.climbs
         w.markAllDirty()
         g.max.pos = s.maxPos

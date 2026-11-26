@@ -27,3 +27,15 @@ final class SalvageTests: XCTestCase {
         XCTAssertNotNil(g.guide)
     }
 }
+
+final class SalvageSaveTests: XCTestCase {
+    /// A save from a build that buried the lift car comes back with it on the cavern floor.
+    func testOldSaveWithBuriedWreckIsRepaired() throws {
+        let g = Game(world: WorldGen.make())
+        g.begin()
+        let i = g.world.propIndex("liftcar")!
+        g.world.props[i].pos = V2(64.5, 14)
+        let back = Game.load(try Game.decodeSave(try g.encodeSave()))
+        XCTAssertGreaterThan(back.world.prop("liftcar")!.pos.y, 20)
+    }
+}
