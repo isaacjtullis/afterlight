@@ -138,8 +138,29 @@ final class GameModel: ObservableObject {
 
     var hasSave: Bool { game.started }
 
+    let checkpointsStore = CheckpointStore()
+
+    /// Snapshot the game as it is now, labelled for the checkpoint list.
+    func snapshot(title: String, text: String, pinned: Bool = false) {
+        guard let d = try? game.encodeSave() else { return }
+        checkpointsStore.add(.init(id: UUID().uuidString, date: Date(), title: title, text: text, depth: Depth.label(atY: game.max.pos.y), pinned: pinned, save: d))
+    }
+
+    /// Go back to a checkpoint: load it, save it as the current game everywhere.
+    func restore(_ e: CheckpointStore.Entry) {
+        guard let s = try? Game.decodeSave(e.save) else { return }
+        game = Game.load(s)
+        game.lootUI = true
+        scene?.reset(game)
+        sheet = nil; panel = nil; conversation = nil; cards = []
+        saveNow(cloud: true)
+        game.think("Back at: \(e.title).", 2.6)
+    }
+
     func start() {
+        let fresh = !game.started
         if !game.started { game.begin() }
+        if fresh || checkpointsStore.all().isEmpty { snapshot(title: "Where it began", text: "The workshop, 2,600 feet down.", pinned: true) }
         audio.start()
         withAnimation(.easeOut(duration: 1.2)) { showTitle = false }
         Task { await syncFromCloud() }
@@ -157,6 +178,7 @@ final class GameModel: ObservableObject {
     }
 
     func resetForNewGame() {
+        checkpointsStore.erase()
         local.erase()
         ICloudStore().erase()
         game = Game()
@@ -164,6 +186,7 @@ final class GameModel: ObservableObject {
     }
 
     func newGame() {
+        checkpointsStore.erase()
         local.erase()
         ICloudStore().erase()
         game = Game()
@@ -291,6 +314,14 @@ final class GameModel: ObservableObject {
         case .checkpoint(let c):
             // A new quest right after finishing one reads as one moment: keep both, in order.
             if cards.count < 4 { withAnimation(.spring(response: 0.5, dampingFraction: 0.75)) { cards.append(c) } }
+            if c.kind != .newQuest {
+                // let the world settle (the step's own changes land a moment later), then snapshot
+                Task { @MainActor in
+                    try? await Task.sleep(for: .seconds(1.5))
+                    self.snapshot(title: c.kind == .questDone ? "\(c.title) — done" : c.title, text: c.text)
+                    self.saveNow(cloud: false)
+                }
+            }
         case .saveNow: if saveDue == nil { saveDue = clock + 1.5 }
         }
     }

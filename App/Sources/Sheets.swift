@@ -34,6 +34,7 @@ struct SheetHost: View {
                         case .camp: CampView()
                         case .pantry: PantryView()
                         case .loot: LootView()
+                        case .checkpoints: CheckpointsView()
                         case .map: MapView()
                         }
                     }
@@ -59,6 +60,7 @@ struct SheetHost: View {
         case .map: return "Map"
         case .pantry: return "Pantry"
         case .loot: return LootView.title(model.game)
+        case .checkpoints: return "Checkpoints"
         }
     }
 }
@@ -739,7 +741,15 @@ struct ScrollJournal: View {
                                 }
                                 .accessibilityIdentifier("journal.close")
                             }
-                            Text("Chapter \(min(g.story.chapter, 4))").font(.system(size: 13, weight: .semibold, design: .serif)).tracking(2).foregroundStyle(ink.opacity(0.6))
+                            HStack {
+                                Text("Chapter \(min(g.story.chapter, 4))").font(.system(size: 13, weight: .semibold, design: .serif)).tracking(2).foregroundStyle(ink.opacity(0.6))
+                                Spacer()
+                                Button { model.sheet = .checkpoints } label: {
+                                    Label("Checkpoints", systemImage: "clock.arrow.circlepath").font(.system(size: 14, weight: .semibold, design: .serif)).foregroundStyle(ink)
+                                        .padding(.horizontal, 10).frame(height: 32).overlay(Capsule().stroke(ink.opacity(0.4)))
+                                }
+                                .accessibilityIdentifier("journal.checkpoints")
+                            }
                             ForEach(g.story.quests.reversed()) { q in
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text((q.side ? "Side · " : "") + q.title).font(.system(size: 19, weight: .semibold, design: .serif)).foregroundStyle(ink.opacity(q.done ? 0.45 : 1))
@@ -1536,5 +1546,44 @@ struct BuildSheet: View {
 
     private func tag(_ s: String, _ c: Color) -> some View {
         Text(s).font(.avenir(9, "Bold")).tracking(1).foregroundStyle(.black).padding(.horizontal, 5).padding(.vertical, 2).background(Capsule().fill(c))
+    }
+}
+
+
+/// Every checkpoint so far, newest first; tap one to go back there.
+struct CheckpointsView: View {
+    @EnvironmentObject var model: GameModel
+    @State private var confirm: String? = nil
+    var body: some View {
+        let list = model.checkpointsStore.all()
+        Text("Each checkpoint is saved as you reach it. Going back replaces your current progress.")
+            .font(.avenir(13)).foregroundStyle(Color.cream.opacity(0.7))
+        if list.isEmpty { Text("No checkpoints yet.").font(.avenir(15)).foregroundStyle(Color.cream.opacity(0.7)) }
+        ForEach(list) { e in
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: e.pinned ? "flag.fill" : "checkmark.seal.fill").foregroundStyle(Color.amber).font(.system(size: 18)).frame(width: 26)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(e.title).font(.avenir(16, "DemiBold")).foregroundStyle(Color.cream)
+                        Text(e.text).font(.avenir(13)).foregroundStyle(Color.cream.opacity(0.7)).fixedSize(horizontal: false, vertical: true)
+                        Text("\(e.depth) · \(e.date.formatted(date: .abbreviated, time: .shortened))").font(.avenir(11)).foregroundStyle(Color.cream.opacity(0.45))
+                    }
+                    Spacer(minLength: 4)
+                    if confirm != e.id {
+                        Button("Go back") { withAnimation { confirm = e.id } }.font(.avenir(13, "DemiBold")).foregroundStyle(Color.amber)
+                    }
+                }
+                if confirm == e.id {
+                    HStack {
+                        Text("Lose everything since then?").font(.avenir(13, "DemiBold")).foregroundStyle(Color(red: 0.95, green: 0.6, blue: 0.5))
+                        Spacer()
+                        Button("Cancel") { confirm = nil }.font(.avenir(13)).foregroundStyle(Color.cream.opacity(0.8))
+                        Button("Go back") { model.restore(e) }.buttonStyle(PillStyle(prominent: true))
+                    }
+                }
+            }
+            .padding(12)
+            .background(RoundedRectangle(cornerRadius: 16).fill(Color.white.opacity(0.05)))
+        }
     }
 }

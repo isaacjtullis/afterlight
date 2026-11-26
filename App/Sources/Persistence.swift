@@ -32,6 +32,38 @@ struct LocalStore {
     func erase() { try? FileManager.default.removeItem(at: url) }
 }
 
+/// Snapshots taken at each checkpoint, so the player can go back to any of them (and to the start).
+struct CheckpointStore {
+    struct Entry: Codable, Identifiable {
+        var id: String
+        var date: Date
+        var title: String
+        var text: String
+        var depth: String
+        var pinned: Bool
+        var save: Data
+    }
+    static let keep = 15
+    var url: URL {
+        let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir.appendingPathComponent("afterlight-checkpoints.json")
+    }
+    func all() -> [Entry] {
+        guard let d = try? Data(contentsOf: url), let e = try? JSONDecoder().decode([Entry].self, from: d) else { return [] }
+        return e
+    }
+    func add(_ e: Entry) {
+        var list = all()
+        list.insert(e, at: 0)
+        // Keep the start pinned; drop the oldest of the rest.
+        let pinned = list.filter(\.pinned), rest = list.filter { !$0.pinned }
+        list = Array(rest.prefix(Self.keep)) + pinned
+        if let d = try? JSONEncoder().encode(list) { try? d.write(to: url, options: .atomic) }
+    }
+    func erase() { try? FileManager.default.removeItem(at: url) }
+}
+
 /// Cloud saves and server-resolved jobs on Supabase. Every call fails soft: the game keeps
 /// working offline and catches up later.
 actor CloudSync {

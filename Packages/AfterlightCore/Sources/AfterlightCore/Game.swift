@@ -47,7 +47,7 @@ public enum GameEvent: Equatable, Sendable {
     case saveNow
 }
 
-public enum Sheet: String, Sendable { case workbench, storage, pack, journal, mission, camp, map, pantry, loot }
+public enum Sheet: String, Sendable { case workbench, storage, pack, journal, mission, camp, map, pantry, loot, checkpoints }
 
 /// One contextual action shown near the work.
 public struct ContextAction: Equatable, Sendable {
