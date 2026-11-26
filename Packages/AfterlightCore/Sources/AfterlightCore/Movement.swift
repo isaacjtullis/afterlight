@@ -462,7 +462,7 @@ extension Game {
     func catchRungs() {
         guard max.mode == .walk, !max.ground, max.vy > 5 else { return }
         let p = max.pos
-        if let c = world.climbs.first(where: { ($0.kind == .rungs || $0.kind == .ladder) && abs($0.x - p.x) < 0.8 && p.y > $0.top + 0.6 && p.y < $0.bottom - 0.8 }) {
+        if let c = world.climbs.first(where: { ($0.kind == .rungs || $0.kind == .ladder) && abs($0.x - p.x) < 1.2 && p.y > $0.top + 0.6 && p.y < $0.bottom - 0.8 }) {
             max.mode = .climb; max.climbID = c.id
             max.vx = 0; max.vy = 0; max.ground = false
             max.pos.x = c.x
