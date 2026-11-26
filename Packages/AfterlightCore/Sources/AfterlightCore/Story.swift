@@ -663,7 +663,7 @@ extension Game {
     func plankSpot() -> (c: Int, r: Int)? {
         guard max.ground, max.mode == .walk, !max.swingOn, inv.wood >= Inventory.plankCost else { return nil }
         let r = Int(max.pos.y.rounded())
-        guard abs(max.pos.y - Double(r)) < 0.2 else { return nil }
+        guard abs(max.pos.y - Double(r)) < 0.48 else { return nil }
         let c = Int((max.pos.x + Double(max.face) * (Tuning.halfWidth + 0.55)).rounded(.down))
         guard !world.m(c, r).solid, !world.m(c, r - 1).solid, !world.m(c, r - 2).solid else { return nil }
         let under = world.m(c - max.face, r)

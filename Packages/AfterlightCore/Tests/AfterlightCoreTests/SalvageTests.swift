@@ -100,7 +100,7 @@ final class HomeGroundTests: XCTestCase {
         g.world.rebuildDensity()
         XCTAssertFalse(g.world.m(hx, 30).solid)
         g.inv.wood = 20
-        g.max.pos = V2(Double(hx) + 1.45, 30); g.max.face = -1; g.max.vx = 0; g.max.ground = true
+        g.max.pos = V2(Double(hx) + 1.6, 30); g.max.face = -1; g.max.vx = 0; g.max.ground = true
         sim(g, GameInput(), 0.3)
         XCTAssertEqual(g.context?.id, "plank", "max at \(g.max.pos)")
         g.performContext()

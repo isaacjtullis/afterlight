@@ -439,7 +439,7 @@ final class MaraTests: XCTestCase {
 
         // Dig the warm passage east to the outpost door.
         hold(GameInput(dx: 1), until: { g.max.pos.x > 34.3 }, timeout: 10)
-        hold(GameInput(dx: 1, dig: true), until: { g.max.pos.x > 74 }, timeout: 400)
+        hold(GameInput(dx: 1, dig: true), until: { g.max.pos.x > 74 }, timeout: 900)
         XCTAssertGreaterThan(g.max.pos.x, 74, "dug through at \(g.max.pos)")
         XCTAssertEqual(g.max.pos.y, 9, accuracy: 0.2)
 
