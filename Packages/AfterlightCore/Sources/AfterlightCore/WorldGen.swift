@@ -172,7 +172,9 @@ public enum WorldGen {
         // Buried things.
         w.set(36, 30, .loose); w.set(37, 30, .loose); w.set(38, 30, .loose)
         w.rebuildDensity()
-        w.buried = [Buried(id: "crystal", item: ItemStack(.chargeCrystal), pos: Landmarks.crystal)]
+        w.buried = [Buried(id: "crystal", item: ItemStack(.chargeCrystal), pos: Landmarks.crystal)] + scatterFinds(w)
+        scatterRoots(w)
+        w.rebuildDensity()
 
         // Props.
         // The cavern floor at a column: start in the cavern's own open air, never in the earth above its ceiling.
@@ -228,5 +230,58 @@ public enum WorldGen {
         ]
         return w
     }
-}
 
+    /// Things in the earth, placed the same way in every world: ore and quartz veins, old-world relics,
+    /// spores. Only in packed dirt, away from the rooms and the crystal.
+    static func scatterFinds(_ w: World) -> [Buried] {
+        var out: [Buried] = []
+        func open(_ c: Int, _ r: Int) -> Bool { w.m(c, r) == .dirt && w.bd(c, r) == .earth }
+        for r in 11..<(Landmarks.height - 3) {
+            for c in 3..<(Landmarks.width - 4) where open(c, r) {
+                if abs(Double(c) + 0.5 - Landmarks.crystal.x) < 3 && abs(Double(r) - Landmarks.crystal.y) < 3 { continue }
+                let h = hash2(c * 13 + 7, r * 7 + 3)
+                guard h < 0.03 else { continue }
+                let k = hash2(c * 3 + 1, r * 17 + 5)
+                let depth = Double(r) / Double(Landmarks.height)
+                let item: ItemID
+                switch k {
+                case ..<0.34: item = .copperOre
+                case ..<(0.52 + depth * 0.1): item = .ironOre
+                case ..<0.68: item = .quartz
+                case ..<0.76: item = .coin
+                case ..<0.82: item = .photo
+                case ..<0.87: item = .toy
+                case ..<0.95: item = .spores
+                default: item = .seedTin
+                }
+                // Ore comes in veins: a few pieces together.
+                let n = (item == .copperOre || item == .ironOre || item == .quartz) ? 1 + Int(hash2(c, r * 5) * 3) : 1
+                for j in 0..<n {
+                    let dc = j == 0 ? 0 : Int(hash2(c + j, r) * 3) - 1, dr = j == 0 ? 0 : Int(hash2(c, r + j) * 3) - 1
+                    guard open(c + dc, r + dr) else { continue }
+                    let p = V2(Double(c + dc) + 0.3 + hash2(c, j) * 0.4, Double(r + dr) + 0.3 + hash2(r, j) * 0.4)
+                    out.append(Buried(id: "f.\(c + dc).\(r + dr)", item: ItemStack(item), pos: p))
+                }
+            }
+        }
+        // one per tile
+        var seen = Set<String>()
+        return out.filter { seen.insert($0.id).inserted }
+    }
+
+    /// Roots wander down through the earth here and there: wood for planks, wherever Max digs.
+    static func scatterRoots(_ w: World) {
+        for r in 12..<(Landmarks.height - 6) {
+            for c in 3..<(Landmarks.width - 4) where w.m(c, r) == .dirt && w.bd(c, r) == .earth && hash2(c * 5 + 11, r * 11 + 2) < 0.0045 {
+                var x = c, y = r
+                let len = 5 + Int(hash2(c, r * 3) * 7)
+                for i in 0..<len {
+                    guard w.m(x, y) == .dirt && w.bd(x, y) == .earth else { break }
+                    w.set(x, y, .root)
+                    y += 1
+                    if hash2(x * 7, y + i) < 0.35 { x += hash2(x, y * 3) < 0.5 ? -1 : 1 }
+                }
+            }
+        }
+    }
+}

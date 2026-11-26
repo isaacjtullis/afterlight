@@ -169,6 +169,25 @@ enum TerrainArt {
                 }
             }
         }
+        // Finds showing through the earth: little flecks of colour where something is buried.
+        for b in w.buried where !b.revealed && b.id != "crystal" && b.pos.x >= Double(c0) - 1 && b.pos.x <= Double(c1) + 2 && b.pos.y >= Double(r0) - 1 && b.pos.y <= Double(r1) + 2 {
+            let col: UInt32
+            switch b.item.id {
+            case .copperOre: col = 0x4fc9a0
+            case .ironOre: col = 0xc0624a
+            case .quartz: col = 0xdff2ff
+            case .spores: col = 0x8affc0
+            case .coin: col = 0xe8c25a
+            default: col = 0xcbb89a
+            }
+            let n = [.copperOre, .ironOre, .quartz].contains(b.item.id) ? 4 : 2
+            for i in 0..<n {
+                let px = b.pos.x - 0.25 + hash2(Int(b.pos.x * 10) + i, 3) * 0.5, py = b.pos.y - 0.25 + hash2(Int(b.pos.y * 10) + i, 7) * 0.5
+                guard w.solid(px, py) else { continue }
+                let s: CGFloat = 0.07 + CGFloat(hash2(i, Int(b.pos.x))) * 0.07
+                ctx.setFillColor(color(col, 0.85)); ctx.fillEllipse(in: CGRect(x: px, y: py, width: s, height: s))
+            }
+        }
         return ctx.makeImage()
     }
 

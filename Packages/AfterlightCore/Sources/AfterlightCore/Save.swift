@@ -81,6 +81,11 @@ extension Game {
         w.climbs = s.climbs
         for f in freshProps where Game.addedLater.contains(f.id) && w.propIndex(f.id) == nil { w.props.append(f) }
         var story = s.story
+        if !story.flags.contains("finds1") {
+            let have = Set(w.buried.map(\.id))
+            for b in WorldGen.scatterFinds(w) where !have.contains(b.id) && w.m(Int(b.pos.x), Int(b.pos.y)) == .dirt { w.buried.append(b) }
+            story.flags.insert("finds1")
+        }
         var maxPos = s.maxPos
         if !story.flags.contains(Game.worldVersionFlag) {
             // Saves from before the cavern moved: keep everything Max did up top (the shaft, the maintenance

@@ -206,7 +206,7 @@ final class GameModel: ObservableObject {
             let s = Int(j.secondsLeft.rounded(.up))
             u.coopStatus = "Mara · \(j.title) · \(s / 60):\(String(format: "%02d", s % 60))"
         }
-        u.pulseDown = g.world.buried.contains { !$0.revealed && abs($0.pos.x - g.max.pos.x) < 1.5 } && g.story.flags.contains("said.glint")
+        u.pulseDown = g.world.buried.contains { $0.id == "crystal" && !$0.revealed && abs($0.pos.x - g.max.pos.x) < 1.5 } && g.story.flags.contains("said.glint")
         if u != ui { ui = u }
     }
 

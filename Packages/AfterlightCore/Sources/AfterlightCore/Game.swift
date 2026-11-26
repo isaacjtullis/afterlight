@@ -140,6 +140,7 @@ public final class Game {
         self.world = world
         story.addQuest(.blackout)
         story.flags.insert(Game.worldVersionFlag)
+        story.flags.insert("finds1")
     }
 
     public func drainEvents() -> [GameEvent] { defer { events.removeAll() }; return events }

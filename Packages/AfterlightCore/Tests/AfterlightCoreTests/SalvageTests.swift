@@ -227,4 +227,16 @@ final class HomeGroundTests: XCTestCase {
         XCTAssertLessThan(peak, 28.1, "the second jump carries Max higher than one jump")
         XCTAssertGreaterThan(peak, 26.0, "but there is no third")
     }
+
+    /// The earth holds things: ore veins, relics, spores and roots, all in packed dirt.
+    func testTheEarthHasFinds() {
+        let w = WorldGen.make()
+        let finds = w.buried.filter { $0.id != "crystal" }
+        XCTAssertGreaterThan(finds.count, 60)
+        XCTAssertTrue(finds.allSatisfy { w.m(Int($0.pos.x), Int($0.pos.y)).solid })
+        XCTAssertTrue(Set(finds.map(\.item.id)).isSuperset(of: [.copperOre, .ironOre, .quartz, .coin]))
+        var roots = 0
+        for r in 12..<55 { for c in 40..<150 where w.m(c, r) == .root { roots += 1 } }
+        XCTAssertGreaterThan(roots, 20, "roots run through the earth away from home too")
+    }
 }

@@ -6,6 +6,8 @@ public enum ItemID: String, Codable, CaseIterable, Sendable {
     case lamp, ladderSection, waterTank
     case pressureValve, rope
     case ration
+    // finds in the earth
+    case copperOre, ironOre, quartz, coin, photo, toy, spores
 
     public var name: String {
         switch self {
@@ -27,6 +29,13 @@ public enum ItemID: String, Codable, CaseIterable, Sendable {
         case .pressureValve: return "Pressure valve"
         case .rope: return "Rope"
         case .ration: return "Tinned ration"
+        case .copperOre: return "Copper ore"
+        case .ironOre: return "Iron ore"
+        case .quartz: return "Quartz"
+        case .coin: return "Old coin"
+        case .photo: return "Faded photo"
+        case .toy: return "Tin toy"
+        case .spores: return "Glowcap spores"
         }
     }
 
@@ -50,6 +59,13 @@ public enum ItemID: String, Codable, CaseIterable, Sendable {
         case .pressureValve: return "Brass, heavy, threaded both ends. A pump won't hold pressure without one."
         case .rope: return "Old climbing line. Two lengths and an anchor will get you up a chimney."
         case .ration: return "Beans, mostly. Eat one at the pantry to get your strength back."
+        case .copperOre: return "Green-streaked rock. Smelted down, it’s wire."
+        case .ironOre: return "Heavy and rust-red. Good for tools and fittings."
+        case .quartz: return "Clear as ice. Lenses, lamps, maybe a radio."
+        case .coin: return "Money from before. Worth nothing, except to someone who misses it."
+        case .photo: return "A family at a beach, squinting into a sun nobody here has seen."
+        case .toy: return "A wind-up bird. It still hops, a little."
+        case .spores: return "A pinch of dust that glows faintly. They grow in the dark."
         }
     }
 

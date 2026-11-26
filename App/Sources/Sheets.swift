@@ -137,11 +137,23 @@ extension ItemID {
         case .pressureValve: return "wrench.adjustable.fill"
         case .rope: return "lasso"
         case .ration: return "fork.knife"
+        case .copperOre: return "circle.hexagongrid.fill"
+        case .ironOre: return "hexagon.fill"
+        case .quartz: return "rhombus.fill"
+        case .coin: return "centsign.circle.fill"
+        case .photo: return "photo.fill"
+        case .toy: return "bird.fill"
+        case .spores: return "sparkles"
         }
     }
     var tint: Color {
         switch self {
         case .chargeCrystal: return .violet
+        case .copperOre: return Color(red: 0.45, green: 0.85, blue: 0.7)
+        case .ironOre: return Color(red: 0.85, green: 0.5, blue: 0.4)
+        case .quartz: return Color(red: 0.85, green: 0.95, blue: 1)
+        case .coin: return Color(red: 0.95, green: 0.8, blue: 0.4)
+        case .spores: return Color(red: 0.6, green: 1, blue: 0.75)
         case .seedTin, .greens: return Color(red: 0.6, green: 0.85, blue: 0.5)
         case .lampCell, .batteryCell, .lamp: return Color(red: 1, green: 0.85, blue: 0.5)
         case .waterTank: return Color(red: 0.55, green: 0.8, blue: 1)

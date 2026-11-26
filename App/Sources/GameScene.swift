@@ -706,7 +706,7 @@ final class GameScene: SKScene {
         if abs(g.max.pos.x - 80) < 30 && g.max.pos.y < 14 { light(80.5, 7, 7, 0.95, rays: g.world.castLight(from: V2(80.5, 7), radius: 7, a0: 0, a1: 2 * .pi, rays: 48)) }
         if g.odi.walking { light(g.odi.pos.x + Double(g.odi.face) * 0.3, g.odi.pos.y - 0.5, 3.6, 0.9, rays: nil) }
         if g.ambient > 0 { light(135, 30, 60, 0.92 * g.ambient, rays: nil) }
-        if let b = g.world.buried.first(where: { !$0.revealed }), abs(b.pos.x - lx) < 6 { light(b.pos.x, b.pos.y - 0.1, 1.1, 0.35, rays: nil) }
+        if let b = g.world.buried.first(where: { $0.id == "crystal" && !$0.revealed }), abs(b.pos.x - lx) < 6 { light(b.pos.x, b.pos.y - 0.1, 1.1, 0.35, rays: nil) }
         if let img = ctx.makeImage() {
             darkNode.texture = SKTexture(cgImage: img)
             darkNode.texture?.filteringMode = .linear
@@ -735,7 +735,7 @@ final class GameScene: SKScene {
             } else { n.isHidden = true }
         }
         // the glint: a sparkle through the soil
-        if let b = g.world.buried.first(where: { !$0.revealed }) {
+        if let b = g.world.buried.first(where: { $0.id == "crystal" && !$0.revealed }) {
             let d = abs(g.max.pos.x - b.pos.x), L = lightAt(b.pos.x, b.pos.y)
             if d < 6.5 && L > 0.03 {
                 let vis = min(1, (L + 0.35) * (1 - d / 6.5) * 1.7)
