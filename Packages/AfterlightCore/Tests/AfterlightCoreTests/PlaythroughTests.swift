@@ -156,7 +156,8 @@ extension Bot {
         guard g.max.pos.y < 31 else { note("didn't make it back up"); return false }
         if back == .digUp {
             // Cover the hole by the door with a plank, the way you'd want to before walking past it again.
-            hold(GameInput(dx: 1), until: { self.g.context?.id == "plank" || self.g.max.pos.x > 31.9 }, timeout: 3, "edge of my own hole")
+            go(31.3)
+            hold(GameInput(dx: 1), until: { self.g.context?.id == "plank" || self.g.max.pos.x > 32.3 }, timeout: 3, "edge of my own hole")
             if g.context?.id == "plank" { g.performContext(); note("planked over the hole") } else { note("no plank offered: \(g.context?.id ?? "nothing") wood=\(g.inv.wood)") }
         }
         guard go(30.7, timeout: 120), use("panel:drum") else { return false }
@@ -224,9 +225,6 @@ final class PlaythroughTests: XCTestCase {
         b.idle(1)
         XCTAssertTrue(b.use("genFree"), b.trail)
         b.idle(2)
-        // Hop over the hole the long dig left by the door.
-        b.go(30.9)
-        b.hold(GameInput(dx: 1, jump: true), until: { g.max.pos.x > 33.6 && g.max.ground }, timeout: 3, "jump my own hole")
         XCTAssertTrue(b.go(36), b.trail)
         XCTAssertTrue(b.go(Landmarks.liftCarPos.x - 0.6, dig: true, timeout: 200), b.trail)
         b.idle(0.5)
