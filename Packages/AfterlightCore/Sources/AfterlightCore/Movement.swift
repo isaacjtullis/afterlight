@@ -508,7 +508,12 @@ extension Game {
             if max.swing >= 1 { max.swingOn = false; max.swing = 0 }
         }
         oneShotTick(dt)
-        if world.solid(max.pos.x, ny - Tuning.height) && v < 0 { ny = max.pos.y }
+        if world.solid(max.pos.x, ny - Tuning.height) && v < 0 {
+            // A ragged edge overhead on a foothold climb: lean a little to the open side.
+            if c.kind == .foothold, let off = [0.2, -0.2, 0.35, -0.35].first(where: { !world.solid(max.pos.x + $0, ny - Tuning.height) }) {
+                max.pos.x += off
+            } else { ny = max.pos.y }
+        }
         max.pos.y = clampD(ny, c.top, c.bottom)
         // Hand over to the next climbable above (ladder -> rungs): Max can reach about an arm's
         // length up to grab it, so a short gap between two climbs never strands him.
