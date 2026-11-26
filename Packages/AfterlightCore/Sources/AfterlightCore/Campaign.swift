@@ -22,13 +22,13 @@ extension Game {
         if let d = world.prop("mara.drop"), near(d, 1.3), d.stock.contains(where: { $0.id == .fullCan }) {
             return act("panel:mara.drop", "Water cans", V2(d.pos.x, d.pos.y - 1.8))
         }
+        if let c = hotelContext() { return c }
+        if let c = galleryContext() { return c }
         // People with something to say.
         for a in visibleCast where hasTalk(a.id) && abs(a.pos.x - p.x) < 1.7 && abs(a.pos.y - p.y) < 1.4 {
             let met = remembers(a.id, "met")
             return act("panel:\(a.id)", met ? "Talk to \(Cast.name(a.id))" : "Say hello", V2(a.pos.x, a.pos.y - 2.4), !met)
         }
-        if let c = hotelContext() { return c }
-        if let c = galleryContext() { return c }
         return nil
     }
 

@@ -15,10 +15,10 @@ extension Landmarks {
     public static let loadingFloor = (x0: 214, x1: 246, top: 41, floor: 52)
     public static let guestFloor = (x0: 170, x1: 212, top: 34, floor: 40)
     public static let upper = (x0: 170, x1: 249, top: 23, floor: 28)
-    public static let exitWell = (x0: 247, x1: 249)
+    public static let exitWell = (x0: 247, x1: 248)
     public static let luggageX = 199.0
     public static let fireHatch = (c0: 172, c1: 173, r: 28)
-    public static let galleryWell = (x0: 244, x1: 246)
+    public static let galleryWell = (x0: 244, x1: 245)
     public static let gallery = (x0: 228, x1: 326, top: 5, floor: 12)
     public static let hotelLift = V2(171.6, 52)
     public static let backstairs = V2(175.2, 52)
@@ -63,8 +63,7 @@ extension WorldGen {
         let E = Landmarks.exitWell
         for c in E.x0...E.x1 { for r in (U.floor + 1)..<F.floor { w.set(c, r, .air, back: .shaft) } }
         for c in (F.x1 + 1)...E.x1 { for r in F.top..<F.floor { w.set(c, r, .air, back: .shaft) } }
-        for r in U.top..<U.floor { for c in E.x0...E.x1 { w.set(c, r, .air, back: .hotel) } }
-        w.set(E.x1 + 1, U.floor, .metal)
+        for c in E.x0...E.x1 { w.set(c, U.floor, .air, back: .shaft) }
         // The gallery stair: up through the plant-room ceiling.
         let GW = Landmarks.galleryWell, GA = Landmarks.gallery
         for c in GW.x0...GW.x1 { for r in (GA.floor)..<U.top { w.set(c, r, .air, back: .shaft) } }

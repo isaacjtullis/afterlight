@@ -434,7 +434,7 @@ extension Game {
         world.props[ti].stock = []
         world.props[ti].pos = V2(Landmarks.freightBottom.x + 1.4, 52)
         setActor("scav") { a in
-            a.carrying = load
+            a.carrying = load.filter { $0.id != .inspectionLamp }
             a.errand = stole ? "stole" : "done"
             a.pos = V2(Landmarks.freightBottom.x + 0.8, 52)
             a.route = [Waypoint(Self.stallPos.x + 0.9, 52, tag: "stall")]

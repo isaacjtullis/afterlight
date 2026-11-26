@@ -348,8 +348,8 @@ public enum WorldGen {
             Climb(id: "rungs.loading", x: Double(Landmarks.loadingShaft.c0) + 1.0, top: Double(Landmarks.transit.floor), bottom: 30, kind: .rungs),
             Climb(id: "rungs.sump", x: Double(Landmarks.hatch.c) + 0.5, top: 9.0, bottom: Double(Landmarks.sump.floor), kind: .rungs),
             Climb(id: "stairs.luggage", x: Landmarks.luggageX, top: Double(Landmarks.guestFloor.floor), bottom: Double(Landmarks.lobby.floor), kind: .rungs),
-            Climb(id: "rungs.exit", x: Double(Landmarks.exitWell.x0) + 1.5, top: Double(Landmarks.upper.floor), bottom: Double(Landmarks.loadingFloor.floor), kind: .rungs),
-            Climb(id: "rungs.gallery", x: Double(Landmarks.galleryWell.x0) + 1.5, top: Double(Landmarks.gallery.floor), bottom: Double(Landmarks.upper.floor), kind: .rungs),
+            Climb(id: "rungs.exit", x: Double(Landmarks.exitWell.x0) + 1.0, top: Double(Landmarks.upper.floor), bottom: Double(Landmarks.loadingFloor.floor), kind: .rungs),
+            Climb(id: "rungs.gallery", x: Double(Landmarks.galleryWell.x0) + 1.0, top: Double(Landmarks.gallery.floor), bottom: Double(Landmarks.upper.floor), kind: .rungs),
             Climb(id: "rungs.service", x: Double(Landmarks.serviceShaft.c1), top: Double(Landmarks.liftPit.floor), bottom: Double(Landmarks.serviceWalk.floor), kind: .rungs),
         ]
 
