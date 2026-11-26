@@ -9,6 +9,8 @@ public enum Mat: UInt8, Codable, Sendable {
     case rock = 4     // bedrock: nothing in chapters 1–3 cuts it
     case metal = 5    // built walls, floors, linings
     case seam = 6     // soft overhead seam: the short pick opens it
+    case root = 7     // a giant root: the shovel hacks it apart for wood
+    case plank = 8    // a plank Max laid: a thin walkable board
 
     public var solid: Bool { rawValue >= 2 }
     public var hard: Bool { self == .rock || self == .metal }
@@ -32,7 +34,7 @@ public enum DigTool: String, Codable, Sendable {
     func cuts(_ m: Mat) -> Bool {
         switch self {
         // Crumbs left inside already-dug tiles always come away.
-        case .shovel: return m == .dirt || m == .loose || m == .seam || m == .dug
+        case .shovel: return m == .dirt || m == .loose || m == .seam || m == .dug || m == .root || m == .plank
         case .pick: return m == .seam || m == .loose || m == .dug
         }
     }
@@ -59,6 +61,7 @@ public struct Climb: Codable, Identifiable, Equatable, Sendable {
 public enum PropKind: String, Codable, Sendable {
     case workbench, locker, buckledLocker, bed, storage
     case liftCar, drillRig, gantry           // cave salvage
+    case crate                               // a tool crate in the root hollow
     case pump, batteryBank, warmPipe         // maintenance room
     case lamp, planter, waterTank            // placed by the player
     case outpostDoor, odiStall
@@ -237,7 +240,9 @@ public final class World {
         for r in r0...r1 {
             for c in c0...c1 {
                 let t = m(c, r)
-                guard t.solid, tool.cuts(t), density(Double(c) + 0.5, Double(r) + 0.5) < 0.5 else { continue }
+                // A plank is a thin board along the top of its tile: test it there.
+                let probeY = t == .plank ? Double(r) + 0.15 : Double(r) + 0.5
+                guard t.solid, tool.cuts(t), density(Double(c) + 0.5, probeY) < 0.5 else { continue }
                 set(c, r, .dug, back: bd(c, r) == .open ? .open : (bd(c, r) == .room ? .room : .earth))
                 res.cleared.append((c, r, t))
                 for (dc, dr) in [(1, 0), (-1, 0), (0, 1), (0, -1)] where res.touchedOpen == nil {
@@ -264,6 +269,19 @@ public final class World {
             for i in (c * K + 1)...((c + 1) * K - 1) {
                 let edge = j == r * K || j == (r + 1) * K
                 dens[j * dw + i] = open ? 0 : (edge ? 0.5 : 1)
+            }
+        }
+        markDirty(x0: Double(c) - 1, y0: Double(r) - 1, x1: Double(c) + 2, y1: Double(r) + 2)
+    }
+
+    /// Lay a plank across the top of an open tile: a thin board Max can walk on.
+    public func setPlank(_ c: Int, _ r: Int) {
+        guard inside(c, r) else { return }
+        set(c, r, .plank)
+        let K = World.K
+        for j in (r * K)...(r * K + 1) {
+            for i in (c * K)...((c + 1) * K) where j * dw + i < dens.count {
+                dens[j * dw + i] = Swift.max(dens[j * dw + i], j == r * K + 1 ? 0.55 : 1)
             }
         }
         markDirty(x0: Double(c) - 1, y0: Double(r) - 1, x1: Double(c) + 2, y1: Double(r) + 2)

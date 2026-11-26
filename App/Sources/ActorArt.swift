@@ -19,10 +19,15 @@ enum ActorArt {
     }
 
     /// Max: cream cloak, red scarf, dusty-purple beanie with a bouncing pom-pom.
-    static func drawMax(_ ctx: CGContext, _ m: Max, time: Double, flashlight: Bool, flashOn: Bool, carrying: Bool) {
+    static func drawMax(_ ctx: CGContext, _ m: Max, time: Double, flashlight: Bool, flashOn: Bool, carrying: Bool, wood: Int = 0) {
         ctx.saveGState()
         ctx.scaleBy(x: CGFloat(m.face), y: 1)
-        ctx.rotate(by: CGFloat(m.lean + m.tilt) * CGFloat(m.face) * CGFloat(m.face))
+        if m.mode == .climb {
+            // Hanging from the hands: swing about the grip, not the feet.
+            ctx.translateBy(x: 0.15, y: -1.75); ctx.rotate(by: CGFloat(m.lean)); ctx.translateBy(x: -0.15, y: 1.75)
+        } else {
+            ctx.rotate(by: CGFloat(m.lean + m.tilt) * CGFloat(m.face) * CGFloat(m.face))
+        }
         let sq = CGFloat(m.squash)
         ctx.scaleBy(x: 1 + sq * 0.6, y: 1 - sq)
         let cr = CGFloat(m.crouch), bob = CGFloat(m.bob)
@@ -35,15 +40,28 @@ enum ActorArt {
             let amp = climbing ? 0.6 : m.walkAmp
             let sw = CGFloat(sin(ph) * amp)
             let lift = CGFloat(max(0, cos(ph)) * 0.13 * amp)
-            let fx = CGFloat(i == 1 ? -1 : 1) * CGFloat(m.stance) + (climbing ? 0 : sw * 0.24)
-            let fy = climbing ? -CGFloat(max(0, sw)) * 0.25 : -lift
-            let kx = fx * 0.5 + 0.05, ky = (hipY + fy) / 2
+            let up = CGFloat(max(0, sin(ph)))
+            let dangle = CGFloat(sin(time * 2.1 + Double(i) * 1.3)) * 0.03
+            let fx = climbing ? CGFloat(i == 1 ? -0.06 : 0.1) + up * 0.1 + dangle : CGFloat(i == 1 ? -1 : 1) * CGFloat(m.stance) + sw * 0.24
+            let fy = climbing ? -up * 0.38 : -lift
+            let kx = climbing ? fx + 0.12 + up * 0.12 : fx * 0.5 + 0.05, ky = climbing ? (hipY + fy) / 2 - up * 0.06 : (hipY + fy) / 2
             line(ctx, [CGPoint(x: i == 1 ? -0.05 : 0.05, y: hipY), CGPoint(x: kx, y: ky), CGPoint(x: fx, y: fy - 0.06)], c(i == 1 ? 0x2a2026 : 0x3a2c33), 0.12)
             ctx.setFillColor(c(i == 1 ? 0x1c1418 : 0x2a1d22)); rr(ctx, fx - 0.08, fy - 0.12, 0.22, 0.12, 0.05); ctx.fillPath()
         }
         // backpack
         ctx.setFillColor(c(0x7a5a44)); rr(ctx, -0.37, shY + 0.02, 0.23, 0.4, 0.08); ctx.fillPath()
         ctx.setFillColor(c(0x5c4232)); ctx.fill(CGRect(x: -0.37, y: shY + 0.19, width: 0.23, height: 0.04))
+        if wood > 0 {
+            // Logs strapped across the back of the bag: more wood, a bigger bundle.
+            let n = min(4, 1 + wood / 50)
+            for k in 0..<n {
+                let ly = shY + 0.06 + CGFloat(k % 2) * 0.1 - CGFloat(k / 2) * 0.1
+                let lx = -0.5 + CGFloat(k / 2) * 0.03
+                ctx.setFillColor(c(0x8a5a34)); rr(ctx, lx, ly, 0.36, 0.09, 0.045); ctx.fillPath()
+                dot(ctx, lx + 0.36, ly + 0.045, 0.045, c(0xc9925a)); dot(ctx, lx + 0.36, ly + 0.045, 0.018, c(0x8a5a34))
+            }
+            line(ctx, [CGPoint(x: -0.42, y: shY + 0.0), CGPoint(x: -0.42, y: shY + 0.3)], c(0x3a2a22), 0.03)
+        }
         if carrying {
             ctx.setFillColor(c(0xb48cff))
             ctx.addLines(between: [CGPoint(x: -0.3, y: shY + 0.04), CGPoint(x: -0.24, y: shY - 0.16), CGPoint(x: -0.18, y: shY + 0.04)]); ctx.fillPath()
@@ -91,6 +109,23 @@ enum ActorArt {
             ctx.setFillColor(c(0x575d63)); ctx.fill(CGRect(x: -0.05, y: -0.045, width: 0.17, height: 0.09))
             ctx.setFillColor(c(flashOn ? 0xfff1d0 : 0x7b8187)); ctx.fill(CGRect(x: 0.11, y: -0.06, width: 0.04, height: 0.12))
             ctx.restoreGState()
+        }
+        if climbing {
+            // Shovel slung across the bag, blade up; both hands on the wall, reaching in turn.
+            line(ctx, [CGPoint(x: -0.4, y: shY + 0.5), CGPoint(x: -0.08, y: shY - 0.42)], c(0x8a6440), 0.06)
+            ctx.setFillColor(c(0xa7adb3)); rr(ctx, -0.15, shY - 0.66, 0.15, 0.26, 0.05); ctx.fillPath()
+            for i in [0, 1] {
+                let ph = m.phase + Double(i) * .pi
+                let reach = CGFloat(max(0, sin(ph)))
+                let hx: CGFloat = 0.2 + CGFloat(i) * 0.04
+                let hy = headY - 0.18 - reach * 0.32 + CGFloat(sin(time * 2.4 + Double(i))) * 0.015
+                let sx: CGFloat = 0.04, sy = shY + 0.05
+                let ex = (sx + hx) / 2 + 0.1, ey = (sy + hy) / 2 + 0.04
+                line(ctx, [CGPoint(x: sx, y: sy), CGPoint(x: ex, y: ey), CGPoint(x: hx, y: hy)], c(i == 0 ? 0xcfbd98 : 0xe3d1ae), 0.11)
+                dot(ctx, hx, hy, 0.055, c(0xf0c9a0))
+            }
+            ctx.restoreGState()
+            return
         }
         // shovel or pick
         let s0 = CGPoint(x: P.x - dx * 0.26, y: P.y - dy * 0.26), e = CGPoint(x: P.x + dx * 0.82, y: P.y + dy * 0.82)

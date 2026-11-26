@@ -51,7 +51,7 @@ extension Game {
             s.phase += 1
             if s.phase == 1 { emit(.whoosh) }
             if s.phase == 3 { oneShotImpact(s) }
-            if s.phase > 3 { max.oneShot = nil; if s.kind == .tryUp { afterTryUp() }; return }
+            if s.phase > 3 { max.oneShot = nil; digLatch = false; downLatch = false; if s.kind == .tryUp { afterTryUp() }; return }
         }
         max.oneShot = s
     }
@@ -137,6 +137,7 @@ extension Game {
         emit(.bite(at: c, kind: kind, carved: res.changed, face: max.face))
         max.lantV += Double(max.face) * 1.3
         max.squash = 0.09
+        digLatch = false; downLatch = false
         if res.changed {
             max.stamina = Swift.max(0, max.stamina - Tuning.biteCost)
             max.restT = 0
@@ -335,14 +336,14 @@ extension Game {
         } else if max.busy > 0 {
             tA = -0.25 + sin(time * 16) * 0.12; tLean = 0.12; tCr = 0.05; stance = 0.12; rate = 12
         } else if max.mode == .climb {
-            tA = -2.4; tLean = 0; stance = 0.05
+            tA = -2.4; tLean = max.sway; stance = 0.05; rate = 0
         } else if max.sliding {
             tA = -2.95; tCr = 0.17; tLean = -0.06; stance = 0.22; rate = 6
         } else if !max.ground && max.air > 0.08 {
             tA = -3.05 + sin(time * 6) * 0.1; tCr = 0.03; tLean = clampD(-max.vy * 0.03, -0.25, 0.25); stance = 0.15; rate = 5
         }
         if rate > 0 { max.shovel = damp(max.shovel, tA, rate, dt) }
-        max.lean = damp(max.lean, tLean, 13, dt)
+        max.lean = max.mode == .climb ? tLean : damp(max.lean, tLean, 13, dt)
         max.crK = damp(max.crK, 0, 7, dt)
         max.crouch = damp(max.crouch, tCr + max.crK, 16, dt)
         max.stance = damp(max.stance, stance, 10, dt)
@@ -371,6 +372,7 @@ extension Game {
     func tryEnterClimb(up: Bool) -> Bool {
         guard let c = reachableClimb(up: up) else { return false }
         max.mode = .climb; max.climbID = c.id
+        max.swayV += Double(max.face) * 1.6 + max.vx * 0.3
         max.vx = 0; max.vy = 0; max.ground = false
         max.swingOn = false
         story.flags.insert("climbed")
@@ -381,8 +383,15 @@ extension Game {
         guard let id = max.climbID, let c = world.climbs.first(where: { $0.id == id }) else { max.mode = .walk; return }
         max.pos.x = damp(max.pos.x, c.x, 12, dt)
         let v = (input.down ? 1.0 : 0) - (input.up ? 1.0 : 0)
+        let wasMoving = abs(max.vy) > 0.1
         max.vy = v * Tuning.climbSpeed
         max.phase += abs(max.vy) * dt * 3.2
+        // Pendulum sway: each reach pulls the body to one side; stopping lets it swing out and settle.
+        let reach = abs(max.vy) > 0.1 ? sin(max.phase) * 7.5 : 0
+        if wasMoving && abs(max.vy) < 0.1 { max.swayV += (max.sway >= 0 ? 1 : -1) * 0.9 }
+        max.swayV += (reach - 26 * max.sway - 2.2 * max.swayV) * dt
+        max.sway = clampD(max.sway + max.swayV * dt, -0.32, 0.32)
+        max.lantV += max.swayV * 0.6 * dt
         var ny = max.pos.y + max.vy * dt
         // head room: pick away the seam above
         if input.dig {
@@ -430,17 +439,39 @@ extension Game {
         max.mode = .walk; max.climbID = nil; max.ground = true; max.vy = 0; max.vyG = 0; max.swingOn = false
     }
 
-    /// With the pick, cut a short line of footholds up a ledge no taller than ~2.4 tiles.
-    func tryFoothold() -> Bool {
-        let dir = max.face
+    /// Is there earth right against Max on this side?
+    func wallBeside(_ dir: Int) -> Bool {
         let x = max.pos.x + Double(dir) * 0.75
-        guard world.solid(x, max.pos.y - 0.5) else { return false }
-        guard let top = world.groundY(x, from: max.pos.y - 2.6, to: max.pos.y - 0.2), max.pos.y - top > 0.9 else { return false }
-        if world.solid(x, top - 1.5) { return false }
-        if world.climbs.contains(where: { abs($0.x - (max.pos.x + Double(dir) * 0.35)) < 0.4 && abs($0.bottom - max.pos.y) < 0.5 }) { return false }
-        world.climbs.append(Climb(id: "foot.\(Int(time * 100))", x: max.pos.x + Double(dir) * 0.35, top: top, bottom: max.pos.y, kind: .foothold))
+        return world.solid(x, max.pos.y - 0.5) && !world.hardAt(x, max.pos.y - 0.5)
+    }
+
+    /// Cut footholds up an earth ledge (up to about eight tiles) so Max can climb it.
+    /// Works anywhere he can see the top: out of a hole he dug, or up a bank.
+    @discardableResult
+    func tryFoothold(dir: Int) -> Bool {
+        let x = max.pos.x + Double(dir) * 0.75
+        guard wallBeside(dir) else { return false }
+        var y = max.pos.y - 0.5
+        var top: Double? = nil
+        while y > max.pos.y - 8.5 {
+            if world.hardAt(x, y) { return false }
+            if !world.solid(x, y) { top = world.groundY(x, from: y - 0.05, to: y + 0.7); break }
+            y -= 0.1
+        }
+        guard let t = top, max.pos.y - t > 0.9 else { return false }
+        // Room to stand at the top, and a clear line for Max's own body on the way up.
+        if world.solid(x, t - 1.5) || world.solid(x + Double(dir) * 0.4, t - 1.2) { return false }
+        let lineX = max.pos.x + Double(dir) * 0.35
+        var yy = max.pos.y - 0.4
+        while yy > t + 0.2 { if world.solid(max.pos.x, yy - 1.2) { return false }; yy -= 0.25 }
+        if world.climbs.contains(where: { abs($0.x - lineX) < 0.45 && $0.bottom > max.pos.y - 0.6 && $0.top < max.pos.y - 0.5 }) { return false }
+        world.climbs.append(Climb(id: "foot.\(Int(time * 100))", x: lineX, top: t, bottom: max.pos.y, kind: .foothold))
         emit(.bite(at: V2(x, max.pos.y - 1), kind: .side, carved: true, face: dir))
-        think("Footholds. That’ll do.", 2)
+        max.face = dir
+        if !story.flags.contains("said.footholds") {
+            story.flags.insert("said.footholds")
+            think("Footholds. That’ll do.", 2)
+        }
         return true
     }
 

@@ -10,7 +10,7 @@ final class SalvageTests: XCTestCase {
             let c = Int(pr.pos.x), r = Int(pr.pos.y)
             XCTAssertTrue(w.m(c, r).solid, "\(id) should rest on solid ground (row \(r))")
             XCTAssertFalse(w.m(c, r - 1).solid, "\(id) should have open air above it (row \(r - 1))")
-            XCTAssertGreaterThan(pr.pos.y, 20, "\(id) should be down in the cavern, not up at y=\(pr.pos.y)")
+            XCTAssertGreaterThan(pr.pos.y, 20, "\(id) should be down where Max walks, not up at y=\(pr.pos.y)")
         }
     }
 
@@ -35,7 +35,80 @@ final class SalvageSaveTests: XCTestCase {
         g.begin()
         let i = g.world.propIndex("liftcar")!
         g.world.props[i].pos = V2(64.5, 14)
+        g.story.flags.remove(Game.worldVersionFlag)
         let back = Game.load(try Game.decodeSave(try g.encodeSave()))
         XCTAssertGreaterThan(back.world.prop("liftcar")!.pos.y, 20)
+    }
+}
+
+final class HomeGroundTests: XCTestCase {
+    /// The lift car sits in a small pit just east of the crystal, not out in a distant cavern.
+    func testLiftCarIsCloseToHome() {
+        let w = WorldGen.make()
+        let car = w.prop("liftcar")!
+        XCTAssertLessThan(car.pos.x, 50)
+        XCTAssertEqual(car.pos.y, 30, accuracy: 0.01)
+        XCTAssertGreaterThan(Double(Landmarks.caveStart), 100, "the big cavern is far from home")
+    }
+
+    /// Hacking the roots in the west door gives wood, strapped outside the bag.
+    func testRootsGiveWood() {
+        let g = Game()
+        g.begin()
+        walk(g, to: 20.8)
+        g.max.face = -1
+        sim(g, GameInput(dig: true), 4)
+        XCTAssertGreaterThanOrEqual(g.inv.wood, 20, "cutting into the door roots should yield wood")
+        XCTAssertEqual(g.inv.wood % Inventory.woodPerRootTile, 0)
+        XCTAssertEqual(Inventory.capacity - g.inv.freeSlots, 0, "wood doesn't take a pocket")
+    }
+
+    /// Wood can't go past what the bag can carry.
+    func testWoodIsCapped() {
+        var inv = Inventory()
+        XCTAssertEqual(inv.addWood(150), 150)
+        XCTAssertEqual(inv.addWood(150), Inventory.woodCap - 150)
+        XCTAssertEqual(inv.wood, Inventory.woodCap)
+    }
+
+    /// Digging down as deep as he likes, then holding ▲ cuts footholds and climbs him back out.
+    func testDigDownThenClimbOut() {
+        let g = Game()
+        g.begin()
+        walk(g, to: 31.3)
+        sim(g, GameInput(dig: true), 5)
+        let x = g.max.pos.x
+        var t = 0.0
+        while g.max.pos.y < 32.3 && t < 12 { g.update(dt: 1 / 60, input: GameInput(down: true)); _ = g.drainEvents(); t += 1 / 60 }
+        XCTAssertGreaterThan(g.max.pos.y, 32.2, "Max should be able to dig down more than two tiles")
+        sim(g, GameInput(), 0.5)
+        sim(g, GameInput(up: true), 6)
+        sim(g, GameInput(), 0.6)
+        XCTAssertEqual(g.max.mode, .walk)
+        XCTAssertLessThan(g.max.pos.y, 30.4, "Max should climb back out of his hole; he's at \(g.max.pos), started at x \(x)")
+    }
+
+    /// A plank bridges a hole: it costs five wood and Max can walk across it.
+    func testPlankCoversAHole() {
+        let g = Game()
+        g.begin()
+        walk(g, to: 31.3)
+        sim(g, GameInput(dig: true), 6)
+        // a hole one tile ahead of where Max stands
+        let hx = Int(g.max.pos.x) - 2
+        _ = g.world.carve(center: V2(Double(hx) + 0.5, 30.6), radius: 0.8, tool: .shovel)
+        _ = g.world.carve(center: V2(Double(hx) + 0.5, 31.4), radius: 0.8, tool: .shovel)
+        XCTAssertFalse(g.world.m(hx, 30).solid)
+        g.inv.wood = 20
+        g.max.pos = V2(Double(hx) + 1.9, 30); g.max.face = -1; g.max.vx = 0
+        sim(g, GameInput(), 0.4)
+        var tries = 0
+        while g.context?.id != "plank" && tries < 40 { sim(g, GameInput(dx: -1), 1.0 / 30); sim(g, GameInput(), 0.2); tries += 1 }
+        XCTAssertEqual(g.context?.id, "plank", "max at \(g.max.pos)")
+        g.performContext()
+        XCTAssertEqual(g.inv.wood, 15)
+        XCTAssertTrue(g.world.m(hx, 30) == .plank || g.world.m(hx - 1, 30) == .plank || g.world.m(hx + 1, 30) == .plank)
+        walk(g, to: Double(hx) - 1.0)
+        XCTAssertEqual(g.max.pos.y, 30, accuracy: 0.25, "Max walks across the plank instead of dropping in")
     }
 }

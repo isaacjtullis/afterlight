@@ -72,11 +72,38 @@ enum Art {
         case .storage:
             rect(-0.6, -0.9, 1.2, 0.9, 0x6b4f3a); rect(-0.6, -0.9, 1.2, 0.12, 0x87674c); rect(-0.08, -0.6, 0.16, 0.2, 0xc9a86a)
         case .liftCar:
-            ctx.saveGState(); ctx.rotate(by: -0.18)
-            rect(-2.4, -3.4, 4.8, 3.2, 0x3a3540); rect(-2.2, -3.2, 1.6, 1.4, 0x1c1a20); rect(0.4, -3.2, 1.6, 1.4, 0x1c1a20)
-            rect(-2.4, -0.4, 4.8, 0.3, 0x4a4450)
-            for i in 0..<6 { rect(-2.3 + CGFloat(i) * 0.8, -3.75, 0.45, 0.35, 0x58505c) }
+            // A lift cabin that came down the shaft and folded on landing. The drive gear sits on its roof.
+            ctx.saveGState(); ctx.rotate(by: -0.12)
+            rect(-2.3, -3.1, 4.6, 3.0, 0x3a3540); rect(-2.3, -3.1, 4.6, 0.18, 0x4f4858)
+            rect(-2.05, -2.8, 1.5, 1.3, 0x18161c); rect(0.45, -2.8, 1.5, 1.3, 0x18161c)
+            ActorArt.line(ctx, [CGPoint(x: -1.9, y: -2.7), CGPoint(x: -0.7, y: -1.6)], c(0x8f96a0, 0.5), 0.03)   // cracked pane
+            rect(-0.12, -2.95, 0.24, 2.85, 0x2c2832)                                                            // door seam
+            rect(-2.3, -0.32, 4.6, 0.26, 0x4a4450)
+            ActorArt.line(ctx, [CGPoint(x: 1.6, y: -3.1), CGPoint(x: 1.9, y: -4.4), CGPoint(x: 1.5, y: -5.2)], c(0x5a5560), 0.06)   // snapped cable
             ctx.restoreGState()
+            ctx.saveGState(); ctx.translateBy(x: -0.9, y: -3.35); ctx.rotate(by: -0.12)
+            ActorArt.dot(ctx, 0, 0, 0.5, c(0x55505c)); ActorArt.dot(ctx, 0, 0, 0.18, c(0x2a2730))
+            let hasTooth = p.stock.contains { $0.id == .liftTooth }
+            for i in 0..<8 {
+                let a = CGFloat(i) * .pi / 4
+                ctx.saveGState(); ctx.rotate(by: a)
+                rect(0.42, -0.09, 0.22, 0.18, i == 6 && hasTooth ? 0xd8dee6 : 0x6a6470)
+                ctx.restoreGState()
+            }
+            if hasTooth { ActorArt.dot(ctx, -0.05, -0.62, 0.07, c(0xfff1d0, 0.9)) }
+            ctx.restoreGState()
+        case .crate:
+            // An old tool crate: slats, a rope coiled on the lid, a stencilled mark.
+            rect(-0.75, -0.95, 1.5, 0.95, 0x6e4a2e)
+            for k in 0..<3 { rect(-0.75, -0.92 + CGFloat(k) * 0.31, 1.5, 0.04, 0x4e3220) }
+            rect(-0.75, -0.95, 0.12, 0.95, 0x5a3a24); rect(0.63, -0.95, 0.12, 0.95, 0x5a3a24)
+            ActorArt.line(ctx, [CGPoint(x: -0.62, y: -0.06), CGPoint(x: 0.6, y: -0.9)], c(0x5a3a24), 0.08)
+            rect(-0.2, -0.62, 0.4, 0.14, 0xc9a86a, 0.55)
+            if !p.stock.isEmpty {
+                ctx.setStrokeColor(c(0xb89a6a)); ctx.setLineWidth(0.06)
+                ctx.strokeEllipse(in: CGRect(x: -0.45, y: -1.12, width: 0.6, height: 0.2))
+                ctx.strokeEllipse(in: CGRect(x: -0.38, y: -1.08, width: 0.46, height: 0.13))
+            }
         case .drillRig:
             rect(-3, -1.8, 5.2, 1.6, 0x3b3640); rect(-2.6, -0.4, 4.6, 0.4, 0x2a2730)
             ctx.setFillColor(c(0x4a4450)); ctx.addLines(between: [CGPoint(x: 2.2, y: -1.8), CGPoint(x: 4.2, y: -1.0), CGPoint(x: 2.2, y: -0.2)]); ctx.fillPath()
@@ -161,7 +188,8 @@ enum Art {
     static func bounds(_ k: PropKind) -> (CGFloat, CGFloat, CGFloat, CGFloat) {
         switch k {
         case .workbench: return (-1.5, -2.8, 3.0, 2.9)
-        case .liftCar: return (-3.2, -4.6, 6.4, 4.8)
+        case .liftCar: return (-3.0, -5.6, 6.0, 5.8)
+        case .crate: return (-0.9, -1.3, 1.8, 1.4)
         case .drillRig: return (-3.2, -3.3, 7.6, 3.4)
         case .gantry: return (-2.5, -6.3, 5.0, 6.4)
         case .warmPipe: return (0, -0.3, 44, 0.5)

@@ -77,13 +77,37 @@ public enum Tool: String, Codable, CaseIterable, Sendable {
     }
 }
 
-/// Max's belt (tools) and backpack (a few slots, small stacks).
+/// Max's belt (tools), his bag (ten slots, small stacks) and the wood bundle strapped outside it.
 public struct Inventory: Codable, Equatable, Sendable {
-    public static let capacity = 6
+    public static let capacity = 10
+    public static let woodCap = 200
+    public static let woodPerRootTile = 10
+    public static let plankCost = 5
     public var slots: [ItemStack?] = Array(repeating: nil, count: Inventory.capacity)
     public var belt: [Tool] = [.shovel]
+    /// Wood rides lashed to the outside of the bag and doesn't take a slot.
+    public var wood = 0
 
     public init() {}
+
+    enum CodingKeys: String, CodingKey { case slots, belt, wood }
+    public init(from d: Decoder) throws {
+        let c = try d.container(keyedBy: CodingKeys.self)
+        var s = try c.decodeIfPresent([ItemStack?].self, forKey: .slots) ?? []
+        // Older saves had a six-slot pack.
+        if s.count < Inventory.capacity { s += Array(repeating: nil, count: Inventory.capacity - s.count) }
+        slots = s
+        belt = try c.decodeIfPresent([Tool].self, forKey: .belt) ?? [.shovel]
+        wood = try c.decodeIfPresent(Int.self, forKey: .wood) ?? 0
+    }
+
+    /// Adds wood up to the cap; returns how much fit.
+    @discardableResult
+    public mutating func addWood(_ n: Int) -> Int {
+        let k = Swift.max(0, Swift.min(n, Inventory.woodCap - wood))
+        wood += k
+        return k
+    }
 
     public func count(_ id: ItemID) -> Int { slots.reduce(0) { $0 + (($1?.id == id) ? $1!.count : 0) } }
     public var freeSlots: Int { slots.filter { $0 == nil }.count }

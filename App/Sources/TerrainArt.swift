@@ -74,6 +74,7 @@ enum TerrainArt {
                     if q.solid && q != .metal { t = q; cc = c + dc; break }
                 }
             }
+            if t == .root { return 0x5e3b26 }
             if t == .loose { return 0x86604a }
             if t == .seam { return 0x7a5a48 }
             return cc >= Landmarks.caveStart - 1 ? 0x55323d : 0x66412f
@@ -86,7 +87,7 @@ enum TerrainArt {
                     let tc = i / K, tr = j / K
                     let t = w.m(tc, tr)
                     let a = w.d(i, j), b = w.d(i + 1, j), d = w.d(i + 1, j + 1), e = w.d(i, j + 1)
-                    if t == .metal { continue }
+                    if t == .metal || t == .plank { continue }
                     if a < 0.5 && b < 0.5 && d < 0.5 && e < 0.5 { continue }
                     if t == .air || t == .dug, [Backdrop.room, .shaft, .maint, .outpost, .sump, .transit].contains(w.bd(tc, tr)) { continue }
                     let x = CGFloat(i) / k, y = CGFloat(j) / k, s = 1 / k
@@ -138,6 +139,27 @@ enum TerrainArt {
                     ctx.setFillColor(color(0x626a74))
                     ctx.fill(CGRect(x: X + 0.15, y: Y + 0.3, width: 0.08, height: 0.08))
                     ctx.fill(CGRect(x: X + 0.77, y: Y + 0.3, width: 0.08, height: 0.08))
+                } else if t == .plank {
+                    ctx.setFillColor(color(0x000000, 0.25)); ctx.fill(CGRect(x: X - 0.03, y: Y + 0.3, width: 1.06, height: 0.06))
+                    ctx.setFillColor(color(0x9a6a40)); ctx.fill(CGRect(x: X - 0.03, y: Y, width: 1.06, height: 0.31))
+                    ctx.setFillColor(color(0xc8925c)); ctx.fill(CGRect(x: X - 0.03, y: Y, width: 1.06, height: 0.07))
+                    ctx.setFillColor(color(0x6e4628)); ctx.fill(CGRect(x: X + 0.48, y: Y + 0.02, width: 0.03, height: 0.28))
+                    ctx.setFillColor(color(0x3a3036))
+                    ctx.fillEllipse(in: CGRect(x: X + 0.12, y: Y + 0.12, width: 0.07, height: 0.07))
+                    ctx.fillEllipse(in: CGRect(x: X + 0.8, y: Y + 0.12, width: 0.07, height: 0.07))
+                } else if t == .root {
+                    // Bark: long dark grain lines and a few pale knots.
+                    ctx.setStrokeColor(color(0x3a2216, 0.8)); ctx.setLineWidth(0.05)
+                    for i in 0..<3 {
+                        let ox = Double(c) + 0.15 + Double(i) * 0.3, oy = Double(r) + hash2(c + i, r) * 0.3
+                        if w.solid(ox, oy + 0.3) {
+                            ctx.move(to: CGPoint(x: ox, y: oy)); ctx.addQuadCurve(to: CGPoint(x: ox + 0.12, y: oy + 0.8), control: CGPoint(x: ox - 0.12, y: oy + 0.4))
+                        }
+                    }
+                    ctx.strokePath()
+                    if hash2(c, r * 7) < 0.35 && w.solid(Double(c) + 0.5, Double(r) + 0.5) {
+                        ctx.setFillColor(color(0x8a5c3a)); ctx.fillEllipse(in: CGRect(x: X + 0.4, y: Y + 0.4, width: 0.18, height: 0.12))
+                    }
                 } else if t == .loose || t == .seam {
                     ctx.setFillColor(color(0xffe6c8, 0.14))
                     for i in 0..<4 {

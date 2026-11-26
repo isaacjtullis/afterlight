@@ -218,7 +218,7 @@ final class SaveTests: XCTestCase {
 final class InventoryTests: XCTestCase {
     func testBulkyItemsTakeWholeSlots() {
         var inv = Inventory()
-        XCTAssertEqual(inv.add(.pipe, 8), 6)
+        XCTAssertEqual(inv.add(.pipe, 12), Inventory.capacity)
         XCTAssertEqual(inv.add(.wire), 0)
         inv.remove(.pipe, 2)
         XCTAssertEqual(inv.add(.wire, 7), 7)

@@ -69,6 +69,7 @@ extension Game {
         let g = Game()
         g.clock = clock
         let w = g.world
+        let freshMat = w.mat, freshDens = w.dens, freshProps = w.props
         if let m = RLE.decode(s.mat, count: w.w * w.h) {
             for i in m.indices { w.mat[i] = Mat(rawValue: m[i]) ?? .dirt }
         }
@@ -76,21 +77,39 @@ extension Game {
             for i in d.indices { w.dens[i] = Float(d[i]) / 255 }
         }
         w.buried = s.buried
-        let freshProps = w.props
         w.props = s.props
-        // Older builds buried the cavern wrecks above the ceiling. Put them back where a fresh world has them.
-        for id in ["liftcar", "drill", "gantry"] {
-            if let i = w.propIndex(id), let f = freshProps.first(where: { $0.id == id }), w.props[i].pos.y < 20 { w.props[i].pos = f.pos }
-        }
         w.climbs = s.climbs
+        var story = s.story
+        var maxPos = s.maxPos
+        if !story.flags.contains(Game.worldVersionFlag) {
+            // Saves from before the cavern moved: keep everything Max did up top (the shaft, the maintenance
+            // level, the warm passage, Mara's outpost) and lay the new ground in below it.
+            let K = World.K
+            let keepShaft = 23...28
+            for r in Game.reworkTopRow..<w.h { for c in 0..<w.w where !keepShaft.contains(c) { w.mat[r * w.w + c] = freshMat[r * w.w + c] } }
+            for j in (Game.reworkTopRow * K)..<w.dh {
+                for i in 0..<w.dw where !keepShaft.contains(i / K) { w.dens[j * w.dw + i] = freshDens[j * w.dw + i] }
+            }
+            for f in freshProps {
+                if let i = w.propIndex(f.id) {
+                    if f.pos.y >= Double(Game.reworkTopRow) && !keepShaft.contains(Int(f.pos.x)) && [.liftCar, .drillRig, .gantry, .crate].contains(f.kind) { w.props[i].pos = f.pos }
+                } else if f.pos.y >= Double(Game.reworkTopRow) {
+                    w.props.append(f)
+                }
+            }
+            w.climbs.removeAll { $0.kind == .foothold && $0.bottom > Double(Game.reworkTopRow) && !keepShaft.contains(Int($0.x)) }
+            if maxPos.y > Double(Game.reworkTopRow) && !keepShaft.contains(Int(maxPos.x)) { maxPos = V2(22.6, 30) }
+            story.flags.remove("broke")
+            story.flags.insert(Game.worldVersionFlag)
+        }
         w.markAllDirty()
-        g.max.pos = s.maxPos
+        g.max.pos = maxPos
         g.max.face = s.maxFace
         g.max.stamina = s.stamina
-        g.max.digFloor = s.maxPos.y
+        g.max.digFloor = maxPos.y
         g.inv = s.inventory
         g.storage = s.storage
-        g.story = s.story
+        g.story = story
         g.odi = s.odi
         g.appliedJobs = Set(s.appliedJobs)
         g.activeJob = s.activeJob

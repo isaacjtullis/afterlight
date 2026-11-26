@@ -21,6 +21,7 @@ struct UIState: Equatable {
     var jobDone = 0
     var jobTotal = 0
     var packUsed = 0
+    var wood = 0
     var pulseDown = false
     var ordersOK = false
     var speech: String? = nil
@@ -199,6 +200,7 @@ final class GameModel: ObservableObject {
             u.jobDone = JobResolver.completedSteps(j.plan, elapsed: Date().timeIntervalSince(j.startedAt))
         }
         u.packUsed = Inventory.capacity - g.inv.freeSlots
+        u.wood = g.inv.wood
         if g.speechT > 0 && !g.speechText.isEmpty { u.speech = g.speechText; u.speaker = g.speechWho == "mara" ? "Mara" : g.speechWho }
         if let id = g.activeJobID(for: "mara"), let j = g.job(id), j.status == .working {
             let s = Int(j.secondsLeft.rounded(.up))
@@ -241,6 +243,7 @@ final class GameModel: ObservableObject {
         case .conversation(let id):
             if let c = game.conversation(id) { lineIndex = 0; conversation = c }
         case .placed: audio.play(.scoop); haptics.bite()
+        case .wood: audio.play(.step); haptics.tap()
         case .panel(let id):
             confirming = nil
             if let p = game.panel(id) { panelPoint = scene?.viewPoint(p.anchor) ?? .zero; panel = p }

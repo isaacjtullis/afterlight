@@ -17,7 +17,13 @@ public enum Landmarks {
     public static let hatchRows = 9...12
     public static let maint = (x0: 17, x1: 34, top: 5, floor: 9)
     public static let outpost = (x0: 74, x1: 86, top: 5, floor: 9, door: 73)
-    public static let caveStart = 48
+    /// The great cavern is far from home now; it opens much later.
+    public static let caveStart = 104
+    /// The bottom of an old lift shaft just east of the workshop, where the lift car came down.
+    public static let liftPit = (x0: 41, x1: 47, top: 26, floor: 30)
+    public static let liftCarPos = V2(44.6, 30)
+    /// The root hollow behind the workshop's west door.
+    public static let hollow = (x0: 10, x1: 18, top: 26, floor: 30, door: 19)
     public static let crystal = V2(37.5, 30.5)
     public static let passage = (x0: 36.0, x1: 73.0, floorY: 9.0)
     public static let shaftRungsID = "rungs.shaft"
@@ -104,6 +110,29 @@ public enum WorldGen {
         }
         for r in 0..<H { w.setBack(Landmarks.caveStart - 1, r, .open) }
 
+        // The lift pit: the bottom of an old lift shaft, just past where the crystal is buried.
+        let lp = Landmarks.liftPit
+        for c in (lp.x0 - 1)...(lp.x1 + 1) {
+            for r in (lp.top - 1)...lp.floor {
+                let edge = c == lp.x0 - 1 || c == lp.x1 + 1 || r == lp.top - 1 || r == lp.floor
+                w.set(c, r, edge ? .dirt : .air, back: (c >= 43 && c <= 45) ? .shaft : .earth)
+            }
+        }
+        for r in 19...(lp.top - 1) { for c in 43...45 { w.set(c, r, .loose, back: .shaft) } }   // the collapsed shaft above
+
+        // The root hollow west of the workshop. Giant roots have grown through its door.
+        let ho = Landmarks.hollow
+        for c in (ho.x0 - 1)...ho.x1 {
+            for r in (ho.top - 1)...ho.floor {
+                let edge = c == ho.x0 - 1 || r == ho.top - 1 || r == ho.floor
+                w.set(c, r, edge ? .dirt : .air, back: .earth)
+            }
+        }
+        for r in 27...29 { w.set(ho.door, r, .root, back: .room) }
+        let rootDoor = [(18, 26), (18, 27), (18, 28), (18, 29), (17, 25), (17, 26), (16, 24)]
+        let rootHang = [(13, 25), (13, 26), (13, 27), (12, 24), (12, 25), (14, 27), (14, 28), (14, 29), (11, 23), (15, 29)]
+        for (c, r) in rootDoor + rootHang { w.set(c, r, .root, back: .earth) }
+
         // Mara's outpost, east along the warm pipe. Built after the cavern so nothing cuts into it.
         let op = Landmarks.outpost
         for c in op.door...(op.x1 + 1) {
@@ -156,9 +185,10 @@ public enum WorldGen {
             Prop(id: "locker.ws", kind: .locker, pos: V2(20.7, 30), stock: [ItemStack(.spareGrip), ItemStack(.fasteners, 2), ItemStack(.lampCell), ItemStack(.wire)]),
             Prop(id: "bed", kind: .bed, pos: V2(22.4, 30)),
             Prop(id: "storage", kind: .storage, pos: V2(29.8, 30)),
-            Prop(id: "liftcar", kind: .liftCar, pos: V2(64.5, floorAt(64)), stock: [ItemStack(.liftTooth), ItemStack(.pipe, 2), ItemStack(.fasteners, 4)]),
-            Prop(id: "drill", kind: .drillRig, pos: V2(80.5, floorAt(80)), stock: [ItemStack(.fasteners, 6), ItemStack(.pressureGauge), ItemStack(.batteryCell), ItemStack(.rope)]),
-            Prop(id: "gantry", kind: .gantry, pos: V2(97.5, floorAt(97)), stock: [ItemStack(.pipe, 2), ItemStack(.wire, 2), ItemStack(.rope)]),
+            Prop(id: "liftcar", kind: .liftCar, pos: Landmarks.liftCarPos, stock: [ItemStack(.liftTooth), ItemStack(.pipe, 2), ItemStack(.fasteners, 4)]),
+            Prop(id: "crate.west", kind: .crate, pos: V2(11.6, 30), stock: [ItemStack(.rope), ItemStack(.lampCell), ItemStack(.fasteners, 3), ItemStack(.pressureGauge)]),
+            Prop(id: "drill", kind: .drillRig, pos: V2(118.5, floorAt(118)), stock: [ItemStack(.fasteners, 6), ItemStack(.batteryCell), ItemStack(.rope)]),
+            Prop(id: "gantry", kind: .gantry, pos: V2(136.5, floorAt(136)), stock: [ItemStack(.pipe, 2), ItemStack(.wire, 2), ItemStack(.rope)]),
             Prop(id: "locker.m1", kind: .locker, pos: V2(18.6, 9), stock: [ItemStack(.seedTin), ItemStack(.wire, 2)]),
             Prop(id: "locker.m2", kind: .locker, pos: V2(19.8, 9), stock: [ItemStack(.lampCell, 3)]),
             Prop(id: "locker.m3", kind: .buckledLocker, pos: V2(21.0, 9)),

@@ -48,22 +48,37 @@ struct TouchPad: UIViewRepresentable {
     func updateUIView(_ v: TouchPadView, context: Context) { v.mode = mode; v.onChange = onChange }
 }
 
-/// A button you hold. Several can be held at once (walk + dig).
+/// A button you hold. Several can be held at once (walk + dig). The touch area reaches past the drawing.
 struct HoldButton<Label: View>: View {
     var id = ""
+    var slop: CGFloat = 12
     var onChange: (Bool) -> Void
     @ViewBuilder var label: (Bool) -> Label
     @State private var down = false
     var body: some View {
         label(down)
+            .padding(slop)
             .overlay(TouchPad { v in
                 let d = v != 0
                 if d != down { down = d; onChange(d) }
             })
+            .padding(-slop)
             .accessibilityElement(children: .ignore)
             .accessibilityAddTraits(.isButton)
             .accessibilityIdentifier(id)
             .accessibilityLabel(id)
+    }
+}
+
+/// A chunky rounded arrowhead.
+struct Arrowhead: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        p.move(to: CGPoint(x: r.minX + r.width * 0.28, y: r.minY + r.height * 0.12))
+        p.addLine(to: CGPoint(x: r.maxX - r.width * 0.12, y: r.midY))
+        p.addLine(to: CGPoint(x: r.minX + r.width * 0.28, y: r.maxY - r.height * 0.12))
+        p.addQuadCurve(to: CGPoint(x: r.minX + r.width * 0.28, y: r.minY + r.height * 0.12), control: CGPoint(x: r.minX + r.width * 0.5, y: r.midY))
+        return p
     }
 }
 
@@ -72,60 +87,81 @@ struct MovePad: View {
     var onChange: (Int) -> Void
     @State private var dir = 0
     var body: some View {
-        HStack(spacing: 0) {
-            Image(systemName: "chevron.left").font(.system(size: 24, weight: .light))
-                .frame(width: 92, height: 76).background(dir == -1 ? Color.white.opacity(0.16) : .clear)
-                .accessibilityElement().accessibilityAddTraits(.isButton).accessibilityIdentifier("move.left").accessibilityLabel("move.left")
-            Rectangle().fill(Color.white.opacity(0.18)).frame(width: 1, height: 38)
-            Image(systemName: "chevron.right").font(.system(size: 24, weight: .light))
-                .frame(width: 92, height: 76).background(dir == 1 ? Color.white.opacity(0.16) : .clear)
-                .accessibilityElement().accessibilityAddTraits(.isButton).accessibilityIdentifier("move.right").accessibilityLabel("move.right")
+        HStack(spacing: 6) {
+            half(-1, id: "move.left")
+            half(1, id: "move.right")
         }
-        .foregroundStyle(Color.cream)
-        .clipShape(Capsule())
-        .background(.ultraThinMaterial.opacity(0.35), in: Capsule())
-        .overlay(Capsule().stroke(Color.white.opacity(0.22), lineWidth: 1))
+        .padding(6)
+        .background(Capsule().fill(Color.black.opacity(0.42)))
+        .background(.ultraThinMaterial.opacity(0.3), in: Capsule())
+        .overlay(Capsule().stroke(Color.amber.opacity(0.28), lineWidth: 1.2))
+        .padding(10)
         .overlay(TouchPad(mode: .leftRight) { v in dir = v; onChange(v) }.accessibilityHidden(true))
-        .animation(.easeOut(duration: 0.08), value: dir)
+        .padding(-10)
+        .animation(.easeOut(duration: 0.07), value: dir)
+    }
+    private func half(_ d: Int, id: String) -> some View {
+        let on = dir == d
+        return ZStack {
+            Capsule().fill(on ? Color.amber.opacity(0.42) : Color.white.opacity(0.06))
+            Arrowhead().fill(on ? Color.black.opacity(0.75) : Color.cream.opacity(0.9))
+                .frame(width: 26, height: 26).scaleEffect(x: CGFloat(d), y: 1)
+        }
+        .frame(width: 86, height: 68)
+        .shadow(color: on ? Color.amber.opacity(0.6) : .clear, radius: 10)
+        .scaleEffect(on ? 0.96 : 1)
+        .accessibilityElement().accessibilityAddTraits(.isButton).accessibilityIdentifier(id).accessibilityLabel(id)
     }
 }
 
+/// A round control: dark glass with a brass rim that lights up while held.
 struct GlassCircle: View {
     var size: CGFloat
     var pressed: Bool
     var pulse = false
     var icon: AnyView
+    var caption: String? = nil
     var body: some View {
         ZStack {
-            Circle().fill(pressed ? Color(red: 1, green: 0.85, blue: 0.7).opacity(0.3) : Color.white.opacity(0.08))
-            Circle().stroke(pulse ? Color.violet : Color.white.opacity(0.22), lineWidth: pulse ? 1.5 : 1)
-            icon.foregroundStyle(Color.cream)
+            Circle().fill(pressed ? Color.amber.opacity(0.42) : Color.black.opacity(0.42))
+            Circle().stroke(pulse ? Color.violet : Color.amber.opacity(pressed ? 0.9 : 0.3), lineWidth: pulse ? 2 : 1.2)
+            VStack(spacing: 2) {
+                icon.foregroundStyle(pressed ? Color.black.opacity(0.8) : Color.cream)
+                if let caption {
+                    Text(caption).font(.avenir(10, "DemiBold")).tracking(1.2)
+                        .foregroundStyle(pressed ? Color.black.opacity(0.7) : Color.cream.opacity(0.7))
+                }
+            }
         }
         .frame(width: size, height: size)
-        .background(.ultraThinMaterial.opacity(0.35), in: Circle())
-        .shadow(color: pulse ? Color.violet.opacity(0.6) : .black.opacity(0.25), radius: pulse ? 14 : 8)
-        .scaleEffect(pressed ? 0.92 : 1)
-        .animation(.easeOut(duration: 0.1), value: pressed)
+        .background(.ultraThinMaterial.opacity(0.3), in: Circle())
+        .shadow(color: pulse ? Color.violet.opacity(0.6) : (pressed ? Color.amber.opacity(0.55) : .black.opacity(0.3)), radius: pressed || pulse ? 14 : 8)
+        .scaleEffect(pressed ? 0.93 : 1)
+        .animation(.easeOut(duration: 0.08), value: pressed)
     }
 }
 
-struct ShovelIcon: View {
-    var down = false
+/// A spade seen from the side: D-grip, shaft, pointed blade, and a little chevron showing where it cuts.
+/// Drawn pointing right; mirror it to point left, rotate it to point down.
+struct DigIcon: View {
     var body: some View {
         Canvas { ctx, size in
             let s = min(size.width, size.height) / 24
-            var p = Path()
-            p.move(to: CGPoint(x: 2.5 * s, y: 9.5 * s)); p.addLine(to: CGPoint(x: 2.5 * s, y: 14.5 * s))
-            p.move(to: CGPoint(x: 2.5 * s, y: 12 * s)); p.addLine(to: CGPoint(x: 11.5 * s, y: 12 * s))
-            ctx.stroke(p, with: .color(.cream), style: StrokeStyle(lineWidth: 2 * s, lineCap: .round))
-            var b = Path()
-            b.move(to: CGPoint(x: 11.5 * s, y: 8.6 * s))
-            b.addCurve(to: CGPoint(x: 21.5 * s, y: 12 * s), control1: CGPoint(x: 15.7 * s, y: 8.4 * s), control2: CGPoint(x: 19.3 * s, y: 9.8 * s))
-            b.addCurve(to: CGPoint(x: 11.5 * s, y: 15.4 * s), control1: CGPoint(x: 19.3 * s, y: 14.2 * s), control2: CGPoint(x: 15.7 * s, y: 15.6 * s))
-            b.closeSubpath()
-            ctx.fill(b, with: .color(.cream))
+            func P(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: x * s, y: y * s) }
+            var grip = Path()
+            grip.addRoundedRect(in: CGRect(x: 1 * s, y: 8.6 * s, width: 3.2 * s, height: 6.8 * s), cornerSize: CGSize(width: 1.6 * s, height: 1.6 * s))
+            ctx.stroke(grip, with: .foreground, lineWidth: 1.6 * s)
+            var shaft = Path(); shaft.move(to: P(4.2, 12)); shaft.addLine(to: P(12, 12))
+            ctx.stroke(shaft, with: .foreground, style: StrokeStyle(lineWidth: 2.2 * s, lineCap: .round))
+            var blade = Path()
+            blade.move(to: P(11.4, 8.2)); blade.addLine(to: P(16.4, 8.2))
+            blade.addQuadCurve(to: P(19.6, 12), control: P(18.9, 8.6))
+            blade.addQuadCurve(to: P(16.4, 15.8), control: P(18.9, 15.4))
+            blade.addLine(to: P(11.4, 15.8)); blade.closeSubpath()
+            ctx.fill(blade, with: .foreground)
+            var chev = Path(); chev.move(to: P(20.8, 9.6)); chev.addLine(to: P(23, 12)); chev.addLine(to: P(20.8, 14.4))
+            ctx.stroke(chev, with: .foreground, style: StrokeStyle(lineWidth: 1.6 * s, lineCap: .round, lineJoin: .round))
         }
-        .rotationEffect(.degrees(down ? 90 : 0))
     }
 }
 
@@ -197,14 +233,24 @@ struct HUDView: View {
                     Button { model.sheet = .mission } label: { circleIcon("sun.horizon") }
                 }
                 Button { model.sheet = .pack } label: {
-                    ZStack(alignment: .topTrailing) {
-                        circleIcon("backpack")
-                        if ui.packUsed > 0 {
-                            Text("\(ui.packUsed)/\(Inventory.capacity)").font(.avenir(10, "DemiBold")).foregroundStyle(.black)
-                                .padding(.horizontal, 4).background(Capsule().fill(Color.amber)).offset(x: 6, y: -4)
+                    HStack(spacing: 8) {
+                        if ui.wood > 0 {
+                            HStack(spacing: 4) {
+                                WoodIcon().frame(width: 18, height: 14)
+                                Text("\(ui.wood)").font(.avenir(13, "DemiBold")).monospacedDigit()
+                            }
+                            .transition(.scale.combined(with: .opacity))
                         }
+                        Image(systemName: "backpack").font(.system(size: 15))
+                        Text("\(ui.packUsed)/\(Inventory.capacity)").font(.avenir(13, "DemiBold")).monospacedDigit()
                     }
+                    .foregroundStyle(Color.cream)
+                    .padding(.horizontal, 12).frame(height: 44)
+                    .background(Capsule().fill(Color.black.opacity(0.4)))
+                    .overlay(Capsule().stroke(Color.amber.opacity(ui.packUsed >= Inventory.capacity ? 0.8 : 0.15)))
+                    .animation(.spring(duration: 0.3), value: ui.wood > 0)
                 }
+                .accessibilityIdentifier("bag")
             }
         }
     }
@@ -219,7 +265,7 @@ struct HUDView: View {
         VStack {
             Spacer()
             HStack(alignment: .bottom) {
-                VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .center, spacing: 12) {
                     if ui.showStamina {
                         HStack(spacing: 8) {
                             Text("Stamina").font(.avenir(12)).foregroundStyle(Color.cream.opacity(0.8))
@@ -231,39 +277,35 @@ struct HUDView: View {
                             }.frame(width: 86, height: 7)
                         }
                     }
-                    if ui.canClimb || ui.hasPick {
-                        HoldButton(id: "climb", onChange: { model.input.up = $0 }) { p in
-                            GlassCircle(size: 56, pressed: p, icon: AnyView(Image(systemName: "chevron.up").font(.system(size: 20, weight: .medium))))
-                        }
-                        .padding(.leading, 52)
+                    HoldButton(id: "climb", onChange: { model.input.up = $0 }) { p in
+                        GlassCircle(size: 62, pressed: p, icon: AnyView(Arrowhead().frame(width: 22, height: 22).rotationEffect(.degrees(-90))), caption: ui.climbing ? "CLIMB" : nil)
                     }
                     MovePad { model.input.dx = $0 }
                 }
                 Spacer()
-                VStack(alignment: .trailing, spacing: 12) {
+                VStack(alignment: .trailing, spacing: 14) {
                     if let c = ui.context {
                         Button { model.performContext() } label: {
                             Text(c.label).font(.avenir(c.prominent ? 17 : 15, "DemiBold")).foregroundStyle(Color.cream)
                                 .padding(.horizontal, 18).frame(minHeight: 46)
-                                .background(Capsule().fill(c.prominent ? Color(red: 1, green: 0.67, blue: 0.4).opacity(0.32) : Color.black.opacity(0.45)))
+                                .background(Capsule().fill(c.prominent ? Color.amber.opacity(0.32) : Color.black.opacity(0.45)))
                                 .overlay(Capsule().stroke(Color.white.opacity(c.prominent ? 0.55 : 0.2), lineWidth: 1))
                         }
                         .transition(.scale.combined(with: .opacity))
                     }
                     HStack(alignment: .bottom, spacing: 14) {
                         HoldButton(id: "dig.down", onChange: { model.input.down = $0 }) { p in
-                            GlassCircle(size: 64, pressed: p, pulse: ui.pulseDown, icon: AnyView(ShovelIcon(down: true).frame(width: 30, height: 30)))
+                            GlassCircle(size: 76, pressed: p, pulse: ui.pulseDown, icon: AnyView(DigIcon().frame(width: 34, height: 34).rotationEffect(.degrees(90))), caption: "DOWN")
                         }
-                        .padding(.bottom, 40)
                         HoldButton(id: "dig", onChange: { model.input.dig = $0 }) { p in
-                            GlassCircle(size: 88, pressed: p, icon: AnyView(ShovelIcon().frame(width: 44, height: 44).scaleEffect(x: CGFloat(ui.facing), y: 1)))
+                            GlassCircle(size: 76, pressed: p, icon: AnyView(DigIcon().frame(width: 34, height: 34).scaleEffect(x: CGFloat(ui.facing), y: 1)), caption: "DIG")
                         }
                     }
                 }
                 .animation(.spring(duration: 0.3), value: ui.context)
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 14)
+            .padding(.horizontal, 20)
+            .padding(.bottom, 26)
         }
     }
 
@@ -294,6 +336,21 @@ struct HUDView: View {
             .padding(18)
             .background(RoundedRectangle(cornerRadius: 22).fill(Color.black.opacity(0.72)))
             .padding(.horizontal, 12).padding(.bottom, 14)
+        }
+    }
+}
+
+/// Three cut logs, stacked.
+struct WoodIcon: View {
+    var body: some View {
+        Canvas { ctx, size in
+            let w = size.width, h = size.height
+            let r = min(w / 3.4, h / 2.2) / 2
+            for (x, y) in [(w * 0.3, h * 0.7), (w * 0.7, h * 0.7), (w * 0.5, h * 0.3)] {
+                let rect = CGRect(x: x - r, y: y - r, width: 2 * r, height: 2 * r)
+                ctx.fill(Path(ellipseIn: rect), with: .color(Color(red: 0.72, green: 0.5, blue: 0.3)))
+                ctx.stroke(Path(ellipseIn: rect.insetBy(dx: r * 0.45, dy: r * 0.45)), with: .color(Color(red: 0.45, green: 0.28, blue: 0.16)), lineWidth: 1)
+            }
         }
     }
 }

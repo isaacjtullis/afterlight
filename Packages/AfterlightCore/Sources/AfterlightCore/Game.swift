@@ -31,6 +31,7 @@ public enum GameEvent: Equatable, Sendable {
     case openSheet(Sheet)
     case conversation(String)
     case placed(String)
+    case wood(Int)
     case panel(String)
     case saveNow
 }
@@ -115,10 +116,19 @@ public final class Game {
     var timers: [(at: Double, fn: (Game) -> Void)] = []
     var prev = GameInput()
     var clankAt = -99.0
+    // A quick tap still does something: a short step, or one full swing of the shovel.
+    var digLatch = false, downLatch = false, latchT = 0.0
+    var walkHold = 0.0, walkHoldDir = 0
+
+    /// Saves made before the cavern moved away from home don't carry this flag.
+    public static let worldVersionFlag = "world2"
+    /// Rows from here down were rebuilt when the cavern moved.
+    public static let reworkTopRow = 12
 
     public init(world: World = WorldGen.make()) {
         self.world = world
         story.addQuest(.blackout)
+        story.flags.insert(Game.worldVersionFlag)
     }
 
     public func drainEvents() -> [GameEvent] { defer { events.removeAll() }; return events }
@@ -158,8 +168,23 @@ public final class Game {
         if story.flags.contains("broke") { ambient = Swift.min(1, ambient + dt * 0.25) }
 
         let fresh = (dig: input.dig && !prev.dig, down: input.down && !prev.down, up: input.up && !prev.up)
+        let freshDx = input.dx != 0 && input.dx != prev.dx
         if order != nil && input.any && !prev.any { stopOrder("player") }
         prev = input
+
+        // Taps: a quick press on an arrow still takes a short step; a quick DIG still lands one swing.
+        var input = input
+        if freshDx { walkHold = 0.16; walkHoldDir = input.dx }
+        walkHold = Swift.max(0, walkHold - dt)
+        if input.dx == 0 && walkHold > 0 && max.mode == .walk { input.dx = walkHoldDir }
+        if fresh.dig && max.mode == .walk { digLatch = true; latchT = 0 }
+        if fresh.down && max.mode == .walk && max.ground { downLatch = true; latchT = 0 }
+        if digLatch || downLatch {
+            latchT += dt
+            if latchT > 0.7 || max.mode != .walk { digLatch = false; downLatch = false }
+        }
+        if digLatch && !input.dig { input.dig = true }
+        if downLatch && !input.down { input.down = true }
 
         var dir = 0
         var swingWanted: SwingKind? = nil
@@ -185,7 +210,10 @@ public final class Game {
             if (input.up || input.down) && tryEnterClimb(up: input.up) {
                 updateFeel(dt); storyTick(dt); return
             }
-            if input.up && fresh.up && inv.has(.shortPick) { _ = tryFoothold() }
+            // ▲ against an earth ledge cuts footholds and climbs it. In a hole, either wall will do.
+            if input.up && !input.dig && max.ground && max.oneShot == nil {
+                if !tryFoothold(dir: max.face) && wallBeside(max.face) { _ = tryFoothold(dir: -max.face) }
+            }
             if input.dig && input.up && inv.has(.shortPick) {
                 swingWanted = .up
             } else if input.dig {
@@ -197,7 +225,7 @@ public final class Game {
                 if world.hardAt(below.x, below.y) {
                     if fresh.down { startOneShot(.clankDown, at: V2(max.pos.x, max.pos.y + 0.05)) }
                 } else if world.solid(below.x, below.y) || buriedBelow() != nil {
-                    if canSink() || buriedBelow() != nil { swingWanted = .down } else if fresh.down { think("Any deeper and I’d never climb back out.", 2.6) }
+                    swingWanted = .down
                 }
             }
         }

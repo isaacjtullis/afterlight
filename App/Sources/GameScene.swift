@@ -320,8 +320,15 @@ final class GameScene: SKScene {
                 var y = c.bottom - 0.6
                 while y > c.top { path.move(to: sp(c.x - 0.12, y)); path.addLine(to: sp(c.x + 0.14, y)); y -= 0.9 }
             case .foothold:
-                var y = c.bottom - 0.5
-                while y > c.top { path.move(to: sp(c.x - 0.15, y)); path.addLine(to: sp(c.x + 0.2, y + 0.05)); y -= 0.55 }
+                // Notches cut into whichever side the earth is on.
+                let d: Double = game.world.solid(c.x + 0.5, c.bottom - 0.6) ? 1 : -1
+                var y = c.bottom - 0.45
+                var k = 0
+                while y > c.top - 0.1 {
+                    let wx = c.x + d * (k % 2 == 0 ? 0.32 : 0.42)
+                    path.move(to: sp(wx, y)); path.addLine(to: sp(wx + d * 0.22, y - 0.08))
+                    y -= 0.5; k += 1
+                }
             }
         }
         climbNode.path = path
@@ -333,7 +340,7 @@ final class GameScene: SKScene {
     // MARK: parallax
 
     private func updateParallax() {
-        let show = game.story.flags.contains("broke") || camX > 42
+        let show = camX > Double(Landmarks.caveStart) - 14
         skyNode.isHidden = !show; sunNode.isHidden = !show
         layerNodes.forEach { $0.1.isHidden = !show }
         rayNodes.forEach { $0.isHidden = !show }
@@ -438,7 +445,7 @@ final class GameScene: SKScene {
         let scarfPts = scarf.map { CGPoint(x: $0.x - m.pos.x, y: $0.y - m.pos.y) }
         let img = Art.image(widthTiles: 5.2, heightTiles: 4.6, ppt: ppt, originX: CGFloat(ox), originY: CGFloat(oy)) { ctx in
             ActorArt.drawScarf(ctx, scarfPts)
-            ActorArt.drawMax(ctx, m, time: g.time, flashlight: g.inv.has(.flashlight), flashOn: g.story.flags.contains("flashOn"), carrying: g.inv.count(.chargeCrystal) > 0)
+            ActorArt.drawMax(ctx, m, time: g.time, flashlight: g.inv.has(.flashlight), flashOn: g.story.flags.contains("flashOn"), carrying: g.inv.count(.chargeCrystal) > 0, wood: g.inv.wood)
             if g.candle > 0 {
                 ActorArt.drawLantern(ctx, hook: CGPoint(x: hx - m.pos.x, y: hy - m.pos.y), lamp: CGPoint(x: lampX - m.pos.x, y: lampY - m.pos.y), swing: m.lant, flicker: flick)
             }

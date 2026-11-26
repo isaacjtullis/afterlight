@@ -30,6 +30,9 @@ public struct Max: Codable, Sendable {
     public var slope = 0.0, vyG = 0.0, air = 0.0
     public var sliding = false, stopping = false
 
+    // climbing: the body swings like a pendulum under the hands
+    public var sway = 0.0, swayV = 0.0
+
     // digging
     public var swing = 0.0, swingOn = false, swingKind: SwingKind = .side
     public var biteHigh = false, digFloor = 30.0
@@ -48,7 +51,7 @@ public enum Tuning {
     public static let halfWidth = 0.3
     public static let height = 1.68
     public static let walkSpeed = 3.0
-    public static let accel = 7.0
+    public static let accel = 16.0
     public static let decel = 15.0
     public static let gravity = 34.0
     public static let airGravity = 17.0

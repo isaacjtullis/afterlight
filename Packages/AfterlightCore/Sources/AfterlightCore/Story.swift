@@ -109,7 +109,15 @@ extension Game {
 
     // MARK: hooks from play
 
+    /// The first time anything goes in the bag, say how the bag works.
+    func explainBag() {
+        guard !story.flags.contains("said.bag") else { return }
+        story.flags.insert("said.bag")
+        later(1.2) { $0.hint("Into the bag. It holds \(Inventory.capacity) things, and small parts stack up to 6. Tap the bag to look inside.", 7) }
+    }
+
     func onPickup(_ id: ItemID) {
+        explainBag()
         switch id {
         case .chargeCrystal:
             story.step("blackout", "crystal")
@@ -139,6 +147,19 @@ extension Game {
     }
 
     func onCarved(_ res: CarveResult) {
+        // Roots come away as wood; a plank comes back as its wood.
+        let roots = res.cleared.filter { $0.was == .root }.count
+        let planks = res.cleared.filter { $0.was == .plank }.count
+        let wood = roots * Inventory.woodPerRootTile + planks * Inventory.plankCost
+        if wood > 0 {
+            let got = inv.addWood(wood)
+            if got > 0 { emit(.wood(got)) }
+            if got < wood { if time - clankAt > 4 { clankAt = time; think("Can’t lash any more wood to the bag.", 2.4) } }
+            if roots > 0 && !story.flags.contains("said.wood") {
+                story.flags.insert("said.wood")
+                later(0.6) { $0.hint("Wood straps to the outside of your bag, up to \(Inventory.woodCap). A plank costs \(Inventory.plankCost).", 7) }
+            }
+        }
         if !story.isDone("blackout", "dig") && res.changed { story.step("blackout", "dig"); clearHint() }
         // The hatch seam: once it's open, the rungs continue up into the room.
         if !story.flags.contains("hatchOpen") {
@@ -173,7 +194,10 @@ extension Game {
         story.flags.formUnion(["needPick", "needLadder", "ordersOK"])
         story.addQuest(.firstAscent)
         emit(.chapter(2, "First Ascent"))
-        later(3.5) { $0.hint("Hold on the dirt wall to give Max a dig order, or dig it yourself.", 7) }
+        later(8.2) { g in
+            if g.inv.count(.liftTooth) == 0 { g.think("The old lift car came down just east of here, past where the crystal was. Its drive teeth are hard steel.", 4.5) }
+        }
+        later(13) { $0.hint("Follow the arrow. Dig east from the workshop.", 6) }
         emit(.saveNow)
     }
 
@@ -214,8 +238,12 @@ extension Game {
                 if f.contains("needPick") { later(3.2) { $0.think("The drive teeth are hard steel. That’s my pick.", 3.4) } }
             }
         }
-        if story.chapter == 2 && f.contains("broke") && p.x > Double(Landmarks.caveStart) + 1 && f.contains("needPick") && !f.contains("said.car") {
-            once("wreck") { later(4) { $0.hint("Something metal down the slope. Head right.", 6) } }
+        // The root door: say what roots are good for the first time Max stands at them.
+        if abs(p.x - Double(Landmarks.hollow.door) - 1.2) < 1.2 && abs(p.y - 30) < 0.6 && world.m(Landmarks.hollow.door, 28) == .root {
+            once("roots") {
+                think("Roots grew right through the door. That’s a lot of wood.", 3.2)
+                later(3.4) { $0.hint("Hold DIG to hack at the roots. Each root is about 100 wood.", 6) }
+            }
         }
         if f.contains("needPick") && inv.count(.liftTooth) + storage.count(.liftTooth) > 0 && !inv.has(.shortPick) {
             once("tooth") { story.step("ascent", "tooth"); think("A lift tooth. Hard steel. With a grip, that’s a pick.", 3.4) }
@@ -407,6 +435,7 @@ extension Game {
 
         if max.stamina < 25 && inv.count(.trailMeal) > 0 { return act("eat", "Eat a trail meal", V2(p.x, p.y - 2.4), true) }
         if let c = maraContext() { return c }
+        if let s = plankSpot() { return act("plank", "Lay plank · \(Inventory.plankCost) wood", V2(Double(s.c) + 0.5, Double(s.r) - 0.9), true) }
         if nearOdi { return act("talk", odi.met ? "Talk to Odi" : "Say hello", V2(odi.pos.x, odi.pos.y - 2.4), !odi.met) }
         if underShaft && f.contains("sawShaft") && !f.contains("triedUp") { return act("tryUp", "Dig up", V2(p.x, p.y - 2.4)) }
         if underShaft && available(.ladderSection) > 0 && !world.climbs.contains(where: { $0.id == "ladder.shaft" }) {
@@ -431,7 +460,8 @@ extension Game {
             switch pr.kind {
             case .locker where !pr.stock.isEmpty: return act("search:\(pr.id)", "Search locker", V2(pr.pos.x, pr.pos.y - 2.2))
             case .buckledLocker: return act("buckled", "Buckled shut", V2(pr.pos.x, pr.pos.y - 2.2))
-            case .liftCar, .drillRig, .gantry: if !pr.stock.isEmpty { return act("salvage:\(pr.id)", "Salvage", V2(pr.pos.x, pr.pos.y - 2.4)) }
+            case .liftCar, .drillRig, .gantry: if !pr.stock.isEmpty { return act("salvage:\(pr.id)", "Salvage", V2(pr.pos.x, pr.pos.y - 2.4), pr.kind == .liftCar) }
+            case .crate: if !pr.stock.isEmpty { return act("search:\(pr.id)", "Open crate", V2(pr.pos.x, pr.pos.y - 1.8), true) }
             case .sunkValve: if !pr.stock.isEmpty { return act("salvage:\(pr.id)", "Take the valve", V2(pr.pos.x, pr.pos.y - 1.8), true) }
             case .storage: return act("storage", "Storage", V2(pr.pos.x, pr.pos.y - 2.0))
             case .pump:
@@ -552,6 +582,13 @@ extension Game {
         case "rest":
             max.stamina = max.staminaMax
             emit(.openSheet(.mission))
+        case "plank":
+            guard let s = plankSpot() else { break }
+            inv.wood -= Inventory.plankCost
+            world.setPlank(s.c, s.r)
+            emit(.placed("plank"))
+            if !story.flags.contains("said.plank") { story.flags.insert("said.plank"); think("Good and solid. I can bridge a gap or cover a hole this way.", 3) }
+            emit(.saveNow)
         case "buckled":
             think("Buckled shut. A pry bar would open it.", 2.6)
         default:
@@ -574,9 +611,10 @@ extension Game {
             if n < s.count { left.append(ItemStack(s.id, s.count - n)) }
         }
         world.props[i].stock = left
-        if !got.isEmpty { emit(.chime); emit(.pickup(got.joined(separator: ", "))) }
+        if !got.isEmpty { emit(.chime); emit(.pickup(got.joined(separator: ", "))); explainBag() }
         if !left.isEmpty {
-            think("My pack’s full. I’ll leave the rest here and come back.", 3)
+            think("My bag’s full. I’ll leave the rest here and come back.", 3)
+            later(3.2) { $0.hint("Put things away in workshop storage to make room.", 5) }
         }
         if got.contains(where: { $0.hasPrefix(ItemID.seedTin.name) }) { think("A seed tin. Some of these might still wake up.", 3) }
         emit(.saveNow)
@@ -609,4 +647,18 @@ extension Game {
         return clampD(clock().timeIntervalSince(t) / (mins * 60), 0, 1)
     }
     func cropReady(_ bed: Prop) -> Bool { cropProgress(bed) >= 1 }
+}
+
+extension Game {
+    /// An open tile in front of Max's feet that a plank would bridge or cover.
+    func plankSpot() -> (c: Int, r: Int)? {
+        guard max.ground, max.mode == .walk, !max.swingOn, inv.wood >= Inventory.plankCost else { return nil }
+        let r = Int(max.pos.y.rounded())
+        guard abs(max.pos.y - Double(r)) < 0.2 else { return nil }
+        let c = Int((max.pos.x + Double(max.face) * (Tuning.halfWidth + 0.55)).rounded(.down))
+        guard !world.m(c, r).solid, !world.m(c, r - 1).solid, !world.m(c, r - 2).solid else { return nil }
+        let under = world.m(c - max.face, r)
+        guard under.solid, !under.hard || under == .metal else { return nil }
+        return (c, r)
+    }
 }
