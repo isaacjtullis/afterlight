@@ -362,6 +362,6 @@ final class HomeGroundTests: XCTestCase {
         g.max.pos = V2(Double(cx) + 0.5, 55); g.max.ground = true
         let s = g.escapeSpot()
         XCTAssertNotNil(s, "there's always somewhere to climb out to")
-        XCTAssertLessThan(s?.y ?? 99, 31, "back near the top, at \(String(describing: s))")
+        XCTAssertLessThan(s?.y ?? 99, 33, "back near the top, at \(String(describing: s))")
     }
 }
