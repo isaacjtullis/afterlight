@@ -179,4 +179,29 @@ final class ExpeditionTests: XCTestCase {
         g.rinseFilter()
         XCTAssertEqual(g.quarters.filter, 100)
     }
+
+    /// Lantern levels go one at a time, each brighter than the last.
+    func testLanternLevels() {
+        let g = Game()
+        g.begin()
+        XCTAssertEqual(g.lanternLevel, 1)
+        XCTAssertTrue(g.upgradeOpen("lantern2"))
+        XCTAssertFalse(g.upgradeOpen("lantern3"))
+        g.applyUpgrade("lantern2")
+        XCTAssertEqual(g.lanternLevel, 2)
+        XCTAssertTrue(g.upgradeOpen("lantern3"))
+        XCTAssertGreaterThan(Game.lanternRadius(5), Game.lanternRadius(1) * 2)
+    }
+
+    /// Storing wood moves it off the bag and back.
+    func testStoreWood() {
+        let g = Game()
+        g.begin()
+        g.inv.wood = 120
+        XCTAssertTrue(g.atHome)
+        g.storeWood()
+        XCTAssertEqual(g.inv.wood, 0); XCTAssertEqual(g.storage.wood, 120); XCTAssertEqual(g.woodAvailable, 120)
+        g.takeWood(50)
+        XCTAssertEqual(g.inv.wood, 50); XCTAssertEqual(g.storage.wood, 70)
+    }
 }

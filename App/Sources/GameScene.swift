@@ -676,9 +676,12 @@ final class GameScene: SKScene {
         ctx.scaleBy(x: sc, y: sc)
         ctx.setBlendMode(.destinationOut)
         let space = CGColorSpaceCreateDeviceRGB()
-        func light(_ x: Double, _ y: Double, _ R: Double, _ I: Double, rays: [V2]?) {
+        // A "flat" light (lanterns, home) holds nearly full strength most of the way out, then fades fast:
+        // it really pushes the darkness back instead of a small hot spot.
+        let flatG = CGGradient(colorsSpace: space, colors: [TerrainArt.color(0, 1), TerrainArt.color(0, 0.97), TerrainArt.color(0, 0.8), TerrainArt.color(0, 0)] as CFArray, locations: [0, 0.55, 0.78, 1])!
+        func light(_ x: Double, _ y: Double, _ R: Double, _ I: Double, rays: [V2]?, flat: Bool = false) {
             guard R > 0.1, I > 0.01 else { return }
-            let g = CGGradient(colorsSpace: space, colors: [TerrainArt.color(0, CGFloat(I)), TerrainArt.color(0, CGFloat(I * 0.8)), TerrainArt.color(0, CGFloat(I * 0.32)), TerrainArt.color(0, 0)] as CFArray,
+            let g = flat && I > 0.9 ? flatG : CGGradient(colorsSpace: space, colors: [TerrainArt.color(0, CGFloat(I)), TerrainArt.color(0, CGFloat(I * 0.8)), TerrainArt.color(0, CGFloat(I * 0.32)), TerrainArt.color(0, 0)] as CFArray,
                                locations: [0, 0.35, 0.7, 1])!
             ctx.saveGState()
             if let rays, rays.count > 2 {
@@ -689,7 +692,7 @@ final class GameScene: SKScene {
         }
         let (lx, ly) = lanternPos()
         let flick = 0.05 * sin(g.time * 13) + 0.035 * sin(g.time * 29 + 1) + g.flicker * 0.35 * sin(g.time * 31)
-        let R = 6.3 * (1 + flick) * lanternK
+        let R = (6.3 + Double(g.lanternLevel - 1) * 1.2) * (1 + flick) * lanternK
         light(lx, ly, R, 0.98, rays: g.world.castLight(from: V2(lx, ly), radius: R, a0: 0, a1: 2 * .pi, rays: 64))
         // The flashlight spills a little light all around Max, so he's never in a black hole of his own.
         if g.inv.has(.flashlight) && g.max.flashI > 0.1 {
@@ -705,18 +708,25 @@ final class GameScene: SKScene {
             light(fx, fy, 20, 0.95 * g.max.flashI, rays: pts)
             light(fx, fy, 1.8, 0.5 * g.max.flashI, rays: nil)
         }
-        let (vx0, vy0, vx1, vy1) = visibleTileRect(margin: 6)
+        let (vx0, vy0, vx1, vy1) = visibleTileRect(margin: 20)
         for l in g.world.props where l.kind == .lamp && l.pos.x > Double(vx0) && l.pos.x < Double(vx1) && l.pos.y > Double(vy0) && l.pos.y < Double(vy1) {
             let o = V2(l.pos.x, l.pos.y - 1.2)
-            let r = l.flags.contains("torch") ? 4.8 * (1 + 0.06 * sin(g.time * 9 + l.pos.x)) : 6.5
-            light(o.x, o.y, r, 0.95, rays: g.world.castLight(from: o, radius: r, a0: 0, a1: 2 * .pi, rays: 48))
+            let torch = l.flags.contains("torch")
+            let r = torch ? 6.5 * (1 + 0.06 * sin(g.time * 9 + l.pos.x)) : Game.lanternRadius(g.lanternLevel)
+            light(o.x, o.y, r, 0.98, rays: g.world.castLight(from: o, radius: r, a0: 0, a1: 2 * .pi, rays: torch ? 48 : 72), flat: !torch)
         }
-        if g.story.flags.contains("shelterLit") { light(23.6, 26.6, 10, 0.97, rays: g.world.castLight(from: V2(23.6, 26.6), radius: 10, a0: 0, a1: 2 * .pi, rays: 56)) }
+        if g.story.flags.contains("shelterLit") {
+            // Warm house lights fill the whole home, wall to wall.
+            light(23.6, 26.8, 15, 1, rays: g.world.castLight(from: V2(23.6, 26.8), radius: 15, a0: 0, a1: 2 * .pi, rays: 64), flat: true)
+            light(29.0, 27.2, 12, 1, rays: g.world.castLight(from: V2(29.0, 27.2), radius: 12, a0: 0, a1: 2 * .pi, rays: 56), flat: true)
+        }
         if g.world.prop("signal")?.flags.contains("lit") == true { light(Landmarks.signalLampX, 0.2, 9, 0.95, rays: g.world.castLight(from: V2(Landmarks.signalLampX, 0.2), radius: 9, a0: 0, a1: 2 * .pi, rays: 48)) }
         for camp in g.world.props(of: .camp) where abs(camp.pos.x - g.max.pos.x) < 20 { light(camp.pos.x, camp.pos.y - 1.0, 2.6, 0.7, rays: nil) }
-        if g.story.flags.contains("power") { light(22.8, 6.6, 8, 0.95, rays: g.world.castLight(from: V2(22.8, 6.6), radius: 8, a0: 0, a1: 2 * .pi, rays: 48)) }
-        if g.story.flags.contains("power") { light(25.5, 27.6, 8, 0.95, rays: g.world.castLight(from: V2(25.5, 27.6), radius: 8, a0: 0, a1: 2 * .pi, rays: 48)) }
-        if abs(g.max.pos.x - 80) < 30 && g.max.pos.y < 14 { light(80.5, 7, 7, 0.95, rays: g.world.castLight(from: V2(80.5, 7), radius: 7, a0: 0, a1: 2 * .pi, rays: 48)) }
+        if g.story.flags.contains("power") {
+            light(22.8, 6.6, 12, 1, rays: g.world.castLight(from: V2(22.8, 6.6), radius: 12, a0: 0, a1: 2 * .pi, rays: 56), flat: true)
+            light(29.5, 6.6, 9, 1, rays: g.world.castLight(from: V2(29.5, 6.6), radius: 9, a0: 0, a1: 2 * .pi, rays: 48), flat: true)
+        }
+        if abs(g.max.pos.x - 80) < 30 && g.max.pos.y < 14 { light(80.5, 7, 10, 1, rays: g.world.castLight(from: V2(80.5, 7), radius: 10, a0: 0, a1: 2 * .pi, rays: 56), flat: true) }
         if g.odi.walking { light(g.odi.pos.x + Double(g.odi.face) * 0.3, g.odi.pos.y - 0.5, 3.6, 0.9, rays: nil) }
         if g.ambient > 0 { light(135, 30, 60, 0.92 * g.ambient, rays: nil) }
         if let b = g.world.buried.first(where: { $0.id == "crystal" && !$0.revealed }), abs(b.pos.x - lx) < 6 { light(b.pos.x, b.pos.y - 0.1, 1.1, 0.35, rays: nil) }

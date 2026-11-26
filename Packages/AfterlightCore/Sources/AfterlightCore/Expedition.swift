@@ -49,7 +49,10 @@ extension Game {
     /// Why a recipe can't be built right now (nil if it can).
     public func buildBlocker(_ r: Recipe) -> String? {
         if case .tool(let t) = r.output, inv.has(t) { return "Already made" }
-        if case .upgrade(let u) = r.output, !upgradeOpen(u) { return u == "plot" ? "The room’s full of plots" : "Already built" }
+        if case .upgrade(let u) = r.output, !upgradeOpen(u) {
+            if u.hasPrefix("lantern"), let n = Int(u.dropFirst(7)), lanternLevel < n - 1 { return "Needs level \(n - 1) first" }
+            return u == "plot" ? "The room’s full of plots" : "Already built"
+        }
         if r.bench && !atBench { return "Needs a workbench" }
         if woodAvailable < r.wood { return "Needs \(r.wood) wood" }
         if let miss = r.inputs.first(where: { available($0.id) < $0.count }) { return "Needs \(miss.id.name.lowercased())" }
@@ -325,9 +328,15 @@ extension Game {
 
     // MARK: home upgrades
 
+    /// How bright every placed lantern burns: 1 (a cell and a wick) to 5 (an iron beam lantern).
+    public var lanternLevel: Int { story.counters["lanternLv", default: 1] }
+    /// The light radius, in tiles, of a lantern at each level.
+    public static func lanternRadius(_ lv: Int) -> Double { [9, 11, 13.5, 16, 20][Swift.max(0, Swift.min(4, lv - 1))] }
+
     func upgradeOpen(_ u: String) -> Bool {
         switch u {
         case "plot": return quarters.plots.count < 6
+        case _ where u.hasPrefix("lantern"): return lanternLevel == (Int(u.dropFirst(7)) ?? 0) - 1
         case "barrel": return quarters.barrelCap < 200
         default: return !quarters.decor.contains(u)
         }
@@ -336,6 +345,10 @@ extension Game {
     func applyUpgrade(_ u: String) {
         switch u {
         case "plot": quarters.plots.append(GardenPlot()); think("Another bed for the garden.", 2)
+        case _ where u.hasPrefix("lantern"):
+            let lv = Int(u.dropFirst(7)) ?? 1
+            story.counters["lanternLv"] = lv
+            think(lv >= 5 ? "An iron beam lantern. It throws light like daylight." : "Every lantern burns brighter now.", 2.6)
         case "barrel": quarters.barrelCap = 200; think("Twice the water now.", 2)
         default: quarters.decor.insert(u); think("A table. Like a real home.", 2.4)
         }

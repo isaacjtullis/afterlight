@@ -184,7 +184,7 @@ struct ItemArt: View {
             func R(_ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat) -> CGRect { CGRect(x: x * s, y: y * s, width: w * s, height: h * s) }
             func fill(_ p: Path, _ c: Color) { ctx.fill(p, with: .color(c)) }
             let wood = Color(red: 0.62, green: 0.42, blue: 0.26), dark = Color(red: 0.25, green: 0.17, blue: 0.12), steel = Color(red: 0.62, green: 0.65, blue: 0.7)
-            switch recipe.id {
+            switch recipe.id.hasPrefix("lantern") ? "lamp" : recipe.id {
             case "lamp":
                 fill(Path(roundedRect: R(0.3, 0.08, 0.4, 0.1), cornerRadius: 3), dark)
                 ctx.stroke(Path(ellipseIn: R(0.4, 0.0, 0.2, 0.14)), with: .color(dark), lineWidth: 2)
