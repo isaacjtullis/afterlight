@@ -57,11 +57,8 @@ public enum Dialogue {
 
     static func load() -> [String: DialogueGraph] {
         var out: [String: DialogueGraph] = [:]
-        let urls = (Bundle.module.urls(forResourcesWithExtension: "json", subdirectory: "dialogue") ?? [])
-            + (Bundle.module.urls(forResourcesWithExtension: "json", subdirectory: nil) ?? []).filter { $0.lastPathComponent.hasPrefix("dialogue.") }
-        for u in urls {
-            guard let d = try? Data(contentsOf: u), let g = try? JSONDecoder().decode(DialogueGraph.self, from: d) else { continue }
-            out[g.id] = g
+        for d in ContentFiles.all(in: "dialogue") {
+            if let g = try? JSONDecoder().decode(DialogueGraph.self, from: d) { out[g.id] = g }
         }
         return out
     }
@@ -221,5 +218,16 @@ extension Game {
             for o in a.owedToMax { out.append(("Owed to you: \(o)", false)) }
         }
         return out
+    }
+}
+
+/// Files bundled under Content/ (kept as folders).
+enum ContentFiles {
+    static var root: URL? { Bundle.module.url(forResource: "Content", withExtension: nil) }
+
+    static func all(in folder: String) -> [Data] {
+        guard let dir = root?.appendingPathComponent(folder),
+              let names = try? FileManager.default.contentsOfDirectory(atPath: dir.path) else { return [] }
+        return names.filter { $0.hasSuffix(".json") }.sorted().compactMap { try? Data(contentsOf: dir.appendingPathComponent($0)) }
     }
 }
