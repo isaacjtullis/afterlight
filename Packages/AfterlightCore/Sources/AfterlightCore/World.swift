@@ -35,7 +35,7 @@ public enum DigTool: String, Codable, Sendable {
         switch self {
         // Crumbs left inside already-dug tiles always come away.
         case .shovel: return m == .dirt || m == .loose || m == .seam || m == .dug || m == .root || m == .plank
-        case .pick: return m == .seam || m == .loose || m == .dug
+        case .pick: return m == .seam || m == .loose || m == .dug || m == .dirt || m == .root
         }
     }
 }

@@ -5,10 +5,12 @@ public struct GameInput: Equatable, Sendable {
     public var up = false
     public var down = false
     public var dig = false
-    public init(dx: Int = 0, up: Bool = false, down: Bool = false, dig: Bool = false) {
-        self.dx = dx; self.up = up; self.down = down; self.dig = dig
+    /// The UP dig button: swing overhead.
+    public var digUp = false
+    public init(dx: Int = 0, up: Bool = false, down: Bool = false, dig: Bool = false, digUp: Bool = false) {
+        self.dx = dx; self.up = up; self.down = down; self.dig = dig; self.digUp = digUp
     }
-    var any: Bool { dx != 0 || up || down || dig }
+    var any: Bool { dx != 0 || up || down || dig || digUp }
 }
 
 /// Things that happened this frame, for sound, haptics, particles and UI.
@@ -173,6 +175,7 @@ public final class Game {
         let fresh = (dig: input.dig && !prev.dig, down: input.down && !prev.down, up: input.up && !prev.up)
         let freshDx = input.dx != 0 && input.dx != prev.dx
         if order != nil && input.any && !prev.any { stopOrder("player") }
+        let freshDigUp = input.digUp && !prev.digUp
         prev = input
 
         // Taps: a quick press on an arrow still takes a short step; a quick DIG still lands one swing.
@@ -202,7 +205,7 @@ public final class Game {
             (dir, swingWanted) = orderTick()
         } else if started {
             if max.mode == .climb {
-                climbTick(dt, input: input, freshDig: fresh.dig)
+                climbTick(dt, input: input, freshDig: fresh.dig || freshDigUp)
                 updateFeel(dt)
                 pickupsTick(dt)
                 storyTick(dt)
@@ -213,11 +216,15 @@ public final class Game {
             if (input.up || input.down) && tryEnterClimb(up: input.up) {
                 updateFeel(dt); storyTick(dt); return
             }
-            // ▲ against an earth ledge cuts footholds and climbs it. In a hole, either wall will do.
-            if input.up && !input.dig && max.ground && max.oneShot == nil {
-                if !tryFoothold(dir: max.face) && wallBeside(max.face) { _ = tryFoothold(dir: -max.face) }
+            // ▲ against an earth ledge cuts footholds and climbs it (in a hole, either wall will do).
+            // Anywhere else, a tap of ▲ is a jump.
+            var climbed = false
+            if input.up && !input.dig && !input.digUp && max.ground && max.oneShot == nil {
+                climbed = tryFoothold(dir: max.face)
+                if !climbed && wallBeside(max.face) { climbed = tryFoothold(dir: -max.face) }
+                if !climbed && fresh.up && !max.swingOn { jump() }
             }
-            if input.dig && input.up && inv.has(.shortPick) {
+            if (input.digUp || (input.dig && input.up)) && !climbed {
                 swingWanted = .up
             } else if input.dig {
                 if let pr = frontProbe(max.face) {

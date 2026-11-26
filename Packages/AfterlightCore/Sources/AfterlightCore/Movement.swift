@@ -103,7 +103,8 @@ extension Game {
         var floor: Double? = nil
         switch kind {
         case .side:
-            c = V2(max.pos.x + Double(max.face) * (Tuning.halfWidth + 0.46), max.digFloor - (max.biteHigh ? 1.38 : 0.55))
+            c = V2(max.pos.x + Double(max.face) * (Tuning.halfWidth + 0.46), max.digFloor - (max.biteHigh ? 1.55 : 0.55))
+            R = max.biteHigh ? 0.82 : 0.72
             floor = max.digFloor
         case .down:
             c = V2(max.pos.x + Double(max.face) * 0.04, max.pos.y + 0.1)
@@ -112,12 +113,15 @@ extension Game {
         case .up:
             c = V2(max.pos.x, max.pos.y - (max.mode == .climb ? (max.biteHigh ? 2.55 : 1.9) : 2.0))
             R = 1.05
-            tool = .pick
+            tool = inv.has(.shortPick) ? .pick : .shovel
         }
         func hasEarth(_ c: V2) -> Bool {
             for o in [V2(0, 0), V2(0.3, 0), V2(-0.3, 0), V2(0, 0.3), V2(0, -0.3)] {
                 let p = c + o
-                if world.solid(p.x, p.y) && tool.cuts(world.m(Int(p.x.rounded(.down)), Int(p.y.rounded(.down)))) { return true }
+                let m = world.m(Int(p.x.rounded(.down)), Int(p.y.rounded(.down)))
+                // The shaft's packed seam needs the pick; the shovel only skids off it.
+                if tool == .shovel && kind == .up && m == .seam { continue }
+                if world.solid(p.x, p.y) && tool.cuts(m) { return true }
             }
             return false
         }
@@ -128,8 +132,10 @@ extension Game {
             if hasEarth(close) { c = close; near = true }
         }
         if !near {
-            if kind == .up && world.solid(c.x, c.y) && !world.hardAt(c.x, c.y) {
-                if time - clankAt > 5 { clankAt = time; think("Packed too hard overhead. The pick only opens soft seams.", 2.8) }
+            if kind == .up && world.solid(c.x, c.y) && !world.hardAt(c.x, c.y) && tool == .shovel {
+                if time - clankAt > 5 { clankAt = time; think("Packed too hard overhead. I need a pick for that.", 2.8) }
+            } else if kind == .up && world.hardAt(c.x, c.y) {
+                if time - clankAt > 5 { clankAt = time; think("Steel overhead. Nothing cuts that.", 2.4) }
             }
             emit(.whoosh); return
         }
@@ -221,10 +227,22 @@ extension Game {
                     max.pos.y = top
                     max.vx *= 0.6
                     max.squash = Swift.max(max.squash, 0.06)
-                } else {
+                } else if max.ground && !max.swingOn && dir != 0,
+                          let top = world.groundY(fx, from: max.pos.y - 1.7, to: max.pos.y - 0.1),
+                          max.pos.y - top < 1.6, !world.solid(fx, top - 0.15), !wallHit(fx, top),
+                          !world.solid(max.pos.x, top - Tuning.height - 0.05) {
+                    // A ledge up to about a tile and a half: Max scrambles up it instead of stopping dead.
+                    max.ground = false
+                    max.vy = -(2 * Tuning.gravity * (max.pos.y - top + 0.22)).squareRoot()
+                    max.vx = Double(dir) * 1.4
+                    max.air = 0
+                    max.squash = Swift.max(max.squash, 0.1)
+                } else if max.ground {
                     if abs(max.vx) > 4.5 { emit(.land(speed: 3)) }
                     max.vx = 0
                 }
+                // In the air against a wall: hold position sideways but keep the push, so a jump or
+                // scramble carries over the top as soon as Max clears it.
             } else {
                 max.pos.x = nx
             }
@@ -367,7 +385,8 @@ extension Game {
 
     func reachableClimb(up: Bool) -> Climb? {
         let p = max.pos
-        for c in world.climbs where abs(c.x - p.x) < 0.55 {
+        for c in world.climbs where abs(c.x - p.x) < (up ? 0.55 : 1.4) {
+            if !up && abs(c.x - p.x) >= 0.55 && abs(c.top - p.y) >= 0.35 { continue }
             if up {
                 // hands reach about 2.1 above the feet
                 if c.bottom >= p.y - 2.1 && c.top < p.y - 0.05 { return c }
@@ -405,12 +424,8 @@ extension Game {
         max.lantV += max.swayV * 0.6 * dt
         var ny = max.pos.y + max.vy * dt
         // head room: pick away the seam above
-        if input.dig {
-            if inv.has(.shortPick) {
-                _ = swingTick(dt, kind: .up)
-            } else if freshDig {
-                startOneShot(.tryUp, at: nil)
-            }
+        if input.dig || input.digUp {
+            _ = swingTick(dt, kind: .up)
             ny = max.pos.y
         } else if max.swingOn {
             max.swing += dt / Tuning.swingPeriod
@@ -442,6 +457,12 @@ extension Game {
             if let g = world.groundY(max.pos.x, from: max.pos.y - 0.3, to: max.pos.y + 0.35) {
                 max.pos.y = g; exitClimb()
                 if input.dx != 0 { max.face = input.dx }
+            } else if input.dx != 0 {
+                // Let go: drop off the climb with a little push to the side.
+                exitClimb()
+                max.ground = false
+                max.vx = Double(input.dx) * 1.6
+                max.face = input.dx
             }
         }
     }

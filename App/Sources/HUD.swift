@@ -278,7 +278,7 @@ struct HUDView: View {
                         }
                     }
                     HoldButton(id: "climb", onChange: { model.input.up = $0 }) { p in
-                        GlassCircle(size: 62, pressed: p, icon: AnyView(Arrowhead().frame(width: 22, height: 22).rotationEffect(.degrees(-90))), caption: ui.climbing ? "CLIMB" : nil)
+                        GlassCircle(size: 66, pressed: p, icon: AnyView(Arrowhead().frame(width: 22, height: 22).rotationEffect(.degrees(-90))), caption: ui.climbing || ui.canClimb ? "CLIMB" : "JUMP")
                     }
                     MovePad { model.input.dx = $0 }
                 }
@@ -293,12 +293,18 @@ struct HUDView: View {
                         }
                         .transition(.scale.combined(with: .opacity))
                     }
-                    HStack(alignment: .bottom, spacing: 14) {
-                        HoldButton(id: "dig.down", onChange: { model.input.down = $0 }) { p in
-                            GlassCircle(size: 76, pressed: p, pulse: ui.pulseDown, icon: AnyView(DigIcon().frame(width: 34, height: 34).rotationEffect(.degrees(90))), caption: "DOWN")
+                    // Three ways to dig, laid out the way they point.
+                    VStack(spacing: 10) {
+                        HoldButton(id: "dig.up", onChange: { model.input.digUp = $0 }) { p in
+                            GlassCircle(size: 66, pressed: p, icon: AnyView(DigIcon().frame(width: 30, height: 30).rotationEffect(.degrees(-90))), caption: "UP")
                         }
-                        HoldButton(id: "dig", onChange: { model.input.dig = $0 }) { p in
-                            GlassCircle(size: 76, pressed: p, icon: AnyView(DigIcon().frame(width: 34, height: 34).scaleEffect(x: CGFloat(ui.facing), y: 1)), caption: "DIG")
+                        HStack(alignment: .center, spacing: 12) {
+                            HoldButton(id: "dig.down", onChange: { model.input.down = $0 }) { p in
+                                GlassCircle(size: 66, pressed: p, pulse: ui.pulseDown, icon: AnyView(DigIcon().frame(width: 30, height: 30).rotationEffect(.degrees(90))), caption: "DOWN")
+                            }
+                            HoldButton(id: "dig", onChange: { model.input.dig = $0 }) { p in
+                                GlassCircle(size: 66, pressed: p, icon: AnyView(DigIcon().frame(width: 30, height: 30).scaleEffect(x: CGFloat(ui.facing), y: 1)), caption: "DIG")
+                            }
                         }
                     }
                 }

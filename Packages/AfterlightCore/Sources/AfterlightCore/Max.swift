@@ -55,6 +55,8 @@ public enum Tuning {
     /// Hold an arrow for a moment and Max breaks into a run.
     public static let runSpeed = 5.4
     public static let runAfter = 0.55
+    /// Takeoff speed for a jump about 1.35 tiles high.
+    public static let jumpSpeed = (2.0 * 34.0 * 1.35).squareRoot()
     public static let accel = 16.0
     public static let decel = 15.0
     public static let gravity = 34.0

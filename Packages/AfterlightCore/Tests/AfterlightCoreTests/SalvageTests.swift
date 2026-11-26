@@ -137,4 +137,44 @@ final class HomeGroundTests: XCTestCase {
         XCTAssertTrue(g.max.running)
         XCTAssertGreaterThan(abs(g.max.vx), Tuning.walkSpeed + 0.5)
     }
+
+    /// Tap ▲ in the open: Max jumps and lands again.
+    func testTapUpJumps() {
+        let g = Game()
+        g.begin()
+        g.max.pos = V2(23.5, 30)
+        sim(g, GameInput(), 0.3)
+        g.update(dt: 1 / 60, input: GameInput(up: true)); _ = g.drainEvents()
+        var peak = 30.0
+        for _ in 0..<60 { g.update(dt: 1 / 60, input: GameInput()); _ = g.drainEvents(); peak = min(peak, g.max.pos.y) }
+        XCTAssertLessThan(peak, 29.0, "a jump clears about a tile")
+        XCTAssertEqual(g.max.pos.y, 30, accuracy: 0.1)
+        XCTAssertTrue(g.max.ground)
+    }
+
+    /// The UP button digs overhead dirt with just the shovel.
+    func testShovelDigsUp() {
+        let g = Game()
+        g.begin()
+        walk(g, to: 31.3)
+        sim(g, GameInput(dig: true), 4)
+        let x = g.max.pos.x
+        XCTAssertTrue(g.world.solid(x, 27.15), "earth overhead before")
+        sim(g, GameInput(digUp: true), 2.5)
+        XCTAssertFalse(g.world.solid(x, 27.15), "digging up should open the earth overhead")
+    }
+
+    /// A one-tile ledge (the far side of a hole) is scrambled over just by walking into it.
+    func testWalkingIntoALedgeScramblesUp() {
+        let g = Game()
+        g.begin()
+        for c in 32...44 { for r in 26...29 { g.world.set(c, r, .dug, back: .earth) }; g.world.set(c, 30, .dirt) }
+        for c in 32...36 { g.world.set(c, 30, .dug, back: .earth); g.world.set(c, 31, .dirt) }   // a sunken stretch, one tile down
+        g.world.rebuildDensity()
+        g.max.pos = V2(34, 31); g.max.ground = true
+        sim(g, GameInput(), 0.3)
+        sim(g, GameInput(dx: 1), 2.5)
+        XCTAssertGreaterThan(g.max.pos.x, 38, "Max should climb out of the dip and keep going, at \(g.max.pos)")
+        XCTAssertEqual(g.max.pos.y, 30, accuracy: 0.2)
+    }
 }

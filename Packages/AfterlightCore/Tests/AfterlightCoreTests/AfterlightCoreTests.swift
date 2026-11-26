@@ -57,7 +57,7 @@ final class WorldTests: XCTestCase {
     func testPickOnlyOpensSoftSeams() {
         let g = Game()
         _ = g.world.carve(center: V2(40.5, 20), radius: 0.8, tool: .pick)
-        XCTAssertEqual(g.world.m(40, 20), .dirt, "the pick doesn't cut packed dirt overhead")
+        XCTAssertEqual(g.world.m(40, 20), .dug, "the pick cuts dirt overhead too")
         _ = g.world.carve(center: V2(26, 11.5), radius: 0.8, tool: .pick)
         XCTAssertEqual(g.world.m(26, 11), .dug)
     }
