@@ -61,7 +61,7 @@ final class CampaignPlaythroughTests: XCTestCase {
         g.chooseTalk("bye")
 
         // Odi's service lift up to the hotel.
-        XCTAssertTrue(b.go(155.8, timeout: 20), b.trail)
+        XCTAssertTrue(b.go(156.4, timeout: 20), b.trail)
         XCTAssertTrue(b.use("ride:hotel"), b.trail)
         b.idle(2.5)
         XCTAssertEqual(g.story.chapter, 6, b.trail)
