@@ -16,6 +16,9 @@ final class AudioEngine {
     private var next = 0
     private var ambientNode = AVAudioPlayerNode()
     private var windNode = AVAudioPlayerNode()
+    private var musicNode = AVAudioPlayerNode()
+    private var music: AVAudioPCMBuffer? = nil
+    private var musicBuilding = false
     private let format = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 1)!
     private var built = false
     private var observers: [NSObjectProtocol] = []
@@ -43,7 +46,7 @@ final class AudioEngine {
         if !built {
             built = true
             reverb.loadFactoryPreset(.mediumChamber)
-            reverb.wetDryMix = 18
+            reverb.wetDryMix = 9
             // Every player feeds a mixer (which takes many inputs), the mixer feeds the reverb, the reverb the output.
             // A reverb has a single input: wiring several players straight into it leaves all but one unconnected,
             // and starting an unconnected player crashes.
@@ -59,6 +62,7 @@ final class AudioEngine {
             }
             engine.attach(ambientNode); engine.connect(ambientNode, to: engine.mainMixerNode, format: format)
             engine.attach(windNode); engine.connect(windNode, to: submix, format: format)
+            engine.attach(musicNode); engine.connect(musicNode, to: engine.mainMixerNode, format: format)
             windNode.volume = 0
             for s in Sfx.allCases { buffers[s] = (0..<4).map { v in normalized(synth(s, variant: v), peak: 0.85) } }
             let nc = NotificationCenter.default
@@ -83,8 +87,22 @@ final class AudioEngine {
         for p in players where !p.isPlaying { p.play() }
         if !ambientNode.isPlaying {
             ambientNode.scheduleBuffer(ambientBuffer(), at: nil, options: .loops)
-            ambientNode.volume = 0.12
+            ambientNode.volume = 0.07
             ambientNode.play()
+        }
+        if !musicNode.isPlaying {
+            if let m = music {
+                musicNode.scheduleBuffer(m, at: nil, options: .loops)
+                musicNode.volume = musicOn ? 0.17 : 0
+                musicNode.play()
+            } else if !musicBuilding {
+                // ~27 seconds of music takes a moment to synthesize: do it off the main thread.
+                musicBuilding = true
+                DispatchQueue.global(qos: .utility).async {
+                    let m = self.musicBuffer()
+                    DispatchQueue.main.async { self.music = m; self.musicBuilding = false; self.resume() }
+                }
+            }
         }
         if !windNode.isPlaying {
             windNode.scheduleBuffer(windBuffer(), at: nil, options: .loops)
@@ -102,8 +120,13 @@ final class AudioEngine {
         p.scheduleBuffer(bs[Int.random(in: 0..<bs.count)], at: nil, options: .interrupts)
     }
 
+    /// The lo-fi bed. On by default; the player can turn it off and keep just the close sounds.
+    var musicOn = UserDefaults.standard.object(forKey: "afterlight.music") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(musicOn, forKey: "afterlight.music"); musicNode.volume = musicOn ? 0.17 : 0 }
+    }
+
     func cavern(_ on: Bool) {
-        reverb.wetDryMix = on ? 45 : 18
+        reverb.wetDryMix = on ? 26 : 9
         windNode.volume = on ? 0.6 : 0
     }
 
@@ -157,44 +180,64 @@ final class AudioEngine {
         }
     }
 
+
+    /// Close-mic crunch: a cluster of tiny grain clicks, each its own little band of noise.
+    /// Dense at the bite, thinning out as the soil settles. This is most of the "ASMR" in a dig.
+    private func crunch(_ t: Double, _ grains: [(at: Double, f: Double, a: Double)], _ g: inout Grit) -> Double {
+        var s = 0.0
+        for gr in grains where t >= gr.at && t < gr.at + 0.004 {
+            let u = t - gr.at
+            s += sin(2.0 * Double.pi * gr.f * u + g.band(0.9, 0.3) * 2) * exp(-u / 0.0011) * gr.a
+        }
+        return s
+    }
+
+    private func grainCloud(count: Int, over span: Double, low: Double, high: Double, front: Double = 2.2) -> [(at: Double, f: Double, a: Double)] {
+        (0..<count).map { _ in
+            let r = Double.random(in: 0...1)
+            let at = pow(r, front) * span          // bunched up front
+            return (at, Double.random(in: low...high), Double.random(in: 0.35...1) * (1 - 0.6 * r))
+        }
+    }
+
     private func synth(_ s: Sfx, variant v: Int) -> AVAudioPCMBuffer {
         let pitch = 1.0 + Double(v - 1) * 0.06
         switch s {
         case .scoop:
-            // The blade bites (a dull thump and a crunch), then loose dirt patters down.
-            var g = Grit(), g2 = Grit()
-            let patter = (0..<9).map { _ in Double.random(in: 0.12...0.5) }
-            return buffer(seconds: 0.65) { (_: Int, t: Double, _: inout Double) -> Float in
-                let freq: Double = (140.0 - 70.0 * min(1.0, t / 0.08)) * pitch
-                let thump: Double = sin(2.0 * Double.pi * freq * t) * env(t, attack: 0.003, decay: 0.05)
-                let crunch: Double = g.band(0.35 * pitch, 0.02) * env(t, attack: 0.004, decay: 0.07)
-                var fall = 0.0
-                for p in patter where t > p && t < p + 0.03 { let u: Double = t - p; fall += g2.band(0.5, 0.05) * exp(-u / 0.008) * 0.5 }
-                return Float(thump * 0.8 + crunch * 1.3 + fall)
+            // Spade into soft earth, close to the ear: a soft push, a dense crunch of grains, a shush of loose soil.
+            var g = Grit(), h = Grit()
+            let cloud = grainCloud(count: 70 + v * 9, over: 0.32, low: 1800 * pitch, high: 5200 * pitch)
+            let settle = grainCloud(count: 18, over: 0.25, low: 900, high: 2600, front: 1)
+            return buffer(seconds: 0.62) { (_: Int, t: Double, lp: inout Double) -> Float in
+                let push: Double = sin(2.0 * Double.pi * (95.0 - 30.0 * min(1, t / 0.06)) * pitch * t) * env(t, attack: 0.006, decay: 0.045)
+                let c = crunch(t, cloud, &g)
+                let late: Double = t > 0.3 ? crunch(t - 0.3, settle, &h) * 0.5 : 0
+                lp += (Double.random(in: -1...1) - lp) * 0.08
+                let shush: Double = lp * sin(Double.pi * min(1, t / 0.5)) * 0.35
+                return Float(push * 0.55 + c * 0.9 + late + shush)
             }
         case .pick:
-            // Steel point into packed earth: a bright tick that rings briefly, a crack, and grit.
+            // Pick into packed earth or stone: a dull, wooden-handled tock, a gritty crackle, a few chips falling.
             var g = Grit()
+            let cloud = grainCloud(count: 34, over: 0.12, low: 2600, high: 6800, front: 3)
+            let chips = grainCloud(count: 9, over: 0.35, low: 1200, high: 3000, front: 1)
             return buffer(seconds: 0.5) { (_: Int, t: Double, _: inout Double) -> Float in
-                var ring = 0.0
-                let pf: [Double] = [2350, 3720, 5100]
-                for i in 0..<3 { ring += partial(pf[i] * pitch, t, 0.05 - Double(i) * 0.012) }
-                let crack = g.band(0.6, 0.08) * env(t, attack: 0.001, decay: 0.03)
-                let dull: Double = sin(2.0 * Double.pi * 190.0 * pitch * t) * env(t, attack: 0.002, decay: 0.04)
-                let grit: Double = t > 0.06 && Double.random(in: 0...1) < 0.006 ? Double.random(in: -0.4...0.4) * exp(-t / 0.2) : 0
-                return Float(ring * 0.35 + crack * 1.2 + dull * 0.5 + grit)
+                var tock = 0.0
+                let tf: [Double] = [310, 820, 1460]
+                for i in 0..<3 { tock += partial(tf[i] * pitch, t, 0.035 - Double(i) * 0.008) / Double(i + 1) }
+                let c = crunch(t, cloud, &g)
+                let fall: Double = t > 0.1 ? crunch(t - 0.1, chips, &g) * 0.6 : 0
+                return Float(tock * 0.7 + c * 0.85 + fall)
             }
         case .chop:
-            // Blade into a root: a hollow woody knock with a short creak.
+            // Blade into root: a soft woody knock and the crackle of fibres tearing.
             var g = Grit()
-            return buffer(seconds: 0.45) { (_: Int, t: Double, _: inout Double) -> Float in
+            let fibres = grainCloud(count: 46, over: 0.28, low: 700, high: 2400, front: 1.6)
+            return buffer(seconds: 0.48) { (_: Int, t: Double, _: inout Double) -> Float in
                 var knock = 0.0
-                let kf: [Double] = [165, 392, 731, 1180]
-                for i in 0..<4 { knock += partial(kf[i] * pitch, t, 0.11 - Double(i) * 0.02) / Double(i + 1) }
-                let click = g.band(0.7, 0.1) * env(t, attack: 0.0005, decay: 0.008)
-                let wob: Double = 520.0 + 90.0 * sin(t * 60.0)
-                let creak: Double = t > 0.05 ? sin(2.0 * Double.pi * wob * t) * env(t - 0.05, attack: 0.02, decay: 0.06) * 0.12 : 0
-                return Float(knock * 1.0 + click * 0.9 + creak)
+                let kf: [Double] = [180, 410, 760]
+                for i in 0..<3 { knock += partial(kf[i] * pitch, t, 0.08 - Double(i) * 0.02) / Double(i + 1) }
+                return Float(knock * 0.75 + crunch(t, fibres, &g) * 0.9)
             }
         case .whoosh:
             return buffer(seconds: 0.3) { (_: Int, t: Double, lp: inout Double) -> Float in
@@ -214,14 +257,12 @@ final class AudioEngine {
                 return Float(s)
             }
         case .step:
-            // A boot on packed dirt: soft heel thud, then a gravelly crunch of a few grains.
+            // A soft boot on grit: a cushioned heel, then a little crunch rolling toward the toe.
             var g = Grit()
-            let grains = (0..<5).map { _ in Double.random(in: 0.008...0.07) }
+            let cloud = grainCloud(count: 16 + v * 3, over: 0.09, low: 1500, high: 4200, front: 1.4)
             return buffer(seconds: 0.14) { (_: Int, t: Double, _: inout Double) -> Float in
-                let thud: Double = sin(2.0 * Double.pi * 85.0 * pitch * t) * env(t, attack: 0.002, decay: 0.022)
-                var crunch = g.band(0.42 * pitch, 0.03) * env(t, attack: 0.004, decay: 0.035)
-                for gr in grains where t > gr && t < gr + 0.006 { let u: Double = t - gr; crunch += Double.random(in: -0.8...0.8) * exp(-u / 0.0015) }
-                return Float(thud * 0.9 + crunch * 0.8)
+                let heel: Double = sin(2.0 * Double.pi * 72.0 * pitch * t) * env(t, attack: 0.004, decay: 0.02)
+                return Float(heel * 0.6 + crunch(t, cloud, &g) * 0.7)
             }
         case .stepMetal:
             // A boot on steel plate: a muffled thump and a faint ring.
@@ -325,17 +366,57 @@ final class AudioEngine {
     }
 
     private func ambientBuffer() -> AVAudioPCMBuffer {
-        // A low room tone with slow drips, so the underground never sounds dead.
-        let drips = (0..<5).map { _ in (Double.random(in: 0.5...7.5), Double.random(in: 900...1500)) }
-        return buffer(seconds: 8) { (_: Int, t: Double, lp: inout Double) -> Float in
-            lp += (Double.random(in: -1...1) - lp) * 0.004
-            var d = 0.0
-            for (at, f) in drips where t > at && t < at + 0.25 {
-                let u: Double = t - at
-                let fr: Double = f + 600.0 * u
-                d += sin(2.0 * Double.pi * fr * u) * exp(-u / 0.035) * 0.06
+        // Room tone only: a warm, very low hush that breathes slowly. No drips: a repeating drip is the first
+        // thing a player hears and the last thing they want to keep hearing.
+        buffer(seconds: 16) { (_: Int, t: Double, lp: inout Double) -> Float in
+            lp += (Double.random(in: -1...1) - lp) * 0.006
+            let breathe = 0.75 + 0.25 * sin(2 * .pi * t / 16)
+            return Float((lp * 0.32 + sin(2 * .pi * 41.2 * t) * 0.02) * breathe)
+        }
+    }
+
+    /// The lo-fi bed: four lazy major-seventh chords on a soft electric piano, a round bass, a brushed beat,
+    /// tape wow and a little dust, all under a low-pass so nothing is bright. About 27 seconds, looping.
+    private func musicBuffer() -> AVAudioPCMBuffer {
+        let bpm = 70.0, beat = 60.0 / bpm, bar = beat * 4
+        func hz(_ midi: Double) -> Double { 440 * pow(2, (midi - 69) / 12) }
+        // Fmaj7 · Em7 · Dm9 · Cmaj7, two bars each
+        let chords: [[Double]] = [[53, 57, 60, 64], [52, 55, 59, 62], [50, 53, 57, 60, 64], [48, 52, 55, 59]]
+        let roots: [Double] = [41, 40, 38, 36]
+        var notes: [(at: Double, f: Double, a: Double, d: Double)] = []
+        for (ci, ch) in chords.enumerated() {
+            let start = Double(ci) * bar * 2
+            for hit in [0.0, beat * 2.5, bar, bar + beat * 2.5] {
+                for (k, m) in ch.enumerated() {
+                    // a lazy, slightly late strum
+                    notes.append((start + hit + Double(k) * 0.018 + Double.random(in: 0...0.012), hz(m), hit == 0 || hit == bar ? 0.16 : 0.1, 2.4))
+                }
             }
-            return Float(sin(2 * .pi * 46.25 * t) * 0.05 + sin(2 * .pi * 69.375 * t) * 0.03 + lp * 0.3 + d)
+            notes.append((start, hz(roots[ci]), 0.32, 3.2))
+            notes.append((start + bar + beat * 2, hz(roots[ci] + 7), 0.2, 1.6))
+        }
+        let length = bar * 8
+        let crackles = (0..<70).map { _ in (Double.random(in: 0..<length), Double.random(in: 0.2...1)) }
+        let kicks = stride(from: 0.0, to: length, by: bar).flatMap { [$0, $0 + beat * 2.5] }
+        let hats = stride(from: beat / 2, to: length, by: beat)
+        return buffer(seconds: length) { (_: Int, t: Double, lp: inout Double) -> Float in
+            // tape wow: the whole loop drifts in pitch, very slightly
+            let wow = 1 + 0.0035 * sin(2 * .pi * 0.45 * t) + 0.001 * sin(2 * .pi * 5.1 * t)
+            var s = 0.0
+            for n in notes where t >= n.at && t < n.at + n.d * 3 {
+                let u = t - n.at
+                let ph = 2 * Double.pi * n.f * u * wow
+                // electric piano: a sine with a soft second harmonic and a short bell on the attack
+                let e = env(u, attack: 0.008, decay: n.d)
+                s += (sin(ph) + 0.22 * sin(2 * ph) + 0.12 * sin(7 * ph) * exp(-u / 0.08)) * e * n.a
+            }
+            for k in kicks where t >= k && t < k + 0.25 { let u = t - k; s += sin(2 * .pi * (58 - 20 * min(1, u / 0.1)) * u) * exp(-u / 0.09) * 0.3 }
+            for h in hats where t >= h && t < h + 0.06 { let u = t - h; s += Double.random(in: -1...1) * exp(-u / 0.012) * 0.025 }
+            for (at, a) in crackles where t >= at && t < at + 0.002 { s += Double.random(in: -1...1) * a * 0.05 }
+            s += Double.random(in: -1...1) * 0.004    // hiss
+            // low-pass around 2.5 kHz: nothing sharp
+            lp += (s - lp) * 0.3
+            return Float(lp * 0.9)
         }
     }
 

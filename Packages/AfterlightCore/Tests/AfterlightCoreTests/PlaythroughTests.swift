@@ -255,6 +255,11 @@ extension Bot {
         b.go(28.3)
         g.packRation()
         XCTAssertTrue(g.packedFood)
+        // Rest before the climb, the way a player would after a rough day.
+        if g.max.health < 90 {
+            b.go(22.4)
+            if g.context?.id == "rest" { g.performContext(); b.note("rested"); b.idle(4) }
+        }
 
         // The ascent: the grip from the workshop locker, the tooth already came with the lift car.
         XCTAssertTrue(b.go(20.9), b.trail)

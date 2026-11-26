@@ -204,6 +204,13 @@ struct CheckpointCard: View {
                     .transition(.opacity)
             }
         }
+        .padding(.vertical, 28)
+        .background(
+            // A soft pool of shadow behind the words, so a busy scene can never swallow them.
+            Ellipse().fill(RadialGradient(colors: [.black.opacity(0.72), .black.opacity(0.45), .clear], center: .center, startRadius: 10, endRadius: 230))
+                .padding(.horizontal, -30).padding(.vertical, -40)
+                .blur(radius: 14)
+        )
         .padding(.horizontal, 40)
         .opacity(shown ? 1 : 0)
         .offset(y: shown ? 0 : 8)

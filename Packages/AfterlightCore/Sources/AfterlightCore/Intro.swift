@@ -39,10 +39,10 @@ public enum IntroScript {
                    bubble: .bottom),
         IntroScene(image: "10-radio", text: "The radio went quiet. No one below knew if anyone was left above.", bubble: .top),
         IntroScene(image: "11-generations",
-                   text: "Life went on. Waterworks, grow lights, patient maintenance. The ones who came down had children in the dark: kids who knew the word “rain” and had never felt it.",
+                   text: "The ones who came down had children in the dark. Max was born in Shelter 4. His dad kept it alive: the pumps, the lights, the old water filter.",
                    bubble: .bottom),
         IntroScene(image: "12-max",
-                   text: "Today Max buried his father. He is the last one left in Shelter 4. Dad’s shovel is by the door. His cup is still beside the sink.",
+                   text: "This year the filter started to fail. Then Dad got sick, the ordinary way. Today Max buried him. He has four clean cups, Dad’s shovel, and a map Dad never finished.",
                    bubble: .top),
     ]
 

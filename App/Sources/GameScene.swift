@@ -218,7 +218,7 @@ final class GameScene: SKScene {
         zoom = damp(zoom, z, 1.4, dt)
         look = damp(look, (abs(m.vx) > 0.3 ? m.vx * 0.45 + Double(m.face) * 0.3 : Double(m.face) * 0.8) + ((game.cine?.t ?? 9) < 2.4 ? 2.5 : 0), 1.5, dt)
         let portrait = size.height > size.width
-        var tx = m.pos.x + look * (portrait ? 0.45 : 1), ty = m.pos.y - (portrait ? 0.9 : 1.4) - m.lookUp * 3.2
+        var tx = m.pos.x + look * (portrait ? 0.45 : 1), ty = m.pos.y - (portrait ? 3.0 : 1.4) - m.lookUp * 3.2
         if game.story.flags.contains("broke") && m.pos.x > Double(Landmarks.caveStart) - 1 && m.pos.y > 12 { ty -= 3 }
         if let p = game.planning { tx = (m.pos.x + Double(planTarget ?? p.reach)) / 2 }
         if let c = game.cine, let f = c.focus { tx = lerpD(tx, f.x, c.focusWeight); ty = lerpD(ty, f.y, c.focusWeight) }
@@ -762,9 +762,14 @@ final class GameScene: SKScene {
             let b = Game.mapBlock, cols = Game.mapCols
             let (ex0, ey0, ex1, ey1) = visibleTileRect(margin: 2)
             ctx.setFillColor(TerrainArt.color(0, 0.42))
-            for by in max(0, ey0 / b)...max(0, ey1 / b) {
-                for bx in max(0, ex0 / b)...max(0, ex1 / b) where g.story.explored.contains(by * cols + bx) {
-                    ctx.fill(CGRect(x: bx * b, y: by * b, width: b, height: b))
+            // Only the open spaces he's walked (and the faces of earth around them) are remembered.
+            // Solid ground stays dark until a light actually reaches it.
+            let w = g.world
+            for r in max(0, ey0)...max(0, ey1) {
+                for c in max(0, ex0)...max(0, ex1) where g.story.explored.contains((r / b) * cols + c / b) {
+                    let open = !w.m(c, r).solid
+                    let face = !open && (!w.m(c, r - 1).solid || !w.m(c - 1, r).solid || !w.m(c + 1, r).solid)
+                    if open || face { ctx.fill(CGRect(x: c, y: r, width: 1, height: open ? 1 : 0.35)) }
                 }
             }
         }
