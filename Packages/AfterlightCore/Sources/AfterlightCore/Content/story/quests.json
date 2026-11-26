@@ -381,5 +381,32 @@
         "text": "Visit Corvin’s stall"
       }
     ]
+  },
+  {
+    "id": "gallery",
+    "title": "The Upper Gallery",
+    "side": false,
+    "steps": [
+      {
+        "id": "landing",
+        "text": "Reach the upper landing"
+      },
+      {
+        "id": "trade",
+        "text": "Someone comes down from above"
+      },
+      {
+        "id": "toll",
+        "text": "Watch what the crossing costs now"
+      },
+      {
+        "id": "map",
+        "text": "Read the station map"
+      },
+      {
+        "id": "choice",
+        "text": "Stay, close the gallery, or go outside"
+      }
+    ]
   }
 ]

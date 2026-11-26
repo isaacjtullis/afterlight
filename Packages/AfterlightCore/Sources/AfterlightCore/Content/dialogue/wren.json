@@ -81,6 +81,30 @@
       ],
       "choices": [
         {
+          "id": "load",
+          "label": "Could you bring a load up to the gallery?",
+          "detail": "Supplies waiting at the landing for the climb.",
+          "when": [
+            "trust:wren>=2",
+            "flag:gallery.seen",
+            "!knows:max:askedForLoad"
+          ],
+          "effects": [
+            "do:friend.load",
+            "say:wren:I’ll get it up there. Don’t go without saying bye."
+          ]
+        },
+        {
+          "id": "gallery",
+          "label": "Should we close the gallery?",
+          "when": [
+            "can:toll.seen"
+          ],
+          "effects": [
+            "say:wren:Close it and I lose my road. Keep it and I keep paying. Pick your poison."
+          ]
+        },
+        {
           "id": "bye",
           "label": "See you.",
           "effects": [

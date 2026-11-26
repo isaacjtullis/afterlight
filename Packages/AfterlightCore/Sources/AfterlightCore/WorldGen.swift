@@ -287,6 +287,7 @@ public enum WorldGen {
         buildOdiRoom(w)
         for r in 0..<H { for c in Landmarks.sealedCols { w.set(c, r, .rock) } }
         buildHotel(w)
+        buildCrossing(w)
         w.rebuildDensity()
 
         // Buried things.

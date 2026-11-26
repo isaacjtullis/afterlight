@@ -152,6 +152,30 @@
       ],
       "choices": [
         {
+          "id": "load",
+          "label": "Could you bring a load up to the gallery?",
+          "detail": "Supplies waiting at the landing for the climb.",
+          "when": [
+            "trust:odi>=2",
+            "flag:gallery.seen",
+            "!knows:max:askedForLoad"
+          ],
+          "effects": [
+            "do:friend.load",
+            "say:odi:I’ll get it up there. Don’t go without saying bye."
+          ]
+        },
+        {
+          "id": "gallery",
+          "label": "Should we close the gallery?",
+          "when": [
+            "can:toll.seen"
+          ],
+          "effects": [
+            "say:odi:Close it. Every can Wren pays is a can my beds don’t get."
+          ]
+        },
+        {
           "id": "back",
           "label": "Could I have my lamp back?",
           "when": [

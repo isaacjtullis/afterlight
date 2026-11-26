@@ -1,0 +1,108 @@
+{
+  "id": "keeper",
+  "speaker": "Bram",
+  "entries": [
+    {
+      "node": "first",
+      "when": [
+        "!knows:keeper:met"
+      ]
+    },
+    {
+      "node": "hub"
+    }
+  ],
+  "nodes": {
+    "first": {
+      "lines": [
+        "Bram. I keep the station. Kept it for my mother, and she kept it for hers… no. She was the first. Came down in ’87 with everybody.",
+        "Section G was built to come down. If the surface came in, you’d close it off and keep the levels below."
+      ],
+      "choices": [
+        {
+          "id": "how",
+          "label": "Close it how?",
+          "next": "how"
+        },
+        {
+          "id": "bye",
+          "label": "See you.",
+          "effects": [
+            "end"
+          ]
+        }
+      ]
+    },
+    "how": {
+      "lines": [
+        "Lever under the glass. The map shows it: the gallery’s its own section. Bring it down and the hotel, transit, the homes all stand.",
+        "Nobody’s ever pulled it. Nobody needed to."
+      ],
+      "choices": [
+        {
+          "id": "hub",
+          "label": "Okay.",
+          "next": "hub"
+        }
+      ]
+    },
+    "hub": {
+      "lines": [
+        "The gallery’s been quiet a long time. It isn’t now."
+      ],
+      "choices": [
+        {
+          "id": "toll",
+          "label": "What about the toll?",
+          "when": [
+            "can:toll.seen"
+          ],
+          "next": "toll"
+        },
+        {
+          "id": "views",
+          "label": "What do people below think?",
+          "when": [
+            "can:toll.seen"
+          ],
+          "next": "views"
+        },
+        {
+          "id": "bye",
+          "label": "See you.",
+          "effects": [
+            "end"
+          ]
+        }
+      ]
+    },
+    "toll": {
+      "lines": [
+        "Came down from above with the trade. Now they sit on the crossing and take a share of everything going either way.",
+        "Lift or chimney, it all ends up on that bridge. Lock the surface door and they’re still on it."
+      ],
+      "choices": [
+        {
+          "id": "hub",
+          "label": "Okay.",
+          "next": "hub"
+        }
+      ]
+    },
+    "views": {
+      "lines": [
+        "Mara says keep it open: the regulator alone was worth the trouble.",
+        "Odi says close it. She’s seen what the crew takes off Wren.",
+        "Corvin wants it open. Business. Ellis just wants to know what’s up there.",
+        "Me? I keep the station. It’s not my lever to pull."
+      ],
+      "choices": [
+        {
+          "id": "hub",
+          "label": "Thanks.",
+          "next": "hub"
+        }
+      ]
+    }
+  }
+}

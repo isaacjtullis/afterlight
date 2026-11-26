@@ -128,6 +128,30 @@
       ],
       "choices": [
         {
+          "id": "load",
+          "label": "Could you bring a load up to the gallery?",
+          "detail": "Supplies waiting at the landing for the climb.",
+          "when": [
+            "trust:ellis>=2",
+            "flag:gallery.seen",
+            "!knows:max:askedForLoad"
+          ],
+          "effects": [
+            "do:friend.load",
+            "say:ellis:I’ll get it up there. Don’t go without saying bye."
+          ]
+        },
+        {
+          "id": "gallery",
+          "label": "Should we close the gallery?",
+          "when": [
+            "can:toll.seen"
+          ],
+          "effects": [
+            "say:ellis:Close it? I’ve never even seen what’s up there."
+          ]
+        },
+        {
           "id": "lamp",
           "label": "Here’s your lamp back.",
           "when": [

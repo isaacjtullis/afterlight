@@ -78,7 +78,7 @@ extension WorldGen {
     static let hotelPropIDs: Set<String> = ["hotel.lift", "backstairs", "transit.door", "hotel.desk", "hotel.diagram", "kitchen.cupboard",
                                             "bench1", "bench2", "bench3", "hotel.cart", "guest.shower", "guest.bed1", "guest.bed2",
                                             "fire.hatch", "hotel.battery", "hotel.trolley", "freight.top", "freight.bottom", "exit.sign",
-                                            "gallery.map", "gallery.station", "gallery.door", "gallery.crossing", "gallery.toll"]
+                                            "gallery.map", "gallery.station", "gallery.door", "gallery.crossing", "gallery.toll", "gallery.cache"]
 
     static func hotelProps() -> [Prop] {
         let lf = 52.0, gf = 40.0, uf = 28.0
@@ -375,5 +375,6 @@ extension Game {
 
     func hotelArrived(_ id: String, _ tag: String) {
         scavArrived(id, tag)
+        galleryArrived(id, tag)
     }
 }

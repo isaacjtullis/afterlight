@@ -48,6 +48,10 @@ public enum GameEvent: Equatable, Sendable {
     case talk
     /// Max lies down: the app plays the sleep (Zs, the clock spinning) while he recovers.
     case sleep
+    /// Max reached the upper landing: the app keeps a pinned checkpoint here, before any ending.
+    case landingSave
+    /// An ending was reached (written once).
+    case ending(String)
     case saveNow
 }
 
@@ -139,6 +143,8 @@ public final class Game {
     public var holdMessages = false
     /// A scuffle in progress (not saved: closing the app pauses it).
     public var struggle: Struggle? = nil
+    /// Out through the surface door: a different kind of walking.
+    public var outside: OutsideWalk? = nil
     /// DIG was pressed this frame.
     var prevDigFresh = false
 
@@ -212,6 +218,14 @@ public final class Game {
     public func update(dt rawDt: Double, input: GameInput) {
         let dt = Swift.min(rawDt, 1.0 / 30.0)
         time += dt
+        if outside != nil {
+            let due = timers.filter { $0.at <= time }
+            timers.removeAll { $0.at <= time }
+            for t in due { t.fn(self) }
+            if thoughtT > 0 { thoughtT -= dt }
+            outsideTick(dt, input: input)
+            return
+        }
         let due = timers.filter { $0.at <= time }
         timers.removeAll { $0.at <= time }
         for t in due { t.fn(self) }

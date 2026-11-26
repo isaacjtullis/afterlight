@@ -33,6 +33,7 @@ struct RootView: View {
                             if model.ui.ordersOK && model.game.planning == nil && model.game.order == nil { model.beginPlan() }
                         })
                 }
+                if let o = model.ui.outside, !model.showTitle { OutsideView(walk: o, thought: model.ui.thought).ignoresSafeArea().transition(.opacity) }
                 if !model.showTitle && !model.showIntro {
                     HUDView()
                         .transition(.opacity)
@@ -43,6 +44,7 @@ struct RootView: View {
                         .zIndex(5)
                 }
                 if model.sleeping { SleepView().transition(.opacity).zIndex(6) }
+                if let lines = model.ui.epilogue { EpilogueView(lines: lines) { model.game.closeEpilogue() }.transition(.opacity).zIndex(7) }
                 if model.showThoughts { ThoughtsCard().askingForHint().transition(.scale(scale: 0.95).combined(with: .opacity)) }
                 if model.showQuarters { QuartersView().transition(.opacity) }
                 if let b = model.banner { ChapterBanner(text: b).transition(.opacity) }

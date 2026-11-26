@@ -33,6 +33,14 @@ struct LocalStore {
 }
 
 /// Snapshots taken at each checkpoint, so the player can go back to any of them (and to the start).
+/// Which endings this player has reached. Kept apart from saves, so going back to a checkpoint
+/// never loses the record.
+struct EndingsStore {
+    let key = "afterlight.endings"
+    func all() -> [String] { UserDefaults.standard.stringArray(forKey: key) ?? [] }
+    func add(_ id: String) { var a = all(); if !a.contains(id) { a.append(id); UserDefaults.standard.set(a, forKey: key) } }
+}
+
 struct CheckpointStore {
     struct Entry: Codable, Identifiable {
         var id: String

@@ -38,6 +38,9 @@ struct UIState: Equatable {
     var speaker = ""
     var coopStatus: String? = nil
     var placing: String? = nil
+    var outside: OutsideWalk? = nil
+    var epilogue: [String]? = nil
+    var thought: String? = nil
 }
 
 @MainActor
@@ -269,6 +272,9 @@ final class GameModel: ObservableObject {
         u.flashOn = g.flashlightLit
         u.aim = input.up ? -1 : (input.climbDown ? 1 : 0)
         if g.speechT > 0 && !g.speechText.isEmpty { u.speech = g.speechText; u.speaker = Cast.name(g.speechWho) }
+        u.outside = g.outside
+        u.epilogue = g.epilogue
+        if g.outside != nil && g.thoughtT > 0 && !g.thoughtText.isEmpty { u.thought = g.thoughtText }
         if let id = g.activeJobID(for: "mara"), let j = g.job(id), j.status == .working {
             let s = Int(j.secondsLeft.rounded(.up))
             u.coopStatus = "Mara · \(j.title) · \(s / 60):\(String(format: "%02d", s % 60))"
@@ -342,6 +348,8 @@ final class GameModel: ObservableObject {
                 }
             }
         case .sleep: playSleep()
+        case .landingSave: snapshot(title: "The upper landing", text: "Before the choice. Come back here any time.", pinned: true)
+        case .ending(let id): EndingsStore().add(id)
         case .saveNow: if saveDue == nil { saveDue = clock + 1.5 }
         }
     }

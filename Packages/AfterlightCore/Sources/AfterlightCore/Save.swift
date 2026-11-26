@@ -196,6 +196,8 @@ extension Game {
         g.pinnedRecipe = s.pinnedRecipe
         if let m = s.mara { g.mara = m }
         g.time = s.playSeconds
+        // Out through the surface door: keep him outside.
+        if g.story.flags.contains("outside") { var o = OutsideWalk(); if g.story.ending != nil { o.walked = 41 }; g.outside = o }
         g.started = true
         g.candle = 1
         if g.story.flags.contains("broke") { g.ambient = 1 }

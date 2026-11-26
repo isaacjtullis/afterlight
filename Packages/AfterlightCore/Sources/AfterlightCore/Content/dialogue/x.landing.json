@@ -1,0 +1,81 @@
+{
+  "id": "x.landing",
+  "speaker": "Wren",
+  "entries": [
+    {
+      "node": "stop"
+    }
+  ],
+  "nodes": {
+    "stop": {
+      "lines": [
+        "You made it up. Look at it: a whole hall, and that door at the end.",
+        "My dad told me about a mountain. You could see it all day and still not reach it by dinner."
+      ],
+      "choices": [
+        {
+          "id": "far",
+          "label": "How far is that?",
+          "next": "far"
+        },
+        {
+          "id": "skip",
+          "label": "(Keep walking.)",
+          "effects": [
+            "end"
+          ]
+        }
+      ]
+    },
+    "far": {
+      "lines": [
+        "No idea. Down here we count turns and ladders. Three turns, two ladders: that’s far.",
+        "I want to see it. The mountain. Even once."
+      ],
+      "choices": [
+        {
+          "id": "me",
+          "label": "Me too.",
+          "effects": [
+            "do:landing.mountain",
+            "say:wren:Then maybe we’ll both go."
+          ]
+        },
+        {
+          "id": "roof",
+          "label": "I think I’d rather keep a roof.",
+          "effects": [
+            "do:landing.roof",
+            "say:wren:Fair. Roofs are good. I like roofs."
+          ]
+        },
+        {
+          "id": "ask",
+          "label": "Did you ever ask your dad how far?",
+          "next": "ask"
+        }
+      ]
+    },
+    "ask": {
+      "lines": [
+        "Never thought to. You think there’ll always be time to ask."
+      ],
+      "choices": [
+        {
+          "id": "me",
+          "label": "I want to see it too.",
+          "effects": [
+            "do:landing.mountain"
+          ]
+        },
+        {
+          "id": "roof",
+          "label": "I’d keep the roof.",
+          "effects": [
+            "do:landing.roof"
+          ]
+        }
+      ]
+    }
+  }
+}
