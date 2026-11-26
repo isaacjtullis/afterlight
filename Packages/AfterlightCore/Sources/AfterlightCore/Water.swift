@@ -67,6 +67,8 @@ extension Game {
             }
         }
         if waterQuestActive && available(.filterAssembly) > 0 && atHome { story.step("drum", "assembly") }
+        // Having walked there and back himself, Max knows the route well enough to be sent on it.
+        if story.flags.contains("foundStore") && atHome && !story.flags.contains("walkedStore") { story.flags.insert("walkedStore") }
     }
 
     func thirst(_ n: Double) { hydration = Swift.max(0, hydration - n) }

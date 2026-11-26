@@ -19,6 +19,10 @@ public struct JobStep: Codable, Equatable, Sendable {
     public var tendBeds = false
     public var haulFrom: String? = nil
     public var haul: ItemStack? = nil
+    /// Fetch jobs: the hauled item goes into Max's pack here (he's carrying it), not straight to storage.
+    public var pickUp: Bool? = nil
+    /// Fetch jobs: what Max unpacks into storage at the end of this step.
+    public var deliver: ItemStack? = nil
 }
 
 public struct JobPlan: Codable, Equatable, Identifiable, Sendable {
@@ -103,6 +107,7 @@ extension Game {
                                summary: "Max waters and harvests every 20 minutes for two hours, and replants if there are seeds.",
                                steps: steps, staminaBudget: budget, pauseIndex: nil, pauseReason: nil, mealsPacked: meals))
         }
+        if let p = fetchCanPlan(budget: budget, meals: meals) { out.append(p) }
         for pr in world.props where [.liftCar, .drillRig, .gantry].contains(pr.kind) && !pr.stock.isEmpty && story.flags.contains("seen.\(pr.id)") {
             let steps = pr.stock.map { s in
                 JobStep(label: "Haul \(s.id.name)", seconds: 600, stamina: s.id.bulky ? 9 : 5, endPos: V2(29.8, 30), haulFrom: pr.id, haul: s)
@@ -112,6 +117,24 @@ extension Game {
                                steps: steps, staminaBudget: budget, pauseIndex: nil, pauseReason: nil, mealsPacked: meals))
         }
         return out
+    }
+
+    /// Once Max has walked to Builders' Store B himself, he can be sent back for the sealed water can.
+    /// The same route either way: there, take the can (it's in his pack from then on), home, unpack.
+    func fetchCanPlan(budget: Int, meals: Int) -> JobPlan? {
+        guard story.flags.contains("firstCup"), story.flags.contains("walkedStore"),
+              let shelf = world.prop("store.shelf"), shelf.stock.contains(where: { $0.id == .waterCan }),
+              available(.waterCan) == 0 else { return nil }
+        let st = Landmarks.storeB
+        let steps = [
+            JobStep(label: "Walk to Builders’ Store B", seconds: 420, stamina: 10, endPos: V2(Double(st.x1) - 1.2, Double(st.floor))),
+            JobStep(label: "Take the sealed can off the shelf", seconds: 30, stamina: 1, endPos: V2(shelf.pos.x - 0.6, Double(st.floor)), haulFrom: shelf.id, haul: ItemStack(.waterCan), pickUp: true),
+            JobStep(label: "Carry it home", seconds: 480, stamina: 14, endPos: V2(29.8, 30)),
+            JobStep(label: "Unpack it into storage", seconds: 20, stamina: 0, endPos: V2(29.8, 30), deliver: ItemStack(.waterCan)),
+        ]
+        return JobPlan(id: UUID().uuidString, kind: .haul, title: "Fetch the sealed water can",
+                       summary: "Max walks the route he found to Store B, takes the can and carries it home (about 16 min). Call him back and he’s wherever he got to, can and all.",
+                       steps: steps, staminaBudget: budget, pauseIndex: nil, pauseReason: nil, mealsPacked: meals)
     }
 
     func digPlan(name: String, floorY: Double, startX: Int, dir: Int, budget: Int, meals: Int) -> JobPlan? {
@@ -193,6 +216,22 @@ extension Game {
                         if story.counters["seeds", default: 0] >= 2 { story.counters["seeds", default: 0] -= 2; world.props[bi].planted = at } else { world.props[bi].planted = nil }
                     }
                 }
+            }
+            if s.pickUp == true, let from = s.haulFrom, let item = s.haul, let pi = world.propIndex(from) {
+                // He carries it: the can leaves the shelf and is in his pack from here until he unpacks it.
+                if let si = world.props[pi].stock.firstIndex(where: { $0.id == item.id }), inv.room(for: item.id) > 0 {
+                    world.props[pi].stock[si].count -= 1
+                    if world.props[pi].stock[si].count <= 0 { world.props[pi].stock.remove(at: si) }
+                    inv.add(item.id, 1)
+                    hauled.append("picked up the \(item.id.name.lowercased())")
+                } else if inv.room(for: item.id) == 0 {
+                    lines.append("His pack was full, so the \(item.id.name.lowercased()) stayed on the shelf.")
+                }
+                continue
+            }
+            if let d = s.deliver {
+                if inv.count(d.id) > 0 { inv.remove(d.id, 1); storage.add(d.id, 1); hauled.append("\(d.id.name) home to storage") }
+                continue
             }
             if let from = s.haulFrom, let item = s.haul, let pi = world.propIndex(from) {
                 if let si = world.props[pi].stock.firstIndex(where: { $0.id == item.id }) {
