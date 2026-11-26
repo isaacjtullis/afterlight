@@ -43,6 +43,7 @@ public enum GameEvent: Equatable, Sendable {
     case climbStep
     case hammerHit
     case panel(String)
+    case checkpoint(Checkpoint)
     case saveNow
 }
 
@@ -190,6 +191,7 @@ public final class Game {
         for t in due { t.fn(self) }
         if thoughtT > 0 { thoughtT -= dt }
         if hintT > 0 { hintT -= dt }
+        if !story.checkpoints.isEmpty { for c in story.checkpoints { emit(.checkpoint(c)) }; story.checkpoints.removeAll() }
         if speechT > 0 { speechT -= dt }
         jobTickT += dt
         if jobTickT >= 0.5 { jobTickT = 0; if !story.coop.jobs.isEmpty { advanceSharedJobs(to: clock()) }; quartersTick(now: clock()) }
@@ -361,7 +363,7 @@ public final class Game {
     public func canCraft(_ r: Recipe) -> Bool {
         if case .tool(let t) = r.output, inv.has(t) { return false }
         if case .upgrade(let u) = r.output, !upgradeOpen(u) { return false }
-        return inv.wood >= r.wood && r.inputs.allSatisfy { available($0.id) >= $0.count }
+        return woodAvailable >= r.wood && r.inputs.allSatisfy { available($0.id) >= $0.count }
     }
 
     public var knownRecipes: [Recipe] { Recipes.all.filter { story.flags.contains($0.unlockFlag) } }
@@ -369,7 +371,9 @@ public final class Game {
     public func craft(_ id: String) {
         guard let r = Recipes.all.first(where: { $0.id == id }), canCraft(r), buildBlocker(r) == nil else { return }
         for i in r.inputs { consume(i.id, i.count) }
-        inv.wood -= r.wood
+        let fromBag = Swift.min(inv.wood, r.wood)
+        inv.wood -= fromBag
+        storage.wood -= r.wood - fromBag
         switch r.output {
         case .tool(let t):
             inv.belt.append(t)

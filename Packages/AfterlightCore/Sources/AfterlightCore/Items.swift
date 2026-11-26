@@ -198,6 +198,11 @@ public struct Storage: Codable, Equatable, Sendable {
     public var items: [String: Int] = [:]
     public init() {}
     public func count(_ id: ItemID) -> Int { items[id.rawValue] ?? 0 }
+    /// Wood kept in storage (no cap).
+    public var wood: Int {
+        get { items["wood"] ?? 0 }
+        set { items["wood"] = newValue > 0 ? newValue : nil }
+    }
     public mutating func add(_ id: ItemID, _ n: Int) { items[id.rawValue, default: 0] += n }
     @discardableResult public mutating func remove(_ id: ItemID, _ n: Int) -> Bool {
         guard count(id) >= n else { return false }

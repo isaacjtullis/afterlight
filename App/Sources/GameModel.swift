@@ -55,6 +55,8 @@ final class GameModel: ObservableObject {
     @Published var conversation: Conversation? = nil
     @Published var lineIndex = 0
     @Published var banner: String? = nil
+    /// Checkpoint cards waiting to slide in, one at a time.
+    @Published var cards: [Checkpoint] = []
     @Published var report: JobReport? = nil
     @Published var panel: Panel? = nil
     @Published var confirming: PanelRow? = nil
@@ -286,6 +288,9 @@ final class GameModel: ObservableObject {
         case .panel(let id):
             confirming = nil
             if let p = game.panel(id) { panelPoint = scene?.viewPoint(p.anchor) ?? .zero; panel = p }
+        case .checkpoint(let c):
+            // A new quest right after finishing one reads as one moment: keep both, in order.
+            if cards.count < 4 { withAnimation(.spring(response: 0.5, dampingFraction: 0.75)) { cards.append(c) } }
         case .saveNow: if saveDue == nil { saveDue = clock + 1.5 }
         }
     }

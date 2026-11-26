@@ -714,6 +714,7 @@ final class GameScene: SKScene {
         if g.story.flags.contains("shelterLit") { light(23.6, 26.6, 10, 0.97, rays: g.world.castLight(from: V2(23.6, 26.6), radius: 10, a0: 0, a1: 2 * .pi, rays: 56)) }
         if g.world.prop("signal")?.flags.contains("lit") == true { light(Landmarks.signalLampX, 0.2, 9, 0.95, rays: g.world.castLight(from: V2(Landmarks.signalLampX, 0.2), radius: 9, a0: 0, a1: 2 * .pi, rays: 48)) }
         for camp in g.world.props(of: .camp) where abs(camp.pos.x - g.max.pos.x) < 20 { light(camp.pos.x, camp.pos.y - 1.0, 2.6, 0.7, rays: nil) }
+        if g.story.flags.contains("power") { light(22.8, 6.6, 8, 0.95, rays: g.world.castLight(from: V2(22.8, 6.6), radius: 8, a0: 0, a1: 2 * .pi, rays: 48)) }
         if g.story.flags.contains("power") { light(25.5, 27.6, 8, 0.95, rays: g.world.castLight(from: V2(25.5, 27.6), radius: 8, a0: 0, a1: 2 * .pi, rays: 48)) }
         if abs(g.max.pos.x - 80) < 30 && g.max.pos.y < 14 { light(80.5, 7, 7, 0.95, rays: g.world.castLight(from: V2(80.5, 7), radius: 7, a0: 0, a1: 2 * .pi, rays: 48)) }
         if g.odi.walking { light(g.odi.pos.x + Double(g.odi.face) * 0.3, g.odi.pos.y - 0.5, 3.6, 0.9, rays: nil) }

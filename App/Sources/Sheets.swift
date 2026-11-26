@@ -10,6 +10,7 @@ struct SheetHost: View {
         switch sheet {
         case .pack: BagSheet()
         case .journal: ScrollJournal()
+        case .workbench: BuildSheet()
         default: card
         }
     }
@@ -26,7 +27,7 @@ struct SheetHost: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 12) {
                         switch sheet {
-                        case .workbench: WorkbenchView()
+                        case .workbench: EmptyView()
                         case .storage: StorageView()
                         case .pack, .journal: EmptyView()
                         case .mission: MissionView()
@@ -231,7 +232,41 @@ struct ItemArt: View {
                 fill(Path(R(0.65, 0.33, 0.12, 0.34)), steel)
                 var beam = Path(); beam.move(to: CGPoint(x: 0.77 * s, y: 0.38 * s)); beam.addLine(to: CGPoint(x: s, y: 0.2 * s)); beam.addLine(to: CGPoint(x: s, y: 0.8 * s)); beam.addLine(to: CGPoint(x: 0.77 * s, y: 0.62 * s))
                 fill(beam, Color(red: 1, green: 0.9, blue: 0.6).opacity(0.6))
+            case "breaker":
+                fill(Path(roundedRect: R(0.44, 0.3, 0.1, 0.65), cornerRadius: 3), wood)
+                fill(Path(roundedRect: R(0.18, 0.12, 0.62, 0.22), cornerRadius: 4), Color(red: 0.55, green: 0.3, blue: 0.22))
+                var wedge = Path(); wedge.move(to: CGPoint(x: 0.8 * s, y: 0.12 * s)); wedge.addLine(to: CGPoint(x: 0.96 * s, y: 0.23 * s)); wedge.addLine(to: CGPoint(x: 0.8 * s, y: 0.34 * s)); fill(wedge, steel)
+                fill(Path(R(0.18, 0.12, 0.62, 0.05)), Color.white.opacity(0.25))
+            case "woodLadder":
+                fill(Path(R(0.25, 0.05, 0.09, 0.9)), wood); fill(Path(R(0.66, 0.05, 0.09, 0.9)), wood)
+                for i in 0..<5 { fill(Path(R(0.25, 0.14 + CGFloat(i) * 0.17, 0.5, 0.07)), Color(red: 0.75, green: 0.53, blue: 0.33)) }
+            case "torch":
+                fill(Path(roundedRect: R(0.44, 0.4, 0.12, 0.55), cornerRadius: 3), wood)
+                fill(Path(ellipseIn: R(0.3, 0.1, 0.4, 0.42)), Color(red: 1, green: 0.55, blue: 0.2))
+                fill(Path(ellipseIn: R(0.38, 0.2, 0.24, 0.28)), Color(red: 1, green: 0.88, blue: 0.5))
+            case "plot":
+                fill(Path(roundedRect: R(0.08, 0.5, 0.84, 0.36), cornerRadius: 4), wood)
+                fill(Path(R(0.14, 0.52, 0.72, 0.14)), Color(red: 0.3, green: 0.2, blue: 0.14))
+                for i in 0..<3 {
+                    let x = 0.25 + CGFloat(i) * 0.25
+                    fill(Path(R(x - 0.015, 0.32, 0.03, 0.22)), Color(red: 0.4, green: 0.7, blue: 0.35))
+                    fill(Path(ellipseIn: R(x - 0.1, 0.24, 0.1, 0.1)), Color(red: 0.5, green: 0.85, blue: 0.4))
+                    fill(Path(ellipseIn: R(x, 0.28, 0.1, 0.1)), Color(red: 0.45, green: 0.78, blue: 0.38))
+                }
+            case "barrel":
+                fill(Path(roundedRect: R(0.22, 0.12, 0.56, 0.8), cornerRadius: 12), wood)
+                for y in [0.25, 0.75] as [CGFloat] { fill(Path(R(0.2, y, 0.6, 0.06)), steel) }
+                fill(Path(ellipseIn: R(0.26, 0.1, 0.48, 0.12)), Color(red: 0.55, green: 0.8, blue: 1))
+            case "table":
+                fill(Path(roundedRect: R(0.08, 0.38, 0.62, 0.12), cornerRadius: 3), wood)
+                fill(Path(R(0.14, 0.5, 0.07, 0.4)), dark); fill(Path(R(0.57, 0.5, 0.07, 0.4)), dark)
+                fill(Path(roundedRect: R(0.72, 0.5, 0.2, 0.08), cornerRadius: 2), wood)
+                fill(Path(R(0.74, 0.25, 0.05, 0.65)), dark); fill(Path(R(0.86, 0.58, 0.05, 0.32)), dark)
+                fill(Path(ellipseIn: R(0.3, 0.27, 0.18, 0.11)), Color(red: 0.9, green: 0.85, blue: 0.75))
             default:
+                if case .tool(let t) = recipe.output {
+                    ctx.draw(Text(Image(systemName: t == .shortPick ? "hammer.fill" : "wrench.and.screwdriver.fill")).font(.system(size: s * 0.55)).foregroundColor(steel), at: CGPoint(x: size.width / 2, y: size.height / 2))
+                }
                 if case .item(let it, _) = recipe.output {
                     ctx.draw(Text(Image(systemName: it.symbol)).font(.system(size: s * 0.6)).foregroundColor(it.tint), at: CGPoint(x: size.width / 2, y: size.height / 2))
                 }
@@ -319,6 +354,24 @@ struct StorageView: View {
         let stored = ItemID.allCases.filter { g.storage.count($0) > 0 }
         Text("Tap an item to move it. Bag holds \(Inventory.capacity) pockets; storage holds everything else.")
             .font(.avenir(13)).foregroundStyle(Color.cream.opacity(0.7))
+        // The wood pile: wood lashed to the bag on one side, the stack in storage on the other.
+        HStack(spacing: 10) {
+            WoodIcon().frame(width: 30, height: 22)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Wood").font(.avenir(14, "DemiBold")).foregroundStyle(Color.cream)
+                Text("Bag \(g.inv.wood)/\(Inventory.woodCap) · Stored \(g.storage.wood)").font(.avenir(12)).foregroundStyle(Color.cream.opacity(0.65)).monospacedDigit()
+            }
+            Spacer(minLength: 4)
+            Button { g.storeWood(); model.haptics.tap(); tick += 1 } label: { Label("Store", systemImage: "arrow.right").font(.avenir(13, "DemiBold")) }
+                .buttonStyle(.plain).foregroundStyle(Color.amber).padding(.horizontal, 10).frame(height: 34)
+                .background(Capsule().fill(Color.black.opacity(0.3))).disabled(g.inv.wood == 0).opacity(g.inv.wood == 0 ? 0.4 : 1)
+            Button { g.takeWood(); model.haptics.tap(); tick += 1 } label: { Label("Take", systemImage: "arrow.left").font(.avenir(13, "DemiBold")) }
+                .buttonStyle(.plain).foregroundStyle(Color.amber).padding(.horizontal, 10).frame(height: 34)
+                .background(Capsule().fill(Color.black.opacity(0.3))).disabled(g.storage.wood == 0 || g.inv.wood >= Inventory.woodCap).opacity(g.storage.wood == 0 ? 0.4 : 1)
+        }
+        .padding(10)
+        .background(RoundedRectangle(cornerRadius: 14).fill(Color(red: 0.2, green: 0.13, blue: 0.09)))
+        .id(tick)
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 8) {
                 Text("BAG · \(Inventory.capacity - g.inv.freeSlots)/\(Inventory.capacity)").font(.avenir(11, "DemiBold")).tracking(1.4).foregroundStyle(Color.amber)
@@ -770,29 +823,230 @@ struct ConversationCard: View {
     @EnvironmentObject var model: GameModel
     let convo: Conversation
     var body: some View {
-        VStack {
-            Spacer()
-            VStack(alignment: .leading, spacing: 12) {
-                Text(convo.speaker).font(.avenir(14, "DemiBold")).foregroundStyle(Color.amber)
-                Text(convo.lines[min(model.lineIndex, convo.lines.count - 1)]).font(.avenir(18)).foregroundStyle(Color.cream)
-                    .fixedSize(horizontal: false, vertical: true)
-                if model.lineIndex >= convo.lines.count - 1 {
-                    ForEach(convo.choices) { c in
-                        Button { model.choose(c.id) } label: {
-                            Text(c.label).font(.avenir(16, "DemiBold")).foregroundStyle(Color.cream)
-                                .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).frame(minHeight: 46)
-                                .background(RoundedRectangle(cornerRadius: 14).fill(Color.white.opacity(0.08)))
+        let last = model.lineIndex >= convo.lines.count - 1
+        TalkStage(speaker: convo.speaker,
+                  line: convo.lines[min(model.lineIndex, convo.lines.count - 1)],
+                  progress: (model.lineIndex + 1, convo.lines.count),
+                  choices: last ? convo.choices.map { TalkStage.Choice(id: $0.id, label: $0.label, detail: nil, enabled: true, primary: false) } : [],
+                  ledger: [],
+                  onChoose: { model.choose($0) },
+                  onAdvance: last ? nil : { model.advanceConversation() },
+                  onClose: nil)
+    }
+}
+
+/// A person's panel (agreements, trades, asks) shown as a conversation.
+struct TalkPanel: View {
+    @EnvironmentObject var model: GameModel
+    let panel: Panel
+    var body: some View {
+        let actions = panel.rows.filter { $0.style == .action || $0.style == .primary }
+        let ledger = panel.rows.filter { $0.style == .info || $0.style == .done }
+        ZStack {
+            TalkStage(speaker: panel.speaker ?? panel.title,
+                      line: panel.lines.joined(separator: " "),
+                      progress: nil,
+                      choices: actions.map { TalkStage.Choice(id: $0.id, label: $0.label, detail: $0.detail, enabled: $0.enabled, primary: $0.style == .primary) } + [TalkStage.Choice(id: "__bye", label: "That’s all for now.", detail: nil, enabled: true, primary: false)],
+                      ledger: ledger,
+                      onChoose: { id in
+                          if id == "__bye" { model.closePanel(); return }
+                          if let r = panel.rows.first(where: { $0.id == id }) { model.tapRow(r) }
+                      },
+                      onAdvance: nil,
+                      onClose: { model.closePanel() })
+            if let c = model.confirming {
+                Color.black.opacity(0.5).ignoresSafeArea()
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("Are you sure?").font(.avenir(19, "Bold")).foregroundStyle(Color.cream)
+                    Text(c.confirm ?? "").font(.avenir(15)).foregroundStyle(Color.cream.opacity(0.85)).fixedSize(horizontal: false, vertical: true)
+                    HStack {
+                        Button("Back") { model.confirming = nil }.buttonStyle(PillStyle(prominent: false))
+                        Spacer()
+                        Button("Do it") { model.tapRow(c) }.buttonStyle(PillStyle(prominent: true))
+                    }
+                }
+                .padding(20)
+                .background(RoundedRectangle(cornerRadius: 22).fill(Color(red: 0.2, green: 0.08, blue: 0.07)))
+                .overlay(RoundedRectangle(cornerRadius: 22).stroke(Color.red.opacity(0.4)))
+                .padding(24)
+            }
+        }
+    }
+}
+
+/// Conversation mode: the world dims, the speaker's portrait comes up, their words type out,
+/// and Max's replies are numbered choices underneath.
+struct TalkStage: View {
+    struct Choice: Identifiable { var id: String; var label: String; var detail: String?; var enabled: Bool; var primary: Bool }
+    let speaker: String
+    let line: String
+    let progress: (Int, Int)?
+    let choices: [Choice]
+    let ledger: [PanelRow]
+    let onChoose: (String) -> Void
+    let onAdvance: (() -> Void)?
+    let onClose: (() -> Void)?
+    @State private var shown = 0
+    @State private var showLedger = false
+    @State private var appeared = false
+
+    var body: some View {
+        let typing = shown < line.count
+        ZStack(alignment: .bottom) {
+            LinearGradient(colors: [Color.black.opacity(0.2), Color.black.opacity(0.85)], startPoint: .top, endPoint: .bottom)
+                .ignoresSafeArea()
+                .onTapGesture { tapLine() }
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .bottom, spacing: 12) {
+                    Portrait(name: speaker).frame(width: 96, height: 112)
+                        .offset(y: appeared ? 0 : 30).opacity(appeared ? 1 : 0)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(speaker.uppercased()).font(.avenir(13, "Bold")).tracking(2.5).foregroundStyle(Color.black)
+                            .padding(.horizontal, 12).frame(height: 28).background(Capsule().fill(Color.amber))
+                        if let p = progress, p.1 > 1 {
+                            Text("\(p.0) / \(p.1)").font(.avenir(11, "DemiBold")).foregroundStyle(Color.cream.opacity(0.5)).padding(.leading, 6)
                         }
                     }
-                } else {
-                    Text("Tap to continue").font(.avenir(13)).foregroundStyle(Color.cream.opacity(0.5))
+                    .padding(.bottom, 10)
+                    Spacer()
+                    if let onClose {
+                        Button { onClose() } label: { Image(systemName: "xmark").font(.system(size: 13, weight: .bold)).foregroundStyle(Color.cream).frame(width: 38, height: 38).background(Circle().fill(Color.white.opacity(0.1))) }
+                            .padding(.bottom, 10)
+                    }
+                }
+                .padding(.horizontal, 6)
+                // the speech bubble
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(String(line.prefix(shown))).font(.avenir(19, "Medium")).foregroundStyle(Ink.main)
+                        .frame(maxWidth: .infinity, minHeight: 54, alignment: .topLeading)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .overlay(alignment: .topLeading) { Text(line).font(.avenir(19, "Medium")).opacity(0) }   // holds the full height while typing
+                    if onAdvance != nil && !typing {
+                        HStack { Spacer(); Image(systemName: "arrowtriangle.down.fill").font(.system(size: 11)).foregroundStyle(Ink.accent) }
+                    }
+                }
+                .padding(16)
+                .background(RoundedRectangle(cornerRadius: 22).fill(Color(red: 0.98, green: 0.93, blue: 0.83)))
+                .overlay(RoundedRectangle(cornerRadius: 22).stroke(Color(red: 0.78, green: 0.6, blue: 0.4), lineWidth: 3))
+                .contentShape(Rectangle())
+                .onTapGesture { tapLine() }
+                // Max's replies
+                if !typing && !choices.isEmpty {
+                    VStack(spacing: 8) {
+                        ForEach(Array(choices.enumerated()), id: \.element.id) { i, c in
+                            Button { onChoose(c.id) } label: {
+                                HStack(alignment: .top, spacing: 10) {
+                                    Text("\(i + 1)").font(.avenir(13, "Bold")).foregroundStyle(Color.black)
+                                        .frame(width: 24, height: 24).background(Circle().fill(c.primary ? Color.amber : Color.cream.opacity(0.85)))
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(c.label).font(.avenir(16, "DemiBold")).foregroundStyle(Color.cream).multilineTextAlignment(.leading)
+                                        if let d = c.detail { Text(d).font(.avenir(12)).foregroundStyle(Color.cream.opacity(0.65)).multilineTextAlignment(.leading) }
+                                    }
+                                    Spacer(minLength: 0)
+                                    Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Color.amber.opacity(0.7)).padding(.top, 5)
+                                }
+                                .padding(.horizontal, 12).padding(.vertical, 10)
+                                .background(RoundedRectangle(cornerRadius: 16).fill(c.primary ? Color.amber.opacity(0.2) : Color.white.opacity(0.07)))
+                                .overlay(RoundedRectangle(cornerRadius: 16).stroke(c.primary ? Color.amber.opacity(0.6) : Color.white.opacity(0.12)))
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(!c.enabled).opacity(c.enabled ? 1 : 0.4)
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                        }
+                    }
+                    .padding(.top, 12)
+                }
+                if !ledger.isEmpty && !typing {
+                    Button { withAnimation(.spring(duration: 0.3)) { showLedger.toggle() } } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "doc.plaintext")
+                            Text(showLedger ? "Hide what you’ve agreed" : "What you’ve agreed (\(ledger.count))")
+                            Image(systemName: showLedger ? "chevron.up" : "chevron.down").font(.system(size: 10, weight: .bold))
+                        }
+                        .font(.avenir(13, "DemiBold")).foregroundStyle(Color.amber)
+                        .frame(maxWidth: .infinity).frame(height: 36)
+                    }
+                    .buttonStyle(.plain)
+                    if showLedger {
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 6) {
+                                ForEach(ledger) { r in
+                                    HStack(alignment: .top, spacing: 8) {
+                                        Image(systemName: r.style == .done ? "checkmark.circle.fill" : "circle").font(.system(size: 12))
+                                            .foregroundStyle(r.style == .done ? Color.green.opacity(0.8) : Color.cream.opacity(0.5)).padding(.top, 2)
+                                        Text(r.label).font(.avenir(13)).foregroundStyle(Color.cream.opacity(r.style == .done ? 0.5 : 0.85))
+                                            .strikethrough(r.style == .done, color: Color.cream.opacity(0.4))
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    }
+                                }
+                            }
+                            .padding(12)
+                        }
+                        .frame(maxHeight: 170)
+                        .background(RoundedRectangle(cornerRadius: 14).fill(Color.black.opacity(0.4)))
+                    }
                 }
             }
-            .padding(18)
-            .background(RoundedRectangle(cornerRadius: 24).fill(Color(red: 0.1, green: 0.06, blue: 0.08).opacity(0.95)))
-            .padding(12)
-            .onTapGesture { model.advanceConversation() }
+            .padding(.horizontal, 14).padding(.bottom, 18)
+            .animation(.spring(duration: 0.3), value: typing)
         }
+        .onAppear { withAnimation(.spring(response: 0.45, dampingFraction: 0.7)) { appeared = true } }
+        .task(id: line) {
+            shown = 0
+            for i in 0...line.count {
+                shown = i
+                try? await Task.sleep(for: .milliseconds(18))
+                if Task.isCancelled { break }
+            }
+        }
+    }
+
+    private func tapLine() {
+        if shown < line.count { shown = line.count } else { onAdvance?() }
+    }
+}
+
+/// A painted bust of whoever's talking. Mara: grey-streaked hair, green work scarf. Others get their own colours.
+struct Portrait: View {
+    let name: String
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1 / 20)) { tl in
+            let t = tl.date.timeIntervalSinceReferenceDate
+            Canvas { ctx, size in
+                let w = size.width, h = size.height
+                let pal: (hair: Color, scarf: Color, coat: Color, skin: Color) = {
+                    switch name.lowercased() {
+                    case "mara": return (Color(red: 0.42, green: 0.38, blue: 0.4), Color(red: 0.32, green: 0.55, blue: 0.42), Color(red: 0.36, green: 0.3, blue: 0.27), Color(red: 0.86, green: 0.68, blue: 0.55))
+                    case "odi": return (Color(red: 0.15, green: 0.12, blue: 0.12), Color(red: 0.75, green: 0.5, blue: 0.2), Color(red: 0.25, green: 0.3, blue: 0.38), Color(red: 0.55, green: 0.38, blue: 0.28))
+                    default: return (Color(red: 0.29, green: 0.23, blue: 0.36), Color(red: 0.78, green: 0.27, blue: 0.18), Color(red: 0.93, green: 0.86, blue: 0.74), Color(red: 0.95, green: 0.82, blue: 0.7))
+                    }
+                }()
+                let breathe = CGFloat(sin(t * 1.6)) * 1.2
+                // glow behind
+                ctx.fill(Path(ellipseIn: CGRect(x: -w * 0.1, y: h * 0.05, width: w * 1.2, height: h)), with: .radialGradient(Gradient(colors: [Color.amber.opacity(0.35), .clear]), center: CGPoint(x: w / 2, y: h * 0.5), startRadius: 2, endRadius: w * 0.6))
+                // shoulders
+                ctx.fill(Path(roundedRect: CGRect(x: w * 0.08, y: h * 0.68 - breathe, width: w * 0.84, height: h * 0.4), cornerRadius: w * 0.3), with: .color(pal.coat))
+                ctx.fill(Path(roundedRect: CGRect(x: w * 0.28, y: h * 0.62 - breathe, width: w * 0.44, height: h * 0.14), cornerRadius: w * 0.07), with: .color(pal.scarf))
+                // head
+                let head = CGRect(x: w * 0.27, y: h * 0.2 - breathe, width: w * 0.46, height: h * 0.46)
+                ctx.fill(Path(ellipseIn: head.insetBy(dx: -w * 0.04, dy: -h * 0.02).offsetBy(dx: 0, dy: h * 0.03)), with: .color(pal.hair))
+                ctx.fill(Path(ellipseIn: head), with: .color(pal.skin))
+                ctx.fill(Path(ellipseIn: CGRect(x: head.minX - w * 0.02, y: head.minY - h * 0.03, width: head.width + w * 0.04, height: head.height * 0.42)), with: .color(pal.hair))
+                // eyes (blinking)
+                let blink = (t.truncatingRemainder(dividingBy: 4.2)) < 0.12
+                for dx in [-0.09, 0.09] as [CGFloat] {
+                    let e = CGRect(x: head.midX + w * dx - 3, y: head.midY - 2, width: 6, height: blink ? 1.5 : 6)
+                    ctx.fill(Path(ellipseIn: e), with: .color(Color(red: 0.15, green: 0.1, blue: 0.1)))
+                }
+                ctx.fill(Path(ellipseIn: CGRect(x: head.midX - w * 0.17, y: head.midY + 6, width: 7, height: 4)), with: .color(Color(red: 0.9, green: 0.5, blue: 0.45).opacity(0.5)))
+                ctx.fill(Path(ellipseIn: CGRect(x: head.midX + w * 0.17 - 7, y: head.midY + 6, width: 7, height: 4)), with: .color(Color(red: 0.9, green: 0.5, blue: 0.45).opacity(0.5)))
+                var mouth = Path(); mouth.move(to: CGPoint(x: head.midX - 5, y: head.midY + 12)); mouth.addQuadCurve(to: CGPoint(x: head.midX + 5, y: head.midY + 12), control: CGPoint(x: head.midX, y: head.midY + 15))
+                ctx.stroke(mouth, with: .color(Color(red: 0.4, green: 0.2, blue: 0.15)), lineWidth: 1.6)
+            }
+        }
+        .background(RoundedRectangle(cornerRadius: 20).fill(Color(red: 0.16, green: 0.1, blue: 0.09)))
+        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.amber.opacity(0.6), lineWidth: 2))
+        .clipShape(RoundedRectangle(cornerRadius: 20))
     }
 }
 
@@ -1070,4 +1324,217 @@ struct LootView: View {
         .id(tick)
     }
     private func flush() { for e in model.game.drainEvents() { model.handleExternal(e) } }
+}
+
+
+// MARK: build
+
+/// The build screen: a grid of blueprints by category, the selected one large on a lit pedestal,
+/// its parts in slots, and one big BUILD button.
+struct BuildSheet: View {
+    @EnvironmentObject var model: GameModel
+    @State private var tab = BuildTab.all
+    @State private var selected: String? = nil
+    @State private var pop = false
+    @State private var flash = 0.0
+    @State private var tick = 0
+
+    enum BuildTab: String, CaseIterable { case all = "All", tools = "Tools", gear = "Gear", field = "Field", home = "Home"
+        var icon: String {
+            switch self { case .all: return "square.grid.2x2.fill"; case .tools: return "wrench.and.screwdriver.fill"; case .gear: return "shippingbox.fill"; case .field: return "tent.fill"; case .home: return "house.fill" }
+        }
+    }
+
+    static func tab(of r: Recipe) -> BuildTab {
+        switch r.output {
+        case .tool: return .tools
+        case .upgrade: return .home
+        case .item: return r.bench ? .gear : .field
+        }
+    }
+
+    var body: some View {
+        let g = model.game
+        let all = g.knownRecipes
+        let shown = all.filter { tab == .all || Self.tab(of: $0) == tab }
+            .sorted { rank($0, g) < rank($1, g) }
+        let sel = shown.first { $0.id == selected } ?? shown.first
+        ZStack(alignment: .bottom) {
+            Color.black.opacity(0.5).ignoresSafeArea().onTapGesture { model.sheet = nil }
+            VStack(spacing: 12) {
+                header(g)
+                tabs(all)
+                if let r = sel { detail(r, g) } else {
+                    Text("Nothing to build yet. Ideas come once Max has seen the problem they solve.")
+                        .font(.avenir(15)).foregroundStyle(Color.cream.opacity(0.8)).padding(.vertical, 30)
+                }
+                ScrollView {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 4), spacing: 10) {
+                        ForEach(shown, id: \.id) { r in tile(r, g, on: r.id == sel?.id) }
+                    }
+                    .padding(.horizontal, 2).padding(.bottom, 6)
+                }
+                .frame(maxHeight: 220)
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 28)
+                    .fill(LinearGradient(colors: [Color(red: 0.16, green: 0.11, blue: 0.1), Color(red: 0.08, green: 0.05, blue: 0.06)], startPoint: .top, endPoint: .bottom))
+            )
+            .overlay(RoundedRectangle(cornerRadius: 28).stroke(Color.amber.opacity(0.22)))
+            .padding(.horizontal, 10).padding(.bottom, 8)
+            .id(tick)
+        }
+        .transition(.move(edge: .bottom))
+    }
+
+    private func rank(_ r: Recipe, _ g: Game) -> Int {
+        let b = g.buildBlocker(r)
+        if b == nil { return 0 }
+        if b == "Already made" || b == "Already built" { return 3 }
+        if b == "Needs a workbench" { return 1 }
+        return 2
+    }
+
+    private func header(_ g: Game) -> some View {
+        HStack(spacing: 10) {
+            ZStack {
+                Circle().fill(Color.amber.opacity(0.18)).frame(width: 40, height: 40)
+                Image(systemName: "hammer.fill").foregroundStyle(Color.amber)
+            }
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Build").font(.avenir(22, "Bold")).foregroundStyle(Color.cream)
+                HStack(spacing: 5) {
+                    Circle().fill(g.atBench ? Color.green : Color.amber).frame(width: 7, height: 7)
+                    Text(g.atBench ? "At a workbench" : "In the field · bench builds locked").font(.avenir(12, "DemiBold")).foregroundStyle(Color.cream.opacity(0.7))
+                }
+            }
+            Spacer()
+            HStack(spacing: 5) {
+                WoodIcon().frame(width: 20, height: 15)
+                Text("\(g.woodAvailable)").font(.avenir(15, "Bold")).monospacedDigit().foregroundStyle(Color.cream)
+            }
+            .padding(.horizontal, 10).frame(height: 34)
+            .background(Capsule().fill(Color.black.opacity(0.35)))
+            Button { model.sheet = nil } label: { Image(systemName: "xmark").font(.system(size: 14, weight: .bold)).foregroundStyle(Color.cream).frame(width: 40, height: 40).background(Circle().fill(Color.white.opacity(0.08))) }
+        }
+    }
+
+    private func tabs(_ all: [Recipe]) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(BuildTab.allCases, id: \.self) { t in
+                    let n = t == .all ? all.count : all.filter { Self.tab(of: $0) == t }.count
+                    if n > 0 || t == .all {
+                        Button { withAnimation(.spring(duration: 0.25)) { tab = t; selected = nil }; model.haptics.tap() } label: {
+                            HStack(spacing: 5) {
+                                Image(systemName: t.icon).font(.system(size: 11, weight: .semibold))
+                                Text(t.rawValue).font(.avenir(13, "DemiBold"))
+                            }
+                            .foregroundStyle(tab == t ? Color.black : Color.cream.opacity(0.8))
+                            .padding(.horizontal, 12).frame(height: 32)
+                            .background(Capsule().fill(tab == t ? Color.amber : Color.white.opacity(0.07)))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+    }
+
+    private func detail(_ r: Recipe, _ g: Game) -> some View {
+        let blocker = g.buildBlocker(r)
+        let ok = blocker == nil
+        return HStack(alignment: .top, spacing: 14) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 20).fill(RadialGradient(colors: [Color.amber.opacity(ok ? 0.45 : 0.15), Color.black.opacity(0.4)], center: .center, startRadius: 4, endRadius: 70))
+                Ellipse().fill(Color.black.opacity(0.35)).frame(width: 80, height: 14).offset(y: 44)
+                ItemArt(recipe: r).padding(20)
+                    .scaleEffect(pop ? 1.25 : 1)
+                    .shadow(color: Color.amber.opacity(ok ? 0.6 : 0), radius: 10)
+                    .saturation(ok ? 1 : 0.35)
+                RoundedRectangle(cornerRadius: 20).fill(Color.white.opacity(flash)).allowsHitTesting(false)
+            }
+            .frame(width: 124, height: 124)
+            .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.amber.opacity(ok ? 0.6 : 0.2), lineWidth: ok ? 1.5 : 1))
+            VStack(alignment: .leading, spacing: 7) {
+                HStack(spacing: 6) {
+                    Text(r.name).font(.avenir(18, "Bold")).foregroundStyle(Color.cream).lineLimit(1).minimumScaleFactor(0.75)
+                    if !r.bench { tag("FIELD", Color.amber) }
+                }
+                Text(r.note).font(.avenir(12)).foregroundStyle(Color.cream.opacity(0.72)).lineLimit(3).fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 6) {
+                    if r.wood > 0 { slot(AnyView(WoodIcon()), have: g.woodAvailable, need: r.wood) }
+                    ForEach(r.inputs, id: \.self) { s in
+                        slot(AnyView(Image(systemName: s.id.symbol).resizable().scaledToFit().foregroundStyle(s.id.tint)), have: g.available(s.id), need: s.count)
+                    }
+                }
+                Button { build(r, g) } label: {
+                    Text(ok ? "BUILD" : (blocker ?? "")).font(.avenir(ok ? 16 : 13, "Bold")).tracking(ok ? 2 : 0)
+                        .foregroundStyle(ok ? Color.black : Color(red: 0.95, green: 0.6, blue: 0.5))
+                        .frame(maxWidth: .infinity).frame(height: 42)
+                        .background(Capsule().fill(ok ? AnyShapeStyle(LinearGradient(colors: [Color(red: 1, green: 0.86, blue: 0.6), Color.amber], startPoint: .top, endPoint: .bottom)) : AnyShapeStyle(Color.white.opacity(0.06))))
+                        .shadow(color: Color.amber.opacity(ok ? 0.5 : 0), radius: 8)
+                }
+                .buttonStyle(.plain).disabled(!ok)
+                .accessibilityIdentifier("build.\(r.id)")
+            }
+        }
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: 22).fill(Color.white.opacity(0.04)))
+    }
+
+    private func build(_ r: Recipe, _ g: Game) {
+        g.craft(r.id)
+        for e in g.drainEvents() { model.handleExternal(e) }
+        model.haptics.bite()
+        withAnimation(.spring(response: 0.18, dampingFraction: 0.4)) { pop = true; flash = 0.5 }
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(0.2))
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.6)) { pop = false; flash = 0 }
+            tick += 1
+        }
+    }
+
+    private func tile(_ r: Recipe, _ g: Game, on: Bool) -> some View {
+        let b = g.buildBlocker(r)
+        let ok = b == nil
+        let owned = b == "Already made" || b == "Already built"
+        return Button { withAnimation(.spring(duration: 0.25)) { selected = r.id }; model.haptics.tap() } label: {
+            ZStack(alignment: .topTrailing) {
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(on ? Color.amber.opacity(0.22) : Color(red: 0.2, green: 0.14, blue: 0.11))
+                ItemArt(recipe: r).padding(12)
+                    .saturation(ok || owned ? 1 : 0.15).opacity(ok || owned ? 1 : 0.5)
+                if owned {
+                    Image(systemName: "checkmark.circle.fill").font(.system(size: 15)).foregroundStyle(Color.green, Color.black).padding(4)
+                } else if ok {
+                    Circle().fill(Color.amber).frame(width: 9, height: 9).padding(6).shadow(color: Color.amber, radius: 4)
+                } else if b == "Needs a workbench" {
+                    Image(systemName: "lock.fill").font(.system(size: 10)).foregroundStyle(Color.cream.opacity(0.6)).padding(6)
+                }
+            }
+            .aspectRatio(1, contentMode: .fit)
+            .overlay(RoundedRectangle(cornerRadius: 14).stroke(on ? Color.amber : Color.white.opacity(ok ? 0.25 : 0.08), lineWidth: on ? 2 : 1))
+            .scaleEffect(on ? 1.04 : 1)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(r.name)
+    }
+
+    private func slot(_ icon: AnyView, have: Int, need: Int) -> some View {
+        let enough = have >= need
+        return VStack(spacing: 2) {
+            icon.frame(width: 20, height: 20)
+            Text("\(min(have, need))/\(need)").font(.avenir(10, "Bold")).monospacedDigit()
+                .foregroundStyle(enough ? Color.cream : Color(red: 0.95, green: 0.55, blue: 0.45))
+        }
+        .frame(width: 42, height: 44)
+        .background(RoundedRectangle(cornerRadius: 10).fill(Color.black.opacity(0.35)))
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(enough ? Color.green.opacity(0.5) : Color.red.opacity(0.4)))
+    }
+
+    private func tag(_ s: String, _ c: Color) -> some View {
+        Text(s).font(.avenir(9, "Bold")).tracking(1).foregroundStyle(.black).padding(.horizontal, 5).padding(.vertical, 2).background(Capsule().fill(c))
+    }
 }

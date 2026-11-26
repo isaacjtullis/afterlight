@@ -1,5 +1,15 @@
 import Foundation
 
+/// A moment worth a card: a step done, a quest finished, a new quest.
+public struct Checkpoint: Equatable, Sendable {
+    public enum Kind: Sendable { case step, questDone, newQuest }
+    public var kind: Kind
+    public var title: String
+    public var text: String
+    public var next: String? = nil
+    public var side = false
+}
+
 public struct QuestStep: Codable, Equatable, Sendable {
     public var id: String
     public var text: String
@@ -62,6 +72,8 @@ public struct Story: Codable, Sendable {
     public var waterTo: String? = nil      // where the home pump sends its water: "home" for now
     /// Shared jobs, agreements, ownership and water routing with other survivors.
     public var coop = Coop()
+    /// Steps finished since the app last showed them (not saved).
+    public var checkpoints: [Checkpoint] = []
 
     public init() {}
 
@@ -79,13 +91,23 @@ public struct Story: Codable, Sendable {
     }
 
     public mutating func addQuest(_ q: Quest) {
-        if !quests.contains(where: { $0.id == q.id }) { quests.append(q) }
+        if !quests.contains(where: { $0.id == q.id }) {
+            quests.append(q)
+            checkpoints.append(Checkpoint(kind: .newQuest, title: q.title, text: q.steps.first?.text ?? "", side: q.side))
+        }
     }
     public mutating func step(_ quest: String, _ step: String) {
         guard let qi = quests.firstIndex(where: { $0.id == quest }),
               let si = quests[qi].steps.firstIndex(where: { $0.id == step }) else { return }
+        guard !quests[qi].steps[si].done else { return }
         quests[qi].steps[si].done = true
-        if quests[qi].steps.allSatisfy(\.done) { quests[qi].done = true }
+        let q = quests[qi]
+        if q.steps.allSatisfy(\.done) {
+            quests[qi].done = true
+            checkpoints.append(Checkpoint(kind: .questDone, title: q.title, text: q.steps[si].text, side: q.side))
+        } else {
+            checkpoints.append(Checkpoint(kind: .step, title: q.title, text: q.steps[si].text, next: q.nextStep?.text, side: q.side))
+        }
     }
     public func isDone(_ quest: String, _ step: String) -> Bool {
         quests.first { $0.id == quest }?.steps.first { $0.id == step }?.done ?? false
@@ -579,8 +601,14 @@ extension Game {
             consume(.batteryCell, 1); consume(.wire, 1)
             story.flags.insert("power")
             story.step("power", "bank")
-            emit(.flashOn)
-            think("The workshop lights. Warm light, after all this time.", 3.4)
+            emit(.flashOn); emit(.swell)
+            if let i = world.propIndex("battery") { world.props[i].flags.insert("lit") }
+            if !story.flags.contains("shelterLit") {
+                lightHome()
+                think("The bank hums. Lights here… and down below, home lights up too.", 3.8)
+            } else {
+                think("The bank hums awake. Light up here now, and more power for home.", 3.4)
+            }
             emit(.saveNow)
         case "placeTank":
             inv.remove(.waterTank, 1)

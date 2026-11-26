@@ -51,7 +51,7 @@ extension Game {
         if case .tool(let t) = r.output, inv.has(t) { return "Already made" }
         if case .upgrade(let u) = r.output, !upgradeOpen(u) { return u == "plot" ? "The room’s full of plots" : "Already built" }
         if r.bench && !atBench { return "Needs a workbench" }
-        if inv.wood < r.wood { return "Needs \(r.wood) wood" }
+        if woodAvailable < r.wood { return "Needs \(r.wood) wood" }
         if let miss = r.inputs.first(where: { available($0.id) < $0.count }) { return "Needs \(miss.id.name.lowercased())" }
         return nil
     }
@@ -115,6 +115,16 @@ extension Game {
         return nil
     }
 
+    /// Power reaches home: the shelter light and the generator come on.
+    func lightHome() {
+        story.flags.insert("shelterLit")
+        story.step("homeLight", "parts"); story.step("homeLight", "fix")
+        if let i = world.propIndex("shelter.light") { world.props[i].flags.insert("lit") }
+        if let i = world.propIndex("generator") { world.props[i].flags.insert("on") }
+        quarters.charge = 100
+        emit(.saveNow)
+    }
+
     func performExpedition(_ id: String) -> Bool {
         switch id {
         case "pitchCamp":
@@ -153,11 +163,7 @@ extension Game {
             consume(.batteryCell, 1)
             hammer(at: V2(gen.pos.x, 28.4), for: 0.9)
             later(1.0) { g in
-                g.story.flags.insert("shelterLit")
-                g.story.step("homeLight", "parts"); g.story.step("homeLight", "fix")
-                if let i = g.world.propIndex("shelter.light") { g.world.props[i].flags.insert("lit") }
-                if let i = g.world.propIndex("generator") { g.world.props[i].flags.insert("on") }
-                g.quarters.charge = 100
+                g.lightHome()
                 g.think("Light. Home looks like home again.", 3.4)
                 g.emit(.flashOn); g.emit(.swell)
                 g.later(4) { g2 in

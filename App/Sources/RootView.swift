@@ -37,6 +37,11 @@ struct RootView: View {
                     HUDView()
                         .transition(.opacity)
                 }
+                if let c = model.cards.first, !model.showTitle && !model.showIntro {
+                    CheckpointCard(card: c).id(c.title + c.text)
+                        .transition(.asymmetric(insertion: .move(edge: .top).combined(with: .opacity), removal: .scale(scale: 0.9).combined(with: .opacity)))
+                        .zIndex(5)
+                }
                 if model.showThoughts { ThoughtsCard().transition(.scale(scale: 0.95).combined(with: .opacity)) }
                 if model.showQuarters { QuartersView().transition(.opacity) }
                 if let b = model.banner { ChapterBanner(text: b).transition(.opacity) }
@@ -153,5 +158,113 @@ struct ChapterBanner: View {
             }
         }
         .allowsHitTesting(false)
+    }
+}
+
+
+/// The moment a step lands: a stamped seal with light behind it, the step crossed off, and what's next.
+struct CheckpointCard: View {
+    @EnvironmentObject var model: GameModel
+    let card: Checkpoint
+    @State private var stamp = false
+    @State private var check: CGFloat = 0
+    @State private var strike: CGFloat = 0
+    @State private var showNext = false
+
+    var body: some View {
+        let big = card.kind == .questDone
+        let label: String = { switch card.kind { case .step: return "CHECKPOINT"; case .questDone: return "QUEST COMPLETE"; case .newQuest: return card.side ? "NEW SIDE QUEST" : "NEW QUEST" } }()
+        VStack {
+            HStack(alignment: .center, spacing: 14) {
+                ZStack {
+                    TimelineView(.animation) { tl in
+                        let t = tl.date.timeIntervalSinceReferenceDate
+                        Canvas { ctx, size in
+                            let c = CGPoint(x: size.width / 2, y: size.height / 2)
+                            for i in 0..<12 {
+                                let a = Double(i) / 12 * 2 * .pi + t * 0.6
+                                var p = Path()
+                                p.move(to: c)
+                                p.addLine(to: CGPoint(x: c.x + cos(a - 0.12) * size.width, y: c.y + sin(a - 0.12) * size.width))
+                                p.addLine(to: CGPoint(x: c.x + cos(a + 0.12) * size.width, y: c.y + sin(a + 0.12) * size.width))
+                                ctx.fill(p, with: .color(Color.amber.opacity(0.13)))
+                            }
+                        }
+                    }
+                    .frame(width: 92, height: 92)
+                    .mask(Circle())
+                    Circle().fill(RadialGradient(colors: [Color(red: 1, green: 0.88, blue: 0.62), Color(red: 0.85, green: 0.55, blue: 0.28)], center: .topLeading, startRadius: 2, endRadius: 50))
+                        .frame(width: 54, height: 54)
+                        .overlay(Circle().stroke(Color(red: 1, green: 0.95, blue: 0.8), lineWidth: 2).padding(3))
+                        .shadow(color: Color.amber.opacity(0.8), radius: 12)
+                    if card.kind == .newQuest {
+                        Image(systemName: "scroll.fill").font(.system(size: 22, weight: .bold)).foregroundStyle(Color(red: 0.3, green: 0.17, blue: 0.08))
+                    } else {
+                        CheckShape().trim(from: 0, to: check)
+                            .stroke(Color(red: 0.3, green: 0.17, blue: 0.08), style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round))
+                            .frame(width: 24, height: 20)
+                    }
+                }
+                .scaleEffect(stamp ? 1 : 2.2)
+                .opacity(stamp ? 1 : 0)
+                .frame(width: 70, height: 70)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(label).font(.avenir(11, "Bold")).tracking(2.4).foregroundStyle(Color.amber)
+                    Text(card.title).font(.avenir(big ? 21 : 18, "Bold")).foregroundStyle(Color.cream).lineLimit(1).minimumScaleFactor(0.7)
+                    Text(card.text).font(.avenir(14)).foregroundStyle(Color.cream.opacity(card.kind == .newQuest ? 0.85 : 0.6))
+                        .overlay(alignment: .leading) {
+                            if card.kind != .newQuest {
+                                GeometryReader { g in Rectangle().fill(Color.amber).frame(width: g.size.width * strike, height: 1.5).offset(y: g.size.height / 2) }
+                            }
+                        }
+                        .fixedSize(horizontal: false, vertical: true)
+                    if let n = card.next, showNext {
+                        HStack(spacing: 5) {
+                            Image(systemName: "arrow.turn.down.right").font(.system(size: 11, weight: .bold))
+                            Text(n).font(.avenir(13, "DemiBold"))
+                        }
+                        .foregroundStyle(Color.cream)
+                        .transition(.move(edge: .leading).combined(with: .opacity))
+                    }
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(14)
+            .background(
+                RoundedRectangle(cornerRadius: 22)
+                    .fill(LinearGradient(colors: [Color(red: 0.24, green: 0.15, blue: 0.1), Color(red: 0.12, green: 0.07, blue: 0.07)], startPoint: .top, endPoint: .bottom))
+                    .shadow(color: .black.opacity(0.6), radius: 18, y: 8)
+            )
+            .overlay(RoundedRectangle(cornerRadius: 22).stroke(LinearGradient(colors: [Color.amber.opacity(0.9), Color.amber.opacity(0.2)], startPoint: .top, endPoint: .bottom), lineWidth: 1.5))
+            .padding(.horizontal, 14)
+            .padding(.top, 64)
+            .onTapGesture { dismiss() }
+            Spacer()
+        }
+        .task {
+            model.audio.play(.swell)
+            model.haptics.big()
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.5).delay(0.25)) { stamp = true }
+            withAnimation(.easeOut(duration: 0.35).delay(0.5)) { check = 1 }
+            withAnimation(.easeInOut(duration: 0.4).delay(0.8)) { strike = 1 }
+            withAnimation(.spring(duration: 0.4).delay(1.2)) { showNext = true }
+            try? await Task.sleep(for: .seconds(card.kind == .questDone ? 4.6 : 3.6))
+            dismiss()
+        }
+    }
+
+    private func dismiss() {
+        guard model.cards.first == card else { return }
+        withAnimation(.easeInOut(duration: 0.35)) { _ = model.cards.removeFirst() }
+    }
+}
+
+struct CheckShape: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        p.move(to: CGPoint(x: r.minX, y: r.midY))
+        p.addLine(to: CGPoint(x: r.minX + r.width * 0.38, y: r.maxY))
+        p.addLine(to: CGPoint(x: r.maxX, y: r.minY))
+        return p
     }
 }

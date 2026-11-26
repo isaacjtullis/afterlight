@@ -208,7 +208,7 @@ struct HUDView: View {
             if let text = ui.planning { planBar(text, ready: ui.planReady) }
             if let t = ui.jobTitle { jobBanner(t, ui) }
             if let c = model.conversation { ConversationCard(convo: c) }
-            if let p = model.panel { PanelCard(panel: p) }
+            if let p = model.panel { if p.speaker != nil { TalkPanel(panel: p) } else { PanelCard(panel: p) } }
             if let s = model.sheet { SheetHost(sheet: s) }
             if let r = model.report { ReportCard(report: r) }
         }
@@ -226,21 +226,17 @@ struct HUDView: View {
                     .padding(.horizontal, 12).frame(height: 36)
                     .background(Capsule().fill(Color.black.opacity(0.4)))
                 }
-                .frame(maxWidth: 260, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .layoutPriority(-1)
+            } else {
+                Spacer(minLength: 0)
             }
-            Spacer()
-            HStack(spacing: 10) {
+            HStack(spacing: 8) {
                 if ui.hasFlashlight {
                     Button { model.game.toggleFlashlight(); model.haptics.tap() } label: { circleIcon(ui.flashOn ? "flashlight.on.fill" : "flashlight.off.fill") }
                         .accessibilityIdentifier("flashlight")
                 }
-                if ui.canGoInside {
-                    Button { model.game.quartersTick(now: Date()); withAnimation(.easeInOut(duration: 0.5)) { model.showQuarters = true } } label: { circleIcon("house.fill") }
-                        .accessibilityIdentifier("quarters")
-                }
                 if ui.started {
-                    Button { model.sheet = .workbench } label: { circleIcon("hammer.fill") }
-                        .accessibilityIdentifier("build")
                     Button { model.sheet = .map } label: { circleIcon("map") }
                         .accessibilityIdentifier("map")
                 }
@@ -306,9 +302,20 @@ struct HUDView: View {
         .accessibilityIdentifier(id)
     }
 
+    private func sideButton(_ icon: String, _ caption: String) -> some View {
+        VStack(spacing: 2) {
+            Image(systemName: icon).font(.system(size: 17, weight: .semibold))
+            Text(caption).font(.avenir(9, "Bold")).tracking(1.2)
+        }
+        .foregroundStyle(Color.cream)
+        .frame(width: 54, height: 54)
+        .background(Circle().fill(Color.black.opacity(0.45)))
+        .overlay(Circle().stroke(Color.amber.opacity(0.35), lineWidth: 1))
+    }
+
     private func circleIcon(_ name: String) -> some View {
         Image(systemName: name).font(.system(size: 16)).foregroundStyle(Color.cream)
-            .frame(width: 44, height: 44)
+            .frame(width: 42, height: 42)
             .background(Circle().fill(Color.black.opacity(0.4)))
     }
 
@@ -316,7 +323,20 @@ struct HUDView: View {
         VStack {
             Spacer()
             HStack(alignment: .bottom) {
-                VStack(alignment: .center, spacing: 12) {
+                VStack(alignment: .leading, spacing: 10) {
+                    if ui.started {
+                        HStack(spacing: 10) {
+                            Button { model.sheet = .workbench; model.haptics.tap() } label: { sideButton("hammer.fill", "BUILD") }
+                                .accessibilityIdentifier("build")
+                            if ui.canGoInside {
+                                Button { model.game.quartersTick(now: Date()); withAnimation(.easeInOut(duration: 0.5)) { model.showQuarters = true } } label: { sideButton("house.fill", "HOME") }
+                                    .accessibilityIdentifier("quarters")
+                                    .transition(.scale.combined(with: .opacity))
+                            }
+                        }
+                        .padding(.leading, 8)
+                        .animation(.spring(duration: 0.3), value: ui.canGoInside)
+                    }
                     MoveWheel(climbing: ui.climbing || ui.canClimb) { dx, run, up, down in
                         model.input.dx = dx; model.input.run = run; model.input.up = up; model.input.climbDown = down
                     }

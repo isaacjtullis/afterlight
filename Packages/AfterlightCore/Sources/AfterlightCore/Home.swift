@@ -51,6 +51,23 @@ extension Game {
     }
 
     /// At home, move a pocket into workshop storage.
+    /// Bag wood plus, at home, the wood pile in storage.
+    public var woodAvailable: Int { inv.wood + (atHome ? storage.wood : 0) }
+    public func storeWood(_ n: Int? = nil) {
+        guard atHome else { return }
+        let k = Swift.min(n ?? inv.wood, inv.wood)
+        guard k > 0 else { return }
+        inv.wood -= k; storage.wood += k
+        emit(.saveNow)
+    }
+    public func takeWood(_ n: Int? = nil) {
+        guard atHome else { return }
+        let k = Swift.min(n ?? storage.wood, storage.wood, Inventory.woodCap - inv.wood)
+        guard k > 0 else { return }
+        storage.wood -= k; inv.wood += k
+        emit(.saveNow)
+    }
+
     public func storeSlot(_ i: Int) {
         guard atHome, inv.slots.indices.contains(i), let s = inv.slots[i] else { return }
         inv.slots[i] = nil
