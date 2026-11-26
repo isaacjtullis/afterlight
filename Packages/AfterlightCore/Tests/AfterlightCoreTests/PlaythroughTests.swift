@@ -9,12 +9,16 @@ final class Bot {
     var t = 0.0
     init(_ g: Game) { self.g = g }
 
-    func note(_ s: String) { log.append(String(format: "[%.0fs x%.1f y%.1f %@] ", t, g.max.pos.x, g.max.pos.y, "\(g.max.mode)") + s) }
+    func note(_ s: String) { log.append(String(format: "[%.0fs x%.1f y%.1f %@ hp%.0f food%.0f water%.0f] ", t, g.max.pos.x, g.max.pos.y, "\(g.max.mode)", g.max.health, g.max.hunger, g.hydration) + s) }
     var trail: String { log.suffix(14).joined(separator: "\n") }
 
     func step(_ i: GameInput) {
         // A real player eats when hungry and rests when spent.
+        if g.max.hunger < 25, let food = [ItemID.ration, .trailMeal, .greens].first(where: { g.inv.count($0) > 0 }) { g.eat(food); note("ate \(food)") }
+        let hp = g.max.health
         g.update(dt: 1 / 60, input: i); _ = g.drainEvents(); t += 1 / 60
+        if g.max.health < hp - 2 { note(String(format: "hurt %.0f", hp - g.max.health)) }
+        if g.max.health <= 0.1 || (hp > 0 && g.max.pos.x < 25 && g.max.pos.y == 30 && abs(g.max.pos.x - 22.4) < 0.01) { note("collapsed") }
     }
     func idle(_ s: Double) { var k = 0.0; while k < s { step(GameInput()); k += 1 / 60 } }
 
