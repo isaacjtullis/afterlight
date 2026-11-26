@@ -311,6 +311,7 @@ extension Game {
                     max.pos.y = g; max.ground = true; max.vyG = 0
                     if v > 4.5 || max.air > 0.35 {
                         emit(.land(speed: v))
+                        if v > 12 { hurt((v - 12) * 5, why: "fall") }
                         max.crK = 0.06 + Swift.min(0.12, v * 0.012)
                     }
                     max.air = 0

@@ -101,6 +101,8 @@ public final class Game {
     public var started = false
     public var candle = 0.0
     public var ambient = 0.0          // cave light once broken through
+    /// Flashlight battery, 0…100.
+    public var battery = 100.0
     public var flicker = 0.0
 
     public var thoughtText = "", thoughtT = 0.0
@@ -278,9 +280,11 @@ public final class Game {
         updateFeel(dt)
         if !max.swingOn && max.oneShot == nil {
             max.restT += dt
-            if max.restT > 0.9 && order == nil { max.stamina = Swift.min(max.staminaMax, max.stamina + 15 * dt) }
+            let cap = max.staminaMax * Tuning.restCap
+            if max.restT > 0.9 && order == nil && max.stamina < cap { max.stamina = Swift.min(cap, max.stamina + Tuning.restRegen * dt) }
         }
         pickupsTick(dt)
+        survivalTick(dt)
         aimTick(dt, lookUp: input.up && max.mode == .walk && !inv.has(.shortPick))
         odiTick(dt)
         maraTick(dt)

@@ -23,6 +23,8 @@ public struct SaveGame: Codable, Sendable {
     public var activeJob: JobRecord?
     public var pinnedRecipe: String?
     public var mara: NPCState?
+    public var health: Double?
+    public var battery: Double?
 }
 
 enum RLE {
@@ -61,7 +63,7 @@ extension Game {
                         inventory: inv, storage: storage, story: story, odi: odi,
                         mat: RLE.encode(matBytes), dens: RLE.encode(densBytes),
                         buried: world.buried, props: world.props, climbs: world.climbs,
-                        appliedJobs: Array(appliedJobs).sorted(), activeJob: activeJob, pinnedRecipe: pinnedRecipe, mara: mara)
+                        appliedJobs: Array(appliedJobs).sorted(), activeJob: activeJob, pinnedRecipe: pinnedRecipe, mara: mara, health: max.health, battery: battery)
     }
 
     /// Restore a saved game on top of a freshly generated world.
@@ -112,6 +114,8 @@ extension Game {
         g.max.pos = maxPos
         g.max.face = s.maxFace
         g.max.stamina = s.stamina
+        g.max.health = s.health ?? 100
+        g.battery = s.battery ?? 100
         g.max.digFloor = maxPos.y
         g.inv = s.inventory
         g.storage = s.storage

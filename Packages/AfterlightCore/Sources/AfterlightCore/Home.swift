@@ -8,23 +8,23 @@ extension Game {
 
     /// Eat and drink at the pantry. A ration (or home-grown greens) restores Max fully; plain water helps a little.
     func eatAndDrink() {
-        guard max.stamina < max.staminaMax - 1 else { think("Not hungry. Not yet.", 1.8); return }
+        guard max.stamina < max.staminaMax - 1 || max.health < max.healthMax - 1 else { think("Not hungry. Not yet.", 1.8); return }
         if let i = world.propIndex("pantry"), let si = world.props[i].stock.firstIndex(where: { $0.id == .ration }) {
             world.props[i].stock[si].count -= 1
             if world.props[i].stock[si].count <= 0 { world.props[i].stock.remove(at: si) }
-            max.stamina = max.staminaMax
+            recover(stamina: 45, health: 15)
             let left = world.props[i].stock.first(where: { $0.id == .ration })?.count ?? 0
             think(left > 0 ? "Beans and cold water. Better. \(left) tins left." : "That was the last tin. I’ll need to grow something.", 3)
         } else if available(.greens) > 0 {
             consume(.greens, 1)
-            max.stamina = max.staminaMax
+            recover(stamina: 35, health: 10)
             think("Greens from the beds. Better.", 2.4)
         } else if available(.trailMeal) > 0 {
             consume(.trailMeal, 1)
-            max.stamina = max.staminaMax
+            recover(stamina: 55, health: 10)
             think("Better.", 1.5)
         } else {
-            max.stamina = Swift.min(max.staminaMax, max.stamina + 30)
+            recover(stamina: 15, health: 3)
             think("Just water. It helps a little.", 2.4)
         }
         max.restT = 0

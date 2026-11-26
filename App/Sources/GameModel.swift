@@ -23,6 +23,9 @@ struct UIState: Equatable {
     var packUsed = 0
     var wood = 0
     var hasFlashlight = false
+    var health = 100
+    var battery = 100
+    var started = false
     var aim = 0          // -1 the wheel points up, 1 down, 0 ahead
     var flashOn = false
     var pulseDown = false
@@ -177,7 +180,10 @@ final class GameModel: ObservableObject {
         u.context = g.context
         u.hint = g.hintT > 0 ? g.hintText : ""
         u.clue = g.story.nextClue
-        u.stamina = Int((g.max.stamina / 5).rounded() * 5)
+        u.stamina = Int((g.max.stamina / g.max.staminaMax * 100).rounded())
+        u.health = Int((g.max.health / g.max.healthMax * 100).rounded())
+        u.battery = Int(g.battery.rounded())
+        u.started = g.started
         u.staminaMax = Int(g.max.staminaMax)
         u.showStamina = g.story.flags.contains("dug") && (g.max.stamina < g.max.staminaMax - 0.5 || g.planning != nil || g.order != nil)
         u.climbing = g.max.mode == .climb

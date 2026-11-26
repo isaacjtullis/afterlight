@@ -195,7 +195,7 @@ final class HomeGroundTests: XCTestCase {
         sim(g, GameInput(), 0.2)
         XCTAssertEqual(g.context?.id, "pantry")
         g.performContext()
-        XCTAssertEqual(g.max.stamina, g.max.staminaMax, accuracy: 0.5)
+        XCTAssertGreaterThan(g.max.stamina, 55, "a meal gives a good chunk back")
         XCTAssertEqual(g.world.prop("pantry")?.stock.first?.count, 11)
     }
 
@@ -278,5 +278,30 @@ final class HomeGroundTests: XCTestCase {
         sim(g, GameInput(), 0.6)
         XCTAssertFalse(g.world.solid(x, 29.4), "low earth cleared")
         XCTAssertFalse(g.world.solid(x, 28.4), "high earth cleared in the same chomp")
+    }
+
+    /// The flashlight runs down; a lamp cell from the bag fills it again.
+    func testBatteryDrainsAndSwaps() {
+        let g = Game()
+        g.begin()
+        g.inv.belt.append(.flashlight); g.story.flags.formUnion(["flashOn", "sawShaft"])
+        g.battery = 1
+        sim(g, GameInput(), 20)
+        XCTAssertEqual(g.battery, 0, accuracy: 0.01)
+        XCTAssertFalse(g.story.flags.contains("flashOn"), "a dead flashlight goes out")
+        g.inv.add(.lampCell)
+        g.swapCell()
+        XCTAssertEqual(g.battery, 100)
+        XCTAssertEqual(g.inv.count(.lampCell), 0)
+    }
+
+    /// At zero health Max wakes up in bed, weak but whole.
+    func testCollapseWakesAtHome() {
+        let g = Game()
+        g.begin()
+        g.max.pos = V2(36, 30)
+        g.hurt(500, why: "test")
+        XCTAssertEqual(g.max.pos.x, 22.4, accuracy: 0.01)
+        XCTAssertGreaterThan(g.max.health, 0)
     }
 }

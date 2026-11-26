@@ -173,6 +173,7 @@ struct HUDView: View {
         ZStack {
             VStack(spacing: 10) {
                 topBar(ui)
+                if ui.started { meters(ui) }
                 if !ui.hint.isEmpty {
                     Text(ui.hint)
                         .font(.avenir(15)).foregroundStyle(Color.cream).multilineTextAlignment(.center)
@@ -259,6 +260,40 @@ struct HUDView: View {
         }
     }
 
+    /// Health, stamina and (once he has one) flashlight battery: always in view, top left.
+    private func meters(_ ui: UIState) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 6) {
+                meter("heart.fill", ui.health, Color(red: 0.95, green: 0.42, blue: 0.4), id: "meter.health")
+                meter("bolt.fill", ui.stamina, Color.amber, id: "meter.stamina")
+                if ui.hasFlashlight {
+                    Button { model.game.swapCell(); model.haptics.tap() } label: {
+                        meter("battery.75", ui.battery, Color(red: 0.6, green: 0.85, blue: 1), id: "meter.battery")
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 10).padding(.vertical, 8)
+            .background(RoundedRectangle(cornerRadius: 12).fill(Color.black.opacity(0.38)))
+            Spacer()
+        }
+    }
+
+    private func meter(_ icon: String, _ value: Int, _ tint: Color, id: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon).font(.system(size: 10, weight: .semibold)).foregroundStyle(value < 20 ? Color.red : tint).frame(width: 14)
+            GeometryReader { g in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.white.opacity(0.12))
+                    Capsule().fill(value < 20 ? Color.red.opacity(0.85) : tint).frame(width: g.size.width * CGFloat(max(0, min(100, value))) / 100)
+                        .animation(.easeOut(duration: 0.3), value: value)
+                }
+            }
+            .frame(width: 92, height: 7)
+        }
+        .accessibilityIdentifier(id)
+    }
+
     private func circleIcon(_ name: String) -> some View {
         Image(systemName: name).font(.system(size: 16)).foregroundStyle(Color.cream)
             .frame(width: 44, height: 44)
@@ -270,17 +305,6 @@ struct HUDView: View {
             Spacer()
             HStack(alignment: .bottom) {
                 VStack(alignment: .center, spacing: 12) {
-                    if ui.showStamina {
-                        HStack(spacing: 8) {
-                            Text("Stamina").font(.avenir(12)).foregroundStyle(Color.cream.opacity(0.8))
-                            GeometryReader { g in
-                                ZStack(alignment: .leading) {
-                                    Capsule().fill(Color.white.opacity(0.1))
-                                    Capsule().fill(ui.stamina < 15 ? Color.red.opacity(0.8) : Color.amber).frame(width: g.size.width * CGFloat(ui.stamina) / CGFloat(max(1, ui.staminaMax)))
-                                }
-                            }.frame(width: 86, height: 7)
-                        }
-                    }
                     MoveWheel(climbing: ui.climbing || ui.canClimb) { dx, run, up, down in
                         model.input.dx = dx; model.input.run = run; model.input.up = up; model.input.climbDown = down
                     }

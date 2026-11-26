@@ -537,7 +537,7 @@ extension Game {
             emit(.saveNow)
         case "eat":
             inv.remove(.trailMeal, 1)
-            max.stamina = max.staminaMax
+            recover(stamina: 55, health: 10)
             think("Better.", 1.5)
         case "talk":
             if !odi.met { emit(.conversation("odi.meet")) }
@@ -601,7 +601,7 @@ extension Game {
                 emit(.saveNow)
             }
         case "rest":
-            max.stamina = max.staminaMax
+            recover(stamina: 35, health: 25)
             emit(.openSheet(.mission))
         case "pantry":
             eatAndDrink()
