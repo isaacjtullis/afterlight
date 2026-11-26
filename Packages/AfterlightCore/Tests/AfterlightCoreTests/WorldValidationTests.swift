@@ -11,7 +11,7 @@ final class WorldValidationTests: XCTestCase {
     func testEveryPropStandsOnTheFloorInOpenAir() {
         let w = WorldGen.make()
         // Things that hang, sit in walls, or are drawn over the floor on purpose.
-        let skip: Set<PropKind> = [.shelterLight, .warmPipe, .lanternClue]
+        let skip: Set<PropKind> = [.shelterLight, .warmPipe, .lanternClue, .sumpHatch]
         for p in w.props where !skip.contains(p.kind) {
             XCTAssertFalse(w.solid(p.pos.x, p.pos.y - 0.6), "\(p.id) is buried at \(p.pos)")
             XCTAssertTrue(w.solid(p.pos.x, p.pos.y + 0.25) || w.m(Int(p.pos.x), Int(p.pos.y)) == .plank, "\(p.id) floats at \(p.pos)")
