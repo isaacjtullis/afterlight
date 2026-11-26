@@ -9,6 +9,7 @@ public enum ItemID: String, Codable, CaseIterable, Sendable {
     // finds in the earth
     case copperOre, ironOre, quartz, coin, photo, toy, spores
     case campCrate
+    case glowcap
 
     public var name: String {
         switch self {
@@ -38,6 +39,7 @@ public enum ItemID: String, Codable, CaseIterable, Sendable {
         case .toy: return "Tin toy"
         case .spores: return "Glowcap spores"
         case .campCrate: return "Camp crate"
+        case .glowcap: return "Glowcap"
         }
     }
 
@@ -69,6 +71,7 @@ public enum ItemID: String, Codable, CaseIterable, Sendable {
         case .toy: return "A wind-up bird. It still hops, a little."
         case .spores: return "A pinch of dust that glows faintly. They grow in the dark."
         case .campCrate: return "Pitch it somewhere flat to make a camp: a crate to stash things in, far from home."
+        case .glowcap: return "A pale mushroom with a faint glow. Two of them, cooked, make a meal."
         }
     }
 

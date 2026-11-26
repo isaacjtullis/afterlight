@@ -7,7 +7,7 @@ extension Game {
     // MARK: eating and drinking
 
     /// Eat and drink at the pantry. A ration (or home-grown greens) restores Max fully; plain water helps a little.
-    func eatAndDrink() {
+    public func eatAndDrink() {
         guard max.stamina < max.staminaMax - 1 || max.health < max.healthMax - 1 else { think("Not hungry. Not yet.", 1.8); return }
         if let i = world.propIndex("pantry"), let si = world.props[i].stock.firstIndex(where: { $0.id == .ration }) {
             world.props[i].stock[si].count -= 1

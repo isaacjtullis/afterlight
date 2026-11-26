@@ -112,4 +112,36 @@ final class ExpeditionTests: XCTestCase {
         let back = Game.load(try Game.decodeSave(try g.encodeSave()))
         XCTAssertEqual(back.world.m(35, 6), .dirt)
     }
+
+    /// The quarters keep time: a watered, lit plot is ready after its grow time, even across a save.
+    func testGardenGrowsOnTheRealClock() throws {
+        let clock = FixedClock()
+        let g = Game()
+        g.clock = { clock.now }
+        g.begin()
+        g.quartersTick(now: clock.now)
+        g.inv.add(.seedTin)
+        g.plant(0, .seedTin)
+        g.waterPlot(0)
+        clock.now = clock.now.addingTimeInterval(50 * 60)
+        let back = Game.load(try Game.decodeSave(try g.encodeSave()), clock: { clock.now })
+        back.quartersTick(now: clock.now)
+        XCTAssertTrue(back.plotReady(0))
+        back.harvestPlot(0)
+        XCTAssertEqual(back.available(.greens), 3)
+    }
+
+    func testFilterClogsAndLampsDrain() {
+        let clock = FixedClock()
+        let g = Game()
+        g.clock = { clock.now }
+        g.quartersTick(now: clock.now)
+        clock.now = clock.now.addingTimeInterval(30 * 3600)
+        g.quartersTick(now: clock.now)
+        XCTAssertLessThan(g.quarters.filter, 20)
+        XCTAssertEqual(g.quarters.charge, 0)
+        XCTAssertFalse(g.quartersNeeds(now: clock.now).isEmpty)
+        g.rinseFilter()
+        XCTAssertEqual(g.quarters.filter, 100)
+    }
 }

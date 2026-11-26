@@ -92,6 +92,7 @@ public final class Game {
     public var inv = Inventory()
     public var storage = Storage()
     public var story = Story()
+    public var quarters = Quarters()
     /// Odi waits for a later chapter, far along the cavern.
     public var odi = NPCState(id: "odi", pos: V2(140, 41))
     public var mara = NPCState(id: "mara", pos: Landmarks.maraHome)
@@ -186,7 +187,7 @@ public final class Game {
         if hintT > 0 { hintT -= dt }
         if speechT > 0 { speechT -= dt }
         jobTickT += dt
-        if jobTickT >= 0.5 { jobTickT = 0; if !story.coop.jobs.isEmpty { advanceSharedJobs(to: clock()) } }
+        if jobTickT >= 0.5 { jobTickT = 0; if !story.coop.jobs.isEmpty { advanceSharedJobs(to: clock()) }; quartersTick(now: clock()) }
         if started { candle = Swift.min(1, candle + dt * 0.8) }
         flicker = Swift.max(0, flicker - dt * 0.5)
         if story.flags.contains("broke") { ambient = Swift.min(1, ambient + dt * 0.25) }

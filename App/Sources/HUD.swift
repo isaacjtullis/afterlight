@@ -234,6 +234,10 @@ struct HUDView: View {
                     Button { model.game.toggleFlashlight(); model.haptics.tap() } label: { circleIcon(ui.flashOn ? "flashlight.on.fill" : "flashlight.off.fill") }
                         .accessibilityIdentifier("flashlight")
                 }
+                if ui.canGoInside {
+                    Button { model.game.quartersTick(now: Date()); withAnimation(.easeInOut(duration: 0.5)) { model.showQuarters = true } } label: { circleIcon("house.fill") }
+                        .accessibilityIdentifier("quarters")
+                }
                 if ui.started {
                     Button { model.sheet = .map } label: { circleIcon("map") }
                         .accessibilityIdentifier("map")

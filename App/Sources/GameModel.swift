@@ -27,6 +27,7 @@ struct UIState: Equatable {
     var battery = 100
     var started = false
     var depth = ""
+    var canGoInside = false
     var aim = 0          // -1 the wheel points up, 1 down, 0 ahead
     var flashOn = false
     var pulseDown = false
@@ -41,6 +42,8 @@ final class GameModel: ObservableObject {
     @Published var ui = UIState()
     @Published var showTitle = true
     @Published var showIntro = false
+    /// The top-down living quarters.
+    @Published var showQuarters = false
     /// UI tests read Max's state through an invisible label.
     @Published var debugState = ""
     var smokeSkipIntro = false
@@ -161,7 +164,7 @@ final class GameModel: ObservableObject {
         clock += dt
         frames += 1
         guard !showTitle else { return }
-        let paused = conversation != nil || sheet != nil || banner != nil || game.activeJob != nil || panel != nil
+        let paused = conversation != nil || sheet != nil || banner != nil || game.activeJob != nil || panel != nil || showQuarters
         game.update(dt: dt, input: paused ? GameInput() : input)
         for e in game.drainEvents() { handle(e) }
         if let d = saveDue, clock >= d { saveDue = nil; saveNow(cloud: false) }
@@ -186,6 +189,7 @@ final class GameModel: ObservableObject {
         u.battery = Int(g.battery.rounded())
         u.started = g.started
         u.depth = Depth.label(atY: g.max.pos.y)
+        u.canGoInside = g.atHome && g.max.pos.y > 25 && g.story.flags.contains("flashOn") && g.max.mode == .walk
         u.staminaMax = Int(g.max.staminaMax)
         u.showStamina = g.story.flags.contains("dug") && (g.max.stamina < g.max.staminaMax - 0.5 || g.planning != nil || g.order != nil)
         u.climbing = g.max.mode == .climb
@@ -225,6 +229,8 @@ final class GameModel: ObservableObject {
     }
 
     // MARK: events
+
+    func handleExternal(_ e: GameEvent) { handle(e) }
 
     private func handle(_ e: GameEvent) {
         switch e {

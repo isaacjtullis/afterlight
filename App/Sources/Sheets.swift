@@ -142,6 +142,7 @@ extension ItemID {
         case .rope: return "lasso"
         case .ration: return "fork.knife"
         case .campCrate: return "shippingbox.fill"
+        case .glowcap: return "leaf.fill"
         case .copperOre: return "circle.hexagongrid.fill"
         case .ironOre: return "hexagon.fill"
         case .quartz: return "rhombus.fill"

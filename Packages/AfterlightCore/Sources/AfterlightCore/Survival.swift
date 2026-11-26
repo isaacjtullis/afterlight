@@ -61,7 +61,7 @@ extension Game {
     }
 
     /// Meal and rest amounts: each helps a little, not all the way.
-    func recover(stamina s: Double, health h: Double) {
+    public func recover(stamina s: Double, health h: Double) {
         max.stamina = Swift.min(max.staminaMax, max.stamina + s)
         max.health = Swift.min(max.healthMax, max.health + h)
     }

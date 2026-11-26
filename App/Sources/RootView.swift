@@ -36,6 +36,7 @@ struct RootView: View {
                     HUDView()
                         .transition(.opacity)
                 }
+                if model.showQuarters { QuartersView().transition(.opacity) }
                 if let b = model.banner { ChapterBanner(text: b).transition(.opacity) }
                 if model.showTitle { TitleView().transition(.opacity) }
                 if model.showIntro { CinematicView().transition(.opacity) }   // fills the screen itself
