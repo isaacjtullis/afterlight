@@ -151,6 +151,9 @@ public final class Game {
     var needUpRelease = false
     // Never stuck: pushing at something soft for a moment clears a way through it.
     var stuckT = 0.0, stuckX = 0.0
+    /// Trying to move and getting nowhere (a pit, a dead end): after a few seconds Max offers to climb out.
+    var trapT = 0.0, trapAnchor = V2(0, 0), trapTried: Set<Int> = []
+    public var trapped = false
 
     /// Saves made before the cavern moved away from home don't carry this flag.
     public static let worldVersionFlag = "world2"
@@ -292,6 +295,7 @@ public final class Game {
         }
         physics(dir: dir, dt: dt)
         unstick(dir: dir, dt: dt)
+        trapCheck(input, dt: dt)
         updateFeel(dt)
         if !max.swingOn && max.oneShot == nil {
             max.restT += dt

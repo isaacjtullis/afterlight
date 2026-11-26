@@ -479,6 +479,7 @@ extension Game {
     func near(_ prop: Prop, _ r: Double = 1.6) -> Bool { abs(prop.pos.x - max.pos.x) < r && abs(prop.pos.y - max.pos.y) < 1.3 }
 
     func computeContext() -> ContextAction? {
+        if trapped && started && cine == nil { return ContextAction(id: "climbOut", label: "Climb out", anchor: V2(max.pos.x, max.pos.y - 2.4), prominent: true) }
         guard started, cine == nil, planning == nil, order == nil, max.busy <= 0, max.oneShot == nil, max.mode == .walk else { return nil }
         let p = max.pos
         let f = story.flags
@@ -557,6 +558,7 @@ extension Game {
             max.busy = 1.6
             for i in 0..<6 { later(Double(i) * 0.22) { $0.emit(.spark(at: V2(26.4, 29.0))) } }
             later(1.6) { $0.craft("flashlight") }
+        case "climbOut": climbOut()
         case "switchOn":
             story.flags.insert("flashOn"); story.flags.remove("lightOff")
             // The first look up the shaft plays once.

@@ -325,4 +325,26 @@ final class HomeGroundTests: XCTestCase {
         XCTAssertGreaterThan(g.max.pos.x, Double(cx) + 0.4, "Max should dig on through the cracked rock, at \(g.max.pos)")
         XCTAssertTrue(Recipes.all.contains { $0.id == "breaker" })
     }
+
+    /// Boxed into a bedrock pit, Max can always climb out.
+    func testClimbOutOfABedrockPit() {
+        let g = Game()
+        g.begin()
+        walk(g, to: 31.3)
+        let cx = Int(g.max.pos.x)
+        // a pit: bedrock walls either side, three tiles deep, open above
+        for r in 27...36 { g.world.set(cx - 2, r, .rock); g.world.set(cx + 2, r, .rock) }
+        for r in 30...35 { for c in (cx - 1)...(cx + 1) { g.world.set(c, r, .dug, back: .earth) } }
+        for c in (cx - 1)...(cx + 1) { g.world.set(c, 36, .rock) }
+        g.world.rebuildDensity()
+        g.max.pos = V2(Double(cx) + 0.5, 36); g.max.ground = false
+        sim(g, GameInput(), 1)
+        sim(g, GameInput(dx: 1), 3); sim(g, GameInput(dx: -1), 3)
+        XCTAssertGreaterThan(g.max.pos.y, 34, "the pit is too deep to just walk out of")
+        XCTAssertTrue(g.trapped, "after trying both ways, Max knows he's boxed in, at \(g.max.pos)")
+        XCTAssertEqual(g.context?.id, "climbOut")
+        let y0 = g.max.pos.y
+        g.performContext()
+        XCTAssertLessThan(g.max.pos.y, y0 - 1.5, "and climbs out, at \(g.max.pos)")
+    }
 }
