@@ -123,5 +123,6 @@ final class CampaignPlaythroughTests: XCTestCase {
         }
         XCTAssertEqual(g.story.ending?.id, "stay", b.trail)
         XCTAssertNotNil(g.epilogue)
+        for l in b.log where l.contains("hurt") || l.contains("collapsed") || l.contains("ate") { print("BOT| " + l) }
     }
 }
