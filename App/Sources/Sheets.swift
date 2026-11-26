@@ -461,6 +461,7 @@ extension ItemID {
         case .torch: return "flame.fill"
         case .copperOre: return "circle.hexagongrid.fill"
         case .ironOre: return "hexagon.fill"
+        case .tape: return "circle.circle.fill"
         case .quartz: return "rhombus.fill"
         case .coin: return "centsign.circle.fill"
         case .photo: return "photo.fill"
@@ -473,6 +474,7 @@ extension ItemID {
         case .chargeCrystal: return .violet
         case .copperOre: return Color(red: 0.45, green: 0.85, blue: 0.7)
         case .ironOre: return Color(red: 0.85, green: 0.5, blue: 0.4)
+        case .tape: return Color(red: 0.78, green: 0.8, blue: 0.84)
         case .quartz: return Color(red: 0.85, green: 0.95, blue: 1)
         case .coin: return Color(red: 0.95, green: 0.8, blue: 0.4)
         case .spores: return Color(red: 0.6, green: 1, blue: 0.75)

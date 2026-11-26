@@ -47,13 +47,18 @@ extension Game {
 
     /// The nearest higher spot where Max can stand with headroom, within a few tiles.
     func escapeSpot() -> V2? {
+        // Close by first; then straight up the shaft he dug, however deep it goes.
+        escapeSpot(reach: 8, rise: 9) ?? escapeSpot(reach: 2.5, rise: 60)
+    }
+
+    private func escapeSpot(reach: Double, rise: Double) -> V2? {
         let p = max.pos
         var best: V2? = nil, bestD = Double.infinity
-        var dx = -8.0
-        while dx <= 8.0 {
+        var dx = -reach
+        while dx <= reach {
             let x = p.x + dx
             var y = p.y - 1.2
-            while y > p.y - 9 {
+            while y > Swift.max(1, p.y - rise) {
                 if world.solid(x, y + 0.1) && !world.solid(x, y - 0.2) && !world.solid(x, y - 1.0) && !world.solid(x, y - 1.8)
                     && !world.solid(x - 0.35, y - 1.0) && !world.solid(x + 0.35, y - 1.0) {
                     let gy = world.groundY(x, from: y - 0.3, to: y + 0.3) ?? y
@@ -67,6 +72,7 @@ extension Game {
         }
         return best
     }
+
 
     func climbOut() {
         trapped = false; trapT = 0

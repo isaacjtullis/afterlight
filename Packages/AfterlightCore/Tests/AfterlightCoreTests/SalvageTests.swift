@@ -347,4 +347,21 @@ final class HomeGroundTests: XCTestCase {
         g.performContext()
         XCTAssertLessThan(g.max.pos.y, y0 - 1.5, "and climbs out, at \(g.max.pos)")
     }
+
+    /// However deep Max digs, he can always get back up.
+    func testClimbOutOfAVeryDeepShaft() {
+        let g = Game()
+        g.begin()
+        walk(g, to: 31.3)
+        let cx = Int(g.max.pos.x)
+        for r in 30...55 {
+            g.world.set(cx - 1, r, .rock); g.world.set(cx + 1, r, .rock)
+            if r < 55 { g.world.set(cx, r, .dug, back: .earth) } else { g.world.set(cx, r, .rock) }
+        }
+        g.world.rebuildDensity()
+        g.max.pos = V2(Double(cx) + 0.5, 55); g.max.ground = true
+        let s = g.escapeSpot()
+        XCTAssertNotNil(s, "there's always somewhere to climb out to")
+        XCTAssertLessThan(s?.y ?? 99, 31, "back near the top, at \(String(describing: s))")
+    }
 }

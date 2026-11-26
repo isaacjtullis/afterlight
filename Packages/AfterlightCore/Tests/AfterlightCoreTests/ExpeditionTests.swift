@@ -135,7 +135,7 @@ final class ExpeditionTests: XCTestCase {
         let g = Game()
         g.begin()
         g.story.flags.formUnion(["wood", "sawPlatform"])
-        g.inv.wood = 60; g.inv.add(.fasteners, 6)
+        g.inv.wood = 60; g.inv.add(.fasteners, 6); g.inv.add(.tape, 2)
         g.max.pos = V2(36, 30)
         let bench = Recipes.all.first { $0.id == "fieldBench" }!
         XCTAssertNil(g.buildBlocker(bench), "a field workbench can be built anywhere")

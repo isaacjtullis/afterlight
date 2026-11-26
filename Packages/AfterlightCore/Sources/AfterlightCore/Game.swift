@@ -167,6 +167,7 @@ public final class Game {
         story.flags.insert("finds1")
         story.flags.insert("world3")
         story.flags.insert("gen1")
+        story.flags.insert("tape1")
     }
 
     public func drainEvents() -> [GameEvent] { defer { events.removeAll() }; return events }

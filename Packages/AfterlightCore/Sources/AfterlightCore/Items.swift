@@ -12,6 +12,7 @@ public enum ItemID: String, Codable, CaseIterable, Sendable {
     case glowcap
     case workbenchKit, cotKit
     case woodLadder, torch
+    case tape
 
     public var name: String {
         switch self {
@@ -35,6 +36,7 @@ public enum ItemID: String, Codable, CaseIterable, Sendable {
         case .ration: return "Tinned ration"
         case .copperOre: return "Copper ore"
         case .ironOre: return "Iron ore"
+        case .tape: return "Duct tape"
         case .quartz: return "Quartz"
         case .coin: return "Old coin"
         case .photo: return "Faded photo"
@@ -71,6 +73,7 @@ public enum ItemID: String, Codable, CaseIterable, Sendable {
         case .ration: return "Beans, mostly. Eat one at the pantry to get your strength back."
         case .copperOre: return "Green-streaked rock. Smelted down, it’s wire."
         case .ironOre: return "Heavy and rust-red. Good for tools and fittings."
+        case .tape: return "Silver and sticky. Holds most things together, for a while."
         case .quartz: return "Clear as ice. Lenses, lamps, maybe a radio."
         case .coin: return "Money from before. Worth nothing, except to someone who misses it."
         case .photo: return "A family at a beach, squinting into a sun nobody here has seen."
@@ -256,21 +259,21 @@ public enum Recipes {
                note: "Eat it on a dig to get your strength back.", unlockFlag: "harvested"),
         Recipe(id: "rope", name: "Rope", inputs: [ItemStack(.wire, 2)], output: .item(.rope, 1),
                note: "Braid wire into a climbing line.", unlockFlag: "sawChimney"),
-        Recipe(id: "camp", name: "Camp crate", inputs: [ItemStack(.fasteners, 2)], output: .item(.campCrate, 1),
+        Recipe(id: "camp", name: "Camp crate", inputs: [ItemStack(.fasteners, 1), ItemStack(.tape, 1)], output: .item(.campCrate, 1),
                note: "Pitch it far from home to keep things there.", unlockFlag: "sawPlatform", wood: 20, bench: false),
         Recipe(id: "cell", name: "Ore cell", inputs: [ItemStack(.copperOre, 3), ItemStack(.quartz, 1)], output: .item(.batteryCell, 1),
                note: "Copper plates and a quartz spacer: a crude battery cell. Powers the generator.", unlockFlag: "genLooked"),
-        Recipe(id: "fieldBench", name: "Field workbench", inputs: [ItemStack(.fasteners, 2)], output: .item(.workbenchKit, 1),
+        Recipe(id: "fieldBench", name: "Field workbench", inputs: [ItemStack(.fasteners, 1), ItemStack(.tape, 1)], output: .item(.workbenchKit, 1),
                note: "Thirty wood. Set it up anywhere and build there.", unlockFlag: "wood", wood: 30, bench: false),
-        Recipe(id: "cot", name: "Cot", inputs: [ItemStack(.fasteners, 1)], output: .item(.cotKit, 1),
+        Recipe(id: "cot", name: "Cot", inputs: [ItemStack(.tape, 1)], output: .item(.cotKit, 1),
                note: "Rest wherever you set it.", unlockFlag: "wood", wood: 25),
-        Recipe(id: "woodLadder", name: "Wooden ladder", inputs: [ItemStack(.fasteners, 1)], output: .item(.woodLadder, 1),
+        Recipe(id: "woodLadder", name: "Wooden ladder", inputs: [], output: .item(.woodLadder, 1),
                note: "Lean it on any ledge up to six tiles high. It stays: a way up and back.", unlockFlag: "wood", wood: 15),
         Recipe(id: "torch", name: "Root torch", inputs: [], output: .item(.torch, 1),
                note: "A warm light that keeps burning. No cell needed.", unlockFlag: "wood", wood: 6, bench: false),
         Recipe(id: "breaker", name: "Rock breaker", inputs: [ItemStack(.ironOre, 4), ItemStack(.fasteners, 2)], output: .tool(.breaker),
                note: "An iron wedge-hammer. Cracks bedrock into rubble the shovel can clear.", unlockFlag: "hitRock", wood: 10),
-        Recipe(id: "lantern2", name: "Reflector lantern", inputs: [ItemStack(.copperOre, 2), ItemStack(.wire, 1)], output: .upgrade("lantern2"),
+        Recipe(id: "lantern2", name: "Reflector lantern", inputs: [ItemStack(.copperOre, 2), ItemStack(.tape, 1)], output: .upgrade("lantern2"),
                note: "Level 2. Polished copper behind the flame: every lantern reaches further.", unlockFlag: "lampIdea", wood: 5),
         Recipe(id: "lantern3", name: "Quartz lantern", inputs: [ItemStack(.quartz, 2), ItemStack(.copperOre, 2)], output: .upgrade("lantern3"),
                note: "Level 3. A quartz lens spreads the light wide.", unlockFlag: "lampIdea", wood: 10),
@@ -280,7 +283,7 @@ public enum Recipes {
                note: "Level 5. Iron housing, a big lens. Floods a whole cavern with light.", unlockFlag: "lampIdea", wood: 20),
         Recipe(id: "plot", name: "Garden plot", inputs: [], output: .upgrade("plot"),
                note: "A raised bed for the quarters. More plots, more food.", unlockFlag: "wood", wood: 12),
-        Recipe(id: "barrel", name: "Bigger barrel", inputs: [ItemStack(.pipe, 1)], output: .upgrade("barrel"),
+        Recipe(id: "barrel", name: "Bigger barrel", inputs: [ItemStack(.pipe, 1), ItemStack(.tape, 1)], output: .upgrade("barrel"),
                note: "Doubles what the water barrel holds.", unlockFlag: "wood", wood: 20),
         Recipe(id: "table", name: "Table and chair", inputs: [ItemStack(.fasteners, 2)], output: .upgrade("table"),
                note: "Somewhere to sit and eat. Meals at home go further.", unlockFlag: "wood", wood: 30),

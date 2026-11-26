@@ -317,7 +317,7 @@ final class GameModel: ObservableObject {
             if let p = game.panel(id) { panelPoint = scene?.viewPoint(p.anchor) ?? .zero; panel = p }
         case .checkpoint(let c):
             // A new quest right after finishing one reads as one moment: keep both, in order.
-            if cards.count < 4 { withAnimation(.spring(response: 0.5, dampingFraction: 0.75)) { cards.append(c) } }
+            if cards.count < 4 && cards.last != c { cards.append(c); showCards() }
             if c.kind != .newQuest {
                 // let the world settle (the step's own changes land a moment later), then snapshot
                 Task { @MainActor in
@@ -328,6 +328,23 @@ final class GameModel: ObservableObject {
             }
         case .sleep: playSleep()
         case .saveNow: if saveDue == nil { saveDue = clock + 1.5 }
+        }
+    }
+
+    private var cardsRunning = false
+    /// Shows queued checkpoint moments one after another, each for a few seconds, then clears them.
+    /// Driven here (not by the view) so a card can never get stuck on screen.
+    func showCards() {
+        guard !cardsRunning else { return }
+        cardsRunning = true
+        Task { @MainActor in
+            while let c = self.cards.first {
+                audio.play(.swell)
+                try? await Task.sleep(for: .seconds(c.kind == .questDone ? 4.4 : 3.6))
+                withAnimation(.easeInOut(duration: 0.8)) { if self.cards.first == c { _ = self.cards.removeFirst() } }
+                try? await Task.sleep(for: .seconds(0.9))
+            }
+            self.cardsRunning = false
         }
     }
 

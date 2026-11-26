@@ -105,6 +105,8 @@ extension Game {
             where !w.buried.contains(where: { $0.id == b.id }) && w.m(Int(b.pos.x), Int(b.pos.y)).solid { w.buried.append(b) }
             story.flags.insert("gen1")
         }
+        var tapeGift = false
+        if !story.flags.contains("tape1") { story.flags.insert("tape1"); tapeGift = true }
         if !story.flags.contains("finds1") {
             let have = Set(w.buried.map(\.id))
             for b in WorldGen.scatterFinds(w) where !have.contains(b.id) && w.m(Int(b.pos.x), Int(b.pos.y)) == .dirt { w.buried.append(b) }
@@ -156,6 +158,8 @@ extension Game {
         // Older builds turned the light off by clearing the story flag; keep the story, just switch it off.
         if g.inv.has(.flashlight) && !g.story.flags.contains("flashOn") && g.story.flags.contains("sawShaft") { g.story.flags.formUnion(["flashOn", "lightOff"]) }
         if g.flashlightLit { g.max.flashI = 1 }
+        // Duct tape arrived with a later build: a couple of rolls turn up in storage.
+        if tapeGift { g.storage.add(.tape, 2) }
         // Work that continued while the game was closed.
         g.advanceSharedJobs(to: g.clock())
         return g
