@@ -137,6 +137,10 @@ public final class Game {
     public var openLoot: String? = nil
     /// A checkpoint card is on screen: thoughts, hints and speech wait (and stay hidden) until it's gone.
     public var holdMessages = false
+    /// A scuffle in progress (not saved: closing the app pauses it).
+    public var struggle: Struggle? = nil
+    /// DIG was pressed this frame.
+    var prevDigFresh = false
 
     public var appliedJobs: Set<String> = []
     public var activeJob: JobRecord? = nil
@@ -180,6 +184,7 @@ public final class Game {
         story.flags.insert("tape1")
         story.flags.insert("storeB1")
         story.flags.insert("odiRoom1")
+        story.flags.insert("wide1")
         quarters.clean = 4; quarters.drumSealed = false; quarters.filterFitted = false
     }
 
@@ -224,6 +229,7 @@ public final class Game {
         let freshDx = input.dx != 0 && input.dx != prev.dx
         if order != nil && input.any && !prev.any { stopOrder("player") }
         let freshDigUp = input.digUp && !prev.digUp
+        prevDigFresh = fresh.dig
         let freshJump = input.jump && !prev.jump
         prev = input
         let prePos = max.pos

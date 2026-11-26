@@ -27,6 +27,8 @@ public enum Backdrop: UInt8, Codable, Sendable {
     case outpost    // Mara's outpost
     case sump       // the flooded sump under the outpost
     case transit    // the old transit level, one level up
+    case hotel      // the old hotel: wallpaper and a dado rail
+    case gallery    // the upper gallery: cut stone
 }
 
 public enum DigTool: String, Codable, Sendable {
@@ -143,7 +145,7 @@ public final class World {
         if let b { back[r * w + c] = b }
     }
     /// The world's outer shell: nothing ever cuts it.
-    public func isFrame(_ c: Int, _ r: Int) -> Bool { r < 2 || r > h - 3 || c < 1 || c > w - 3 }
+    public func isFrame(_ c: Int, _ r: Int) -> Bool { r < 2 || r > h - 3 || c < 1 || c > w - 3 || Landmarks.sealedCols.contains(c) }
     public func setBack(_ c: Int, _ r: Int, _ b: Backdrop) {
         guard inside(c, r) else { return }
         back[r * w + c] = b

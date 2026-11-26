@@ -3,6 +3,30 @@
   "speaker": "Odi",
   "entries": [
     {
+      "node": "cart.ask",
+      "when": [
+        "can:cart.stuck"
+      ]
+    },
+    {
+      "node": "cart.wait",
+      "when": [
+        "can:cart.helping"
+      ]
+    },
+    {
+      "node": "cart.load",
+      "when": [
+        "can:cart.down"
+      ]
+    },
+    {
+      "node": "cart.half",
+      "when": [
+        "can:cart.half"
+      ]
+    },
+    {
       "node": "first",
       "when": [
         "!knows:odi:met"
@@ -208,6 +232,126 @@
         {
           "id": "bye",
           "label": "See you.",
+          "effects": [
+            "end"
+          ]
+        }
+      ]
+    },
+    "cart.ask": {
+      "lines": [
+        "Housekeeping cart. Four wheels, a rail, room for twenty trays. I’m sick of carrying them one at a time.",
+        "It won’t go down this stair on its own and I can’t hold both ends."
+      ],
+      "choices": [
+        {
+          "id": "help",
+          "label": "I’ll take the bottom end.",
+          "detail": "Go down to the lobby and steady it as she feeds it to you.",
+          "effects": [
+            "do:cart.help",
+            "remember:odi:offeredCart"
+          ],
+          "primary": true
+        },
+        {
+          "id": "rail",
+          "label": "Why does it have a brass rail?",
+          "next": "cart.rail"
+        },
+        {
+          "id": "no",
+          "label": "Not right now.",
+          "effects": [
+            "say:odi:Then I’ll think of something else."
+          ]
+        }
+      ]
+    },
+    "cart.rail": {
+      "lines": [
+        "So you could hang towels on it? So it looked nice? Nobody knows. It’s ridiculous. I love it."
+      ],
+      "choices": [
+        {
+          "id": "help",
+          "label": "I’ll take the bottom end.",
+          "effects": [
+            "do:cart.help",
+            "remember:odi:offeredCart"
+          ],
+          "primary": true
+        },
+        {
+          "id": "no",
+          "label": "Good luck with it.",
+          "effects": [
+            "end"
+          ]
+        }
+      ]
+    },
+    "cart.wait": {
+      "lines": [
+        "Go on down, I’m ready up here. Take the low end at the foot of the stair."
+      ],
+      "choices": [
+        {
+          "id": "ok",
+          "label": "Going.",
+          "effects": [
+            "end"
+          ]
+        }
+      ]
+    },
+    "cart.load": {
+      "lines": [
+        "It’s going down my lift either way. Anything heavy you want carried home? It’ll be on the cart in my room."
+      ],
+      "choices": [
+        {
+          "id": "load",
+          "label": "Load something bulky on it",
+          "detail": "It rides down with the cart. Pick it up at Odi’s.",
+          "when": [
+            "can:cart.load"
+          ],
+          "locked": "Nothing bulky in your pack.",
+          "effects": [
+            "do:cart.load",
+            "say:odi:I’ll guard it with my life. Or at least my trays."
+          ]
+        },
+        {
+          "id": "home",
+          "label": "Just take it home.",
+          "effects": [
+            "do:cart.home",
+            "say:odi:Thanks, Max. Really."
+          ]
+        }
+      ]
+    },
+    "cart.half": {
+      "lines": [
+        "Couldn’t get the big one down. So: wheels off, a frame from the shelving. Half a cart.",
+        "Hold this end while I bolt it?"
+      ],
+      "choices": [
+        {
+          "id": "finish",
+          "label": "Hold it steady",
+          "detail": "She finishes the smaller cart now.",
+          "effects": [
+            "do:cart.finishSmall",
+            "say:odi:There. Narrow enough for the stair. Ugly enough for me."
+          ],
+          "primary": true
+        },
+        {
+          "id": "no",
+          "label": "You’ve got it.",
           "effects": [
             "end"
           ]

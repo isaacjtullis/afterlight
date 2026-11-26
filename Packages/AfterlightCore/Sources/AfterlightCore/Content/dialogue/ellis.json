@@ -1,0 +1,185 @@
+{
+  "id": "ellis",
+  "speaker": "Ellis",
+  "entries": [
+    {
+      "node": "kids",
+      "when": [
+        "can:ellis.kids"
+      ]
+    },
+    {
+      "node": "after",
+      "when": [
+        "can:ellis.played"
+      ]
+    },
+    {
+      "node": "first",
+      "when": [
+        "!knows:ellis:met"
+      ]
+    },
+    {
+      "node": "hub"
+    }
+  ],
+  "nodes": {
+    "first": {
+      "lines": [
+        "Mind the benches. I’m making a pitch.",
+        "There’s a recording of a match my dad kept. Corner kick in the ninetieth minute. I’ve watched it maybe four hundred times."
+      ],
+      "choices": [
+        {
+          "id": "help",
+          "label": "Need a hand?",
+          "next": "help"
+        },
+        {
+          "id": "ball",
+          "label": "Got a ball?",
+          "next": "ball"
+        },
+        {
+          "id": "bye",
+          "label": "Good luck with it.",
+          "effects": [
+            "end"
+          ]
+        }
+      ]
+    },
+    "help": {
+      "lines": [
+        "Grab the other end of that last bench. It weighs more than me."
+      ],
+      "choices": [
+        {
+          "id": "ok",
+          "label": "Okay.",
+          "effects": [
+            "end"
+          ]
+        },
+        {
+          "id": "ball",
+          "label": "And the ball?",
+          "next": "ball"
+        }
+      ]
+    },
+    "ball": {
+      "lines": [
+        "Kicked it into the kitchen last week. Somewhere in the cupboards. Don’t tell anyone I lost the only ball."
+      ],
+      "choices": [
+        {
+          "id": "give",
+          "label": "Here, I found it.",
+          "when": [
+            "has:ball"
+          ],
+          "effects": [
+            "do:ellis.ball",
+            "say:ellis:You absolute legend. Right. Kick off."
+          ],
+          "primary": true
+        },
+        {
+          "id": "ok",
+          "label": "I’ll look.",
+          "effects": [
+            "end"
+          ]
+        }
+      ]
+    },
+    "hub": {
+      "lines": [
+        "Pitch is nearly there."
+      ],
+      "choices": [
+        {
+          "id": "give",
+          "label": "I found your ball.",
+          "when": [
+            "has:ball",
+            "can:ellis.clearing"
+          ],
+          "effects": [
+            "do:ellis.ball",
+            "say:ellis:Kick off!"
+          ],
+          "primary": true
+        },
+        {
+          "id": "bye",
+          "label": "See you.",
+          "effects": [
+            "end"
+          ]
+        }
+      ]
+    },
+    "after": {
+      "lines": [
+        "Same time next outing?"
+      ],
+      "choices": [
+        {
+          "id": "lamp",
+          "label": "Here’s your lamp back.",
+          "when": [
+            "has:ellisLamp"
+          ],
+          "effects": [
+            "do:ellis.lampBack"
+          ]
+        },
+        {
+          "id": "again",
+          "label": "What was the corner like? On the recording?",
+          "next": "corner"
+        },
+        {
+          "id": "bye",
+          "label": "See you.",
+          "effects": [
+            "end"
+          ]
+        }
+      ]
+    },
+    "corner": {
+      "lines": [
+        "Whole stadium stands up. You can hear it before you see it. Fifty thousand people.",
+        "I can’t picture fifty thousand people. I tried."
+      ],
+      "choices": [
+        {
+          "id": "bye",
+          "label": "Me neither.",
+          "effects": [
+            "end"
+          ]
+        }
+      ]
+    },
+    "kids": {
+      "lines": [
+        "Cleared one end myself. Jun and Pip turned up with their coats. Coats make good posts.",
+        "There’s room for one more."
+      ],
+      "choices": [
+        {
+          "id": "bye",
+          "label": "Maybe later.",
+          "effects": [
+            "end"
+          ]
+        }
+      ]
+    }
+  }
+}

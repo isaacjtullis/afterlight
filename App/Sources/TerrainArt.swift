@@ -56,6 +56,14 @@ enum TerrainArt {
                     ctx.setFillColor(color(0xffdcb4, 0.06)); ctx.fill(CGRect(x: CGFloat(c), y: CGFloat(r) + 0.82, width: 1, height: 0.1))
                 case .earth:
                     ctx.setFillColor(color(0x4e312b)); ctx.fill(rect)
+                case .hotel:
+                    // faded wallpaper with a stripe, a dado rail at waist height
+                    ctx.setFillColor(color(c % 2 == 0 ? 0x5a403c : 0x604541)); ctx.fill(rect)
+                    if c % 4 == 1 { ctx.setFillColor(color(0xc8a070, 0.08)); ctx.fill(CGRect(x: CGFloat(c) + 0.3, y: CGFloat(r), width: 0.12, height: 1)) }
+                    if w.m(c, r + 2).solid && !w.m(c, r + 1).solid { ctx.setFillColor(color(0x3a2620)); ctx.fill(CGRect(x: CGFloat(c), y: CGFloat(r) + 0.55, width: 1, height: 0.12)) }
+                case .gallery:
+                    ctx.setFillColor(color((c / 3 + r) % 2 == 0 ? 0x3a3a44 : 0x34343e)); ctx.fill(rect)
+                    if c % 9 == 0 { ctx.setFillColor(color(0x000000, 0.25)); ctx.fill(CGRect(x: CGFloat(c), y: CGFloat(r), width: 0.35, height: 1)) }
                 }
             }
         }
@@ -89,7 +97,7 @@ enum TerrainArt {
                     let a = w.d(i, j), b = w.d(i + 1, j), d = w.d(i + 1, j + 1), e = w.d(i, j + 1)
                     if t == .metal || t == .plank { continue }
                     if a < 0.5 && b < 0.5 && d < 0.5 && e < 0.5 { continue }
-                    if t == .air || t == .dug, [Backdrop.room, .shaft, .maint, .outpost, .sump, .transit].contains(w.bd(tc, tr)) { continue }
+                    if t == .air || t == .dug, [Backdrop.room, .shaft, .maint, .outpost, .sump, .transit, .hotel, .gallery].contains(w.bd(tc, tr)) { continue }
                     let x = CGFloat(i) / k, y = CGFloat(j) / k, s = 1 / k
                     let p = path(cellColor(tc, tr))
                     if a >= 0.5 && b >= 0.5 && d >= 0.5 && e >= 0.5 {

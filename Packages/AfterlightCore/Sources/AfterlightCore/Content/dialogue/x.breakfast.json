@@ -1,0 +1,79 @@
+{
+  "id": "x.breakfast",
+  "speaker": "Mara",
+  "entries": [
+    {
+      "node": "card"
+    }
+  ],
+  "nodes": {
+    "card": {
+      "lines": [
+        "Eggs. Toast. Juice. Tick the box, hang it on your door.",
+        "So people lived here."
+      ],
+      "choices": [
+        {
+          "id": "pay",
+          "label": "Not lived. You paid to sleep here for a night.",
+          "next": "bed"
+        },
+        {
+          "id": "skip",
+          "label": "(Pocket the card and move on.)",
+          "effects": [
+            "end"
+          ]
+        }
+      ]
+    },
+    "bed": {
+      "lines": [
+        "Even if you had a bed?"
+      ],
+      "choices": [
+        {
+          "id": "yes",
+          "label": "Yeah. If you wanted to see somewhere else.",
+          "next": "think"
+        }
+      ]
+    },
+    "think": {
+      "lines": [
+        "…",
+        "Somewhere else."
+      ],
+      "choices": [
+        {
+          "id": "would",
+          "label": "Would you?",
+          "next": "would"
+        },
+        {
+          "id": "go",
+          "label": "Come on, there’s more upstairs.",
+          "effects": [
+            "do:mara.wouldYou",
+            "end"
+          ]
+        }
+      ]
+    },
+    "would": {
+      "lines": [
+        "Maybe. If somebody watched my beds. And I’d want to know the eggs were really coming."
+      ],
+      "choices": [
+        {
+          "id": "ok",
+          "label": "Fair.",
+          "effects": [
+            "do:mara.wouldYou",
+            "end"
+          ]
+        }
+      ]
+    }
+  }
+}

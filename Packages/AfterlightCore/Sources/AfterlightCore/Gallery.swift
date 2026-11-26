@@ -22,3 +22,10 @@ extension Game {
     func galleryDo(_ what: String) {}
     func galleryCineTick(_ dt: Double, kind: String) -> Int { cine = nil; return 0 }
 }
+
+extension WorldGen {
+    static func galleryProps() -> [Prop] { [] }
+}
+extension Game {
+    var galleryLights: [(pos: V2, radius: Double)] { [] }
+}

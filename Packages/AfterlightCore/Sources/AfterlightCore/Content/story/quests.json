@@ -305,5 +305,81 @@
         "text": "Odi’s dark beds: lend a lamp, run cable, or keep your gear"
       }
     ]
+  },
+  {
+    "id": "hotel",
+    "title": "The Hotel",
+    "side": false,
+    "steps": [
+      {
+        "id": "lobby",
+        "text": "Look around the lobby"
+      },
+      {
+        "id": "diagram",
+        "text": "Find the way up on the exit diagram"
+      },
+      {
+        "id": "climb",
+        "text": "Climb to the upper gallery"
+      }
+    ]
+  },
+  {
+    "id": "cart",
+    "title": "Odi’s Cart",
+    "side": true,
+    "steps": [
+      {
+        "id": "down",
+        "text": "Odi wants the cart down the luggage stair"
+      },
+      {
+        "id": "home",
+        "text": "See what Odi ends up wheeling home"
+      }
+    ]
+  },
+  {
+    "id": "kick",
+    "title": "A Corner Kick",
+    "side": true,
+    "steps": [
+      {
+        "id": "pitch",
+        "text": "Ellis needs the last bench moved, and his ball"
+      },
+      {
+        "id": "play",
+        "text": "Play on the loading floor"
+      },
+      {
+        "id": "lamp",
+        "text": "Bring Ellis his lamp back"
+      }
+    ]
+  },
+  {
+    "id": "battery",
+    "title": "The Hotel Battery",
+    "side": true,
+    "steps": [
+      {
+        "id": "deal",
+        "text": "Corvin wants to get upstairs"
+      },
+      {
+        "id": "hatch",
+        "text": "The fire hatch is barred from above"
+      },
+      {
+        "id": "split",
+        "text": "Bring the battery down"
+      },
+      {
+        "id": "after",
+        "text": "Visit Corvin’s stall"
+      }
+    ]
   }
 ]

@@ -10,7 +10,11 @@ public struct Decal: Codable, Equatable, Sendable {
 
 /// Fixed coordinates the story and renderer refer to.
 public enum Landmarks {
-    public static let width = 160, height = 60
+    public static let width = 330, height = 60
+    /// The lower world was this wide before the hotel and gallery were added to the east.
+    public static let oldWidth = 160
+    /// Solid rock between the lower world and the hotel: nothing digs through it.
+    public static let sealedCols = 158...167
     public static let workshop = (x0: 20, x1: 31, top: 26, floor: 30)
     public static let bench = V2(26.25, 30)
     public static let shaft = (c0: 25, c1: 26, open: 13, mouth: 25)
@@ -281,6 +285,8 @@ public enum WorldGen {
 
         buildStoreB(w)
         buildOdiRoom(w)
+        for r in 0..<H { for c in Landmarks.sealedCols { w.set(c, r, .rock) } }
+        buildHotel(w)
         w.rebuildDensity()
 
         // Buried things.
@@ -301,7 +307,7 @@ public enum WorldGen {
             return w.groundY(Double(x) + 0.5, from: Double(top) + 0.5, to: 58) ?? 30
         }
         let storeProps = storeBProps(w)
-        w.props = storeProps + odiRoomProps() + [
+        w.props = storeProps + odiRoomProps() + hotelProps() + [
             Prop(id: "bench", kind: .workbench, pos: Landmarks.bench),
             Prop(id: "locker.ws", kind: .locker, pos: V2(20.7, 30), stock: [ItemStack(.spareGrip), ItemStack(.fasteners, 3), ItemStack(.lampCell, 3), ItemStack(.wire, 3), ItemStack(.tape, 2)]),
             Prop(id: "shelter.light", kind: .shelterLight, pos: V2(23.6, 26.0)),
@@ -341,6 +347,9 @@ public enum WorldGen {
             Climb(id: Landmarks.shaftRungsID, x: 26.0, top: 13.0, bottom: 25.6, kind: .rungs),
             Climb(id: "rungs.loading", x: Double(Landmarks.loadingShaft.c0) + 1.0, top: Double(Landmarks.transit.floor), bottom: 30, kind: .rungs),
             Climb(id: "rungs.sump", x: Double(Landmarks.hatch.c) + 0.5, top: 9.0, bottom: Double(Landmarks.sump.floor), kind: .rungs),
+            Climb(id: "stairs.luggage", x: Landmarks.luggageX, top: Double(Landmarks.guestFloor.floor), bottom: Double(Landmarks.lobby.floor), kind: .rungs),
+            Climb(id: "rungs.exit", x: Double(Landmarks.exitWell.x0) + 1.5, top: Double(Landmarks.upper.floor), bottom: Double(Landmarks.loadingFloor.floor), kind: .rungs),
+            Climb(id: "rungs.gallery", x: Double(Landmarks.galleryWell.x0) + 1.5, top: Double(Landmarks.gallery.floor), bottom: Double(Landmarks.upper.floor), kind: .rungs),
             Climb(id: "rungs.service", x: Double(Landmarks.serviceShaft.c1), top: Double(Landmarks.liftPit.floor), bottom: Double(Landmarks.serviceWalk.floor), kind: .rungs),
         ]
 
@@ -356,6 +365,14 @@ public enum WorldGen {
             Decal(text: "TRANSIT · −2,440 FT", pos: V2(64.0, 1.5), size: 0.26, vertical: false),
             Decal(text: "LOADING ▾ DEPOT", pos: V2(101.2, 1.4), size: 0.22, vertical: false),
             Decal(text: "↓ gardens  —O.", pos: V2(102.0, 2.6), size: 0.2, vertical: false),
+            Decal(text: "GROW ROOM · O.", pos: V2(148.0, 36.2), size: 0.22, vertical: false),
+            Decal(text: "HOTEL MERIDIAN · LOBBY", pos: V2(176.0, 46.2), size: 0.3, vertical: false),
+            Decal(text: "GUEST FLOOR 2", pos: V2(171.0, 35.2), size: 0.24, vertical: false),
+            Decal(text: "KITCHEN", pos: V2(202.0, 47.2), size: 0.24, vertical: false),
+            Decal(text: "LOADING · DELIVERIES", pos: V2(218.0, 42.4), size: 0.28, vertical: false),
+            Decal(text: "PLANT ROOM · SERVICE", pos: V2(224.0, 24.2), size: 0.24, vertical: false),
+            Decal(text: "UPPER GALLERY ▸ SURFACE APPROACH", pos: V2(234.0, 6.2), size: 0.3, vertical: false),
+            Decal(text: "STAIRS ▴ HOTEL", pos: V2(61.4, 1.6), size: 0.2, vertical: false),
         ]
         return w
     }
@@ -366,7 +383,7 @@ public enum WorldGen {
         var out: [Buried] = []
         func open(_ c: Int, _ r: Int) -> Bool { w.m(c, r) == .dirt && w.bd(c, r) == .earth }
         for r in 11..<(Landmarks.height - 3) {
-            for c in 3..<(Landmarks.width - 4) where open(c, r) {
+            for c in 3..<(Landmarks.oldWidth - 4) where open(c, r) {
                 if abs(Double(c) + 0.5 - Landmarks.crystal.x) < 3 && abs(Double(r) - Landmarks.crystal.y) < 3 { continue }
                 let h = hash2(c * 13 + 7, r * 7 + 3)
                 guard h < 0.03 else { continue }
@@ -402,7 +419,7 @@ public enum WorldGen {
     /// Roots wander down through the earth here and there: wood for planks, wherever Max digs.
     static func scatterRoots(_ w: World) {
         for r in 12..<(Landmarks.height - 6) {
-            for c in 3..<(Landmarks.width - 4) where w.m(c, r) == .dirt && w.bd(c, r) == .earth && hash2(c * 5 + 11, r * 11 + 2) < 0.0045 {
+            for c in 3..<(Landmarks.oldWidth - 4) where w.m(c, r) == .dirt && w.bd(c, r) == .earth && hash2(c * 5 + 11, r * 11 + 2) < 0.0045 {
                 var x = c, y = r
                 let len = 5 + Int(hash2(c, r * 3) * 7)
                 for i in 0..<len {

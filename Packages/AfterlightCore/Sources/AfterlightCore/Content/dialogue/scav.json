@@ -1,0 +1,252 @@
+{
+  "id": "scav",
+  "speaker": "Corvin",
+  "entries": [
+    {
+      "node": "split",
+      "when": [
+        "can:scav.atLift"
+      ]
+    },
+    {
+      "node": "stolen",
+      "when": [
+        "can:scav.stole"
+      ]
+    },
+    {
+      "node": "stall",
+      "when": [
+        "can:scav.stall"
+      ]
+    },
+    {
+      "node": "busy",
+      "when": [
+        "can:scav.dealt"
+      ]
+    },
+    {
+      "node": "first",
+      "when": [
+        "!knows:scav:met"
+      ]
+    },
+    {
+      "node": "hub"
+    }
+  ],
+  "nodes": {
+    "first": {
+      "lines": [
+        "Corvin. I find things, and I sell them to people who didn’t find them.",
+        "There’s a battery up in the plant room. Hatch at the top of the guest stair is barred from the other side, and I don’t do rungs."
+      ],
+      "choices": [
+        {
+          "id": "what",
+          "label": "What’s in it for me?",
+          "next": "offer"
+        },
+        {
+          "id": "no",
+          "label": "Not interested.",
+          "effects": [
+            "do:scav.decline",
+            "say:scav:Then I’ll find a way. I always do."
+          ]
+        }
+      ]
+    },
+    "offer": {
+      "lines": [
+        "There’s an inspection lamp on the service trolley up there. Bright, holds a charge. Get me up there and it’s yours. The battery’s mine."
+      ],
+      "choices": [
+        {
+          "id": "deal",
+          "label": "Deal.",
+          "detail": "Open the hatch from above (exit stair off the loading floor). He brings the battery down.",
+          "effects": [
+            "do:scav.deal",
+            "say:scav:Pleasure. Open that hatch and I’ll meet you up top."
+          ],
+          "primary": true
+        },
+        {
+          "id": "how",
+          "label": "How would I get up there?",
+          "next": "how"
+        },
+        {
+          "id": "no",
+          "label": "No.",
+          "effects": [
+            "do:scav.decline",
+            "say:scav:Suit yourself."
+          ]
+        }
+      ]
+    },
+    "how": {
+      "lines": [
+        "Exit stair, far end of the loading floor. Rungs all the way. Then along the top corridor to the hatch."
+      ],
+      "choices": [
+        {
+          "id": "deal",
+          "label": "Deal.",
+          "effects": [
+            "do:scav.deal",
+            "say:scav:Pleasure."
+          ],
+          "primary": true
+        },
+        {
+          "id": "no",
+          "label": "I’ll think about it.",
+          "effects": [
+            "end"
+          ]
+        }
+      ]
+    },
+    "busy": {
+      "lines": [
+        "Hatch open yet? I’m not getting any younger."
+      ],
+      "choices": [
+        {
+          "id": "bye",
+          "label": "Working on it.",
+          "effects": [
+            "end"
+          ]
+        }
+      ]
+    },
+    "split": {
+      "lines": [
+        "Freight cage takes one person and the trolley. I’ll run it down, you take the rungs. See you at the bottom.",
+        "(He’d be at the lever. The battery and your lamp are both on the trolley.)"
+      ],
+      "choices": [
+        {
+          "id": "ride",
+          "label": "We both ride. I’ll squeeze in.",
+          "detail": "You go down with him and the load.",
+          "effects": [
+            "do:scav.ride",
+            "say:scav:Cosy."
+          ],
+          "primary": true
+        },
+        {
+          "id": "lamp",
+          "label": "Hand me the lamp first.",
+          "detail": "Your share comes off the trolley before you split up.",
+          "effects": [
+            "do:scav.takeLamp",
+            "say:scav:Don’t trust me? Smart."
+          ]
+        },
+        {
+          "id": "trust",
+          "label": "Go ahead. I’ll take the rungs.",
+          "detail": "He controls the lift and everything on the trolley.",
+          "effects": [
+            "do:scav.trust",
+            "say:scav:See you at the bottom."
+          ]
+        }
+      ]
+    },
+    "stall": {
+      "lines": [
+        "{stallLine}"
+      ],
+      "choices": [
+        {
+          "id": "bye",
+          "label": "Just looking.",
+          "effects": [
+            "end"
+          ]
+        }
+      ]
+    },
+    "stolen": {
+      "lines": [
+        "{stallLine}"
+      ],
+      "choices": [
+        {
+          "id": "confront",
+          "label": "That’s my lamp.",
+          "detail": "Take it back. He won’t let go easily.",
+          "effects": [
+            "do:scav.confront",
+            "say:scav:Prove it."
+          ]
+        },
+        {
+          "id": "bargain",
+          "label": "Buy it back",
+          "detail": "Two coins or four fasteners.",
+          "when": [
+            "can:scav.bargain"
+          ],
+          "locked": "You can’t afford his price (two coins or four fasteners).",
+          "effects": [
+            "do:scav.bargain",
+            "say:scav:Pleasure doing business. Again."
+          ]
+        },
+        {
+          "id": "warn",
+          "label": "Warn Wren about him",
+          "detail": "She’ll know what he did.",
+          "when": [
+            "can:scav.warn"
+          ],
+          "locked": "Wren isn’t around to warn.",
+          "effects": [
+            "do:scav.warn"
+          ]
+        },
+        {
+          "id": "bye",
+          "label": "Walk away.",
+          "effects": [
+            "end"
+          ]
+        }
+      ]
+    },
+    "hub": {
+      "lines": [
+        "Still here. Still looking up that stair."
+      ],
+      "choices": [
+        {
+          "id": "deal",
+          "label": "Is the lamp offer still on?",
+          "effects": [
+            "do:scav.deal",
+            "say:scav:Always."
+          ],
+          "when": [
+            "can:scav.waiting"
+          ]
+        },
+        {
+          "id": "bye",
+          "label": "See you.",
+          "effects": [
+            "end"
+          ]
+        }
+      ]
+    }
+  }
+}

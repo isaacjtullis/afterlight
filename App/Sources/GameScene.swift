@@ -14,6 +14,18 @@ final class GameScene: SKScene {
 
     private var chunks: [Int: SKSpriteNode] = [:]
     private var castNodes: [String: SKSpriteNode] = [:]
+    private lazy var ballNode: SKSpriteNode = {
+        let s = 48
+        let ctx = CGContext(data: nil, width: s, height: s, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+        ctx.setFillColor(TerrainArt.color(0xf2efe6)); ctx.fillEllipse(in: CGRect(x: 2, y: 2, width: 44, height: 44))
+        ctx.setFillColor(TerrainArt.color(0x2a2a2a))
+        ctx.fillEllipse(in: CGRect(x: 18, y: 18, width: 12, height: 12))
+        for a in stride(from: 0.0, to: 6.28, by: 1.256) { ctx.fillEllipse(in: CGRect(x: 21 + cos(a) * 17, y: 21 + sin(a) * 17, width: 7, height: 7)) }
+        let n = SKSpriteNode(texture: SKTexture(cgImage: ctx.makeImage()!))
+        n.zPosition = 26; n.isHidden = true
+        addChild(n)
+        return n
+    }()
     private var propNodes: [String: (node: SKSpriteNode, key: String)] = [:]
     private var climbNode = SKShapeNode()
     private var climbKey = ""
@@ -294,7 +306,7 @@ final class GameScene: SKScene {
             if (p.kind == .maraLift || p.kind == .transitLift) && g.liftRepaired && g.liftCar > 0.5 { p.flags.insert("carUp") }
             if p.kind == .answerLamp { if g.odiLampBlink { p.flags.insert("lit") } else { p.flags.remove("lit") } }
             let crop = p.kind == .planter ? (p.planted == nil ? 0 : max(0.08, g.cropProgress(p))) : (p.kind == .waterDrum ? g.quarters.clean.rounded(.down) : 0)
-            let key = "\(p.kind.rawValue)|\(p.stock.isEmpty)|\(p.flags.sorted().joined())|\(Int(crop * 10))|\(g.story.flags.contains("power"))|\(S)"
+            let key = "\(p.kind.rawValue)|\(p.look ?? "")|\(p.stock.map(\.id.rawValue).joined())|\(Int(p.pos.x * 10)),\(Int(p.pos.y * 10))|\(p.stock.isEmpty)|\(p.flags.sorted().joined())|\(Int(crop * 10))|\(g.story.flags.contains("power"))|\(S)"
             alive.insert(p.id)
             if let e = propNodes[p.id], e.key == key { continue }
             let (bx, by, bw, bh) = Art.bounds(p.kind)
@@ -498,7 +510,7 @@ final class GameScene: SKScene {
 
         // Odi (a later chapter)
         let o = g.odi
-        if g.story.chapter >= 5 && !g.story.flags.contains("odi.out") && o.pos.x > Double(vx0) && o.pos.x < Double(vx1) {
+        if g.story.chapter >= 5 && o.pos.x > Double(vx0) && o.pos.x < Double(vx1) {
             odiNode.isHidden = false
             if let img = Art.image(widthTiles: 1.6, heightTiles: 2.0, ppt: ppt, originX: 0.8, originY: 1.9, { ctx in
                 ActorArt.drawOdi(ctx, face: o.face, walking: o.walking, time: g.time)
@@ -525,6 +537,14 @@ final class GameScene: SKScene {
         }
         let shown = Set(cast.map(\.id))
         for (id, n) in castNodes where !shown.contains(id) { n.isHidden = true }
+
+        // The ball, when there's a game on.
+        if let b = g.ball {
+            ballNode.isHidden = false
+            ballNode.position = sp(b.pos.x, b.pos.y)
+            ballNode.size = CGSize(width: 0.62 * S, height: 0.62 * S)
+            ballNode.zRotation = CGFloat(-b.pos.x * 2.2)
+        } else { ballNode.isHidden = true }
 
         // loose finds waiting to be picked up
         while dropNodes.count < g.drops.count {

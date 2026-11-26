@@ -77,9 +77,19 @@ extension Game {
         let freshMat = w.mat, freshDens = w.dens, freshProps = w.props, freshClimbs = w.climbs
         if let m = RLE.decode(s.mat, count: w.w * w.h) {
             for i in m.indices { w.mat[i] = Mat(rawValue: m[i]) ?? .dirt }
+        } else if let m = RLE.decode(s.mat, count: Landmarks.oldWidth * w.h) {
+            // Saves from before the hotel: the world was narrower. Keep every tile of it; the east is new.
+            let ow = Landmarks.oldWidth
+            for r in 0..<w.h { for c in 0..<ow where c < Landmarks.sealedCols.lowerBound { w.mat[r * w.w + c] = Mat(rawValue: m[r * ow + c]) ?? .dirt } }
         }
         if let d = RLE.decode(s.dens, count: w.dw * w.dh) {
             for i in d.indices { w.dens[i] = Float(d[i]) / 255 }
+        } else {
+            let odw = Landmarks.oldWidth * World.K + 1
+            if let d = RLE.decode(s.dens, count: odw * w.dh) {
+                let keep = Landmarks.sealedCols.lowerBound * World.K
+                for j in 0..<w.dh { for i in 0..<keep { w.dens[j * w.dw + i] = Float(d[j * odw + i]) / 255 } }
+            }
         }
         w.buried = s.buried
         w.props = s.props
@@ -112,6 +122,14 @@ extension Game {
             for f in freshProps where WorldGen.odiRoomPropIDs.contains(f.id) && w.propIndex(f.id) == nil { w.props.append(f) }
         }
         var story = s.story
+        if !story.flags.contains("wide1") {
+            // The map's explored blocks were numbered by the old width.
+            let oc = Landmarks.oldWidth / Game.mapBlock
+            story.explored = Set(story.explored.map { ($0 / oc) * Game.mapCols + $0 % oc })
+            for f in freshProps where WorldGen.hotelPropIDs.contains(f.id) && w.propIndex(f.id) == nil { w.props.append(f) }
+            for c in freshClimbs where ["stairs.luggage", "rungs.exit", "rungs.gallery"].contains(c.id) && !w.climbs.contains(where: { $0.id == c.id }) { w.climbs.append(c) }
+            story.flags.insert("wide1")
+        }
         story.flags.insert("odiRoom1")
         story.flags.insert("world3")
         story.flags.insert("storeB1")
