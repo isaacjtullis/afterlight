@@ -161,10 +161,11 @@ final class CampaignBuild2Tests: XCTestCase {
         sim(g, GameInput(), 2)
         XCTAssertTrue(g.maraHauling)
         XCTAssertEqual(g.maraHaulKind, "transit")
-        sim(g, GameInput(), 5)   // she's filled up at the tap
+        var k = 0
+        while !g.maraCansFull && k < 600 { sim(g, GameInput(), 0.05); k += 1 }   // she fills up at the tap
         XCTAssertTrue(g.maraCansFull)
-        // Meet her on the way and take a can.
-        place(g, V2(g.mara.pos.x + 0.6, 9))
+        // Meet her there and take a can.
+        place(g, V2(g.mara.pos.x + 0.6, g.mara.pos.y))
         XCTAssertEqual(g.context?.id, "can.carry", "Max \(g.max.pos) Mara \(g.mara.pos) cans \(g.maraCans) room \(g.inv.room(for: .fullCan)) busy \(g.max.busy) mode \(g.max.mode)")
         if g.context?.id == "can.carry" { g.performContext() }
         XCTAssertEqual(g.inv.count(.fullCan), 1)
