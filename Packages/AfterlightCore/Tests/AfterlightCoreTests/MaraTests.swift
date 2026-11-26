@@ -446,7 +446,14 @@ final class MaraTests: XCTestCase {
         // Meet Mara and agree to help.
         hold(GameInput(dx: 1), until: { g.nearMara }, timeout: 10)
         tapContext("panel:mara")
-        g.choosePanel("mara", "offer.collab")
+        // Conversation mode: the shock of meeting, the problem, the terms, then the deal.
+        XCTAssertEqual(g.talk?.node, "first")
+        for c in ["alive", "tap", "help"] { g.chooseTalk(c) }
+        XCTAssertEqual(g.talk?.node, "terms.water")
+        g.chooseTalk("agree")
+        XCTAssertNotNil(g.agreement(MaraDeal.water))
+        g.chooseTalk("ok")
+        XCTAssertNil(g.talk)
 
         // Down the open hatch into the sump, valve, intake.
         hold(GameInput(dx: 1), until: { g.max.pos.y > 13 }, timeout: 10)

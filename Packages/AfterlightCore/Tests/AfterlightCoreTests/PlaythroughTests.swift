@@ -100,6 +100,28 @@ final class PlaythroughTests: XCTestCase {
         b.go(28.3)
         g.packRation()
         XCTAssertTrue(g.packedFood)
+
+        // The ascent: the grip from the workshop locker, the tooth already came with the lift car.
+        XCTAssertTrue(b.go(20.9), b.trail)
+        if let id = g.context?.id, id.hasPrefix("search:") || id.hasPrefix("salvage:") { g.performContext(); b.note("searched \(id)") }
+        b.idle(0.5)
+        XCTAssertGreaterThan(g.available(.spareGrip), 0, "the spare grip from the workshop locker\n" + b.trail)
+        XCTAssertGreaterThan(g.available(.liftTooth), 0, "the drive tooth from the lift car\n" + b.trail)
+        XCTAssertTrue(b.go(26.2), b.trail)
+        g.craft("pick"); g.craft("ladder")
+        XCTAssertTrue(g.inv.has(.shortPick), "built the short pick\n" + b.trail)
+        XCTAssertEqual(g.inv.count(.ladderSection), 1, "built the ladder\n" + b.trail)
+        b.go(26.0)
+        XCTAssertTrue(b.use("placeLadder"), b.trail)
+        b.hold(GameInput(up: true), until: { g.max.pos.y < 16 }, timeout: 12, "climb to the seam")
+        for _ in 0..<12 where !g.story.flags.contains("hatchOpen") {
+            b.hold(GameInput(up: true, dig: true), until: { g.story.flags.contains("hatchOpen") }, timeout: 1.5, "pick the seam")
+            b.hold(GameInput(up: true), until: { false }, timeout: 1, "keep climbing")
+        }
+        XCTAssertTrue(g.story.flags.contains("hatchOpen"), b.trail)
+        b.hold(GameInput(up: true), until: { g.max.mode == .walk && g.max.pos.y < 9.5 }, timeout: 8, "climb into maintenance")
+        b.idle(1)
+        XCTAssertEqual(g.story.chapter, 3, "into the maintenance room\n" + b.trail)
         XCTAssertNil(g.talk)
     }
 }
