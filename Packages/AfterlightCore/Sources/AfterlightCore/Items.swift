@@ -14,87 +14,12 @@ public enum ItemID: String, Codable, CaseIterable, Sendable {
     case woodLadder, torch
     case tape
 
-    public var name: String {
-        switch self {
-        case .chargeCrystal: return "Charge crystal"
-        case .liftTooth: return "Lift tooth"
-        case .spareGrip: return "Spare grip"
-        case .fasteners: return "Fasteners"
-        case .pipe: return "Pipe length"
-        case .wire: return "Wire"
-        case .lampCell: return "Lamp cell"
-        case .seedTin: return "Seed tin"
-        case .pressureGauge: return "Cracked pressure gauge"
-        case .batteryCell: return "Battery cell"
-        case .greens: return "Greens"
-        case .trailMeal: return "Trail meal"
-        case .lamp: return "Lantern"
-        case .ladderSection: return "Ladder section"
-        case .waterTank: return "Water tank"
-        case .pressureValve: return "Pressure valve"
-        case .rope: return "Rope"
-        case .ration: return "Tinned ration"
-        case .copperOre: return "Copper ore"
-        case .ironOre: return "Iron ore"
-        case .tape: return "Duct tape"
-        case .quartz: return "Quartz"
-        case .coin: return "Old coin"
-        case .photo: return "Faded photo"
-        case .toy: return "Tin toy"
-        case .spores: return "Glowcap spores"
-        case .campCrate: return "Camp crate"
-        case .glowcap: return "Glowcap"
-        case .workbenchKit: return "Field workbench"
-        case .cotKit: return "Cot"
-        case .woodLadder: return "Wooden ladder"
-        case .torch: return "Root torch"
-        }
-    }
+    public var name: String { ItemTable.row(self)?.name ?? rawValue }
 
-    public var blurb: String {
-        switch self {
-        case .chargeCrystal: return "Violet, faintly warm. Could bridge a cracked cell."
-        case .liftTooth: return "A hardened tooth off a lift rack. With a grip, it's a pick."
-        case .spareGrip: return "A worn shovel grip from the locker."
-        case .fasteners: return "Bolts, washers, a few rivets."
-        case .pipe: return "Bulky. Good for ladder rails or a tank."
-        case .wire: return "Copper, mostly unkinked."
-        case .lampCell: return "Holds a charge for a long while."
-        case .seedTin: return "Old seeds. Some might still wake up."
-        case .pressureGauge: return "Cracked glass, working needle. A pump needs one."
-        case .batteryCell: return "Heavy. Enough to wake a battery bank."
-        case .greens: return "Fresh. Grown at home."
-        case .trailMeal: return "Restores Max's strength on a long dig."
-        case .lamp: return "Set it down anywhere and it keeps burning. Light the way home."
-        case .ladderSection: return "Place under an opening to climb it."
-        case .waterTank: return "Place it in the workshop to store water."
-        case .pressureValve: return "Brass, heavy, threaded both ends. A pump won't hold pressure without one."
-        case .rope: return "Old climbing line. Two lengths and an anchor will get you up a chimney."
-        case .ration: return "Beans, mostly. Eat one at the pantry to get your strength back."
-        case .copperOre: return "Green-streaked rock. Smelted down, it’s wire."
-        case .ironOre: return "Heavy and rust-red. Good for tools and fittings."
-        case .tape: return "Silver and sticky. Holds most things together, for a while."
-        case .quartz: return "Clear as ice. Lenses, lamps, maybe a radio."
-        case .coin: return "Money from before. Worth nothing, except to someone who misses it."
-        case .photo: return "A family at a beach, squinting into a sun nobody here has seen."
-        case .toy: return "A wind-up bird. It still hops, a little."
-        case .spores: return "A pinch of dust that glows faintly. They grow in the dark."
-        case .campCrate: return "Pitch it somewhere flat to make a camp: a crate to stash things in, far from home."
-        case .glowcap: return "A pale mushroom with a faint glow. Two of them, cooked, make a meal."
-        case .workbenchKit: return "Set it up anywhere and build there, not just at home."
-        case .cotKit: return "A place to lie down and get your strength back, wherever you set it."
-        case .woodLadder: return "Lean it against any ledge and it stays there: a way up and back down."
-        case .torch: return "Bundled root fibre soaked in resin. Set it down for a warm light that keeps burning."
-        }
-    }
+    public var blurb: String { ItemTable.row(self)?.blurb ?? "" }
 
     /// Bulky things take a whole backpack slot and don't stack.
-    public var bulky: Bool {
-        switch self {
-        case .pipe, .batteryCell, .ladderSection, .waterTank, .campCrate, .workbenchKit, .cotKit, .woodLadder: return true
-        default: return false
-        }
-    }
+    public var bulky: Bool { ItemTable.row(self)?.bulky ?? false }
     public var maxStack: Int { bulky ? 1 : 6 }
 }
 
@@ -233,13 +158,7 @@ public struct Recipe: Identifiable, Sendable {
 extension ItemID {
     /// What eating it does: hunger filled, stamina and health restored.
     public var food: (hunger: Double, stamina: Double, health: Double)? {
-        switch self {
-        case .ration: return (45, 20, 8)
-        case .trailMeal: return (60, 30, 10)
-        case .greens: return (25, 10, 5)
-        case .glowcap: return (15, 5, 3)
-        default: return nil
-        }
+        ItemTable.row(self)?.food.map { ($0.hunger, $0.stamina, $0.health) }
     }
 }
 
@@ -278,4 +197,21 @@ public enum Recipes {
         if Set(out.map(\.id)).count != out.count { errs.append("duplicate recipe ids") }
         return (out, errs)
     }
+}
+
+/// Item facts from Content/items/items.json: names, descriptions, bulk and food value.
+public enum ItemTable {
+    public struct Row: Decodable, Sendable {
+        public struct Food: Decodable, Sendable { public var hunger: Double, stamina: Double, health: Double }
+        public var id: String, name: String, blurb: String
+        public var bulky: Bool?
+        public var food: Food?
+    }
+    static let rows: [String: Row] = {
+        guard let d = ContentFiles.file("items/items.json"), let r = try? JSONDecoder().decode([Row].self, from: d) else { return [:] }
+        return Dictionary(r.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+    }()
+    public static func row(_ id: ItemID) -> Row? { rows[id.rawValue] }
+    /// Item ids with no entry in the file (a validation test keeps this empty).
+    public static var missing: [ItemID] { ItemID.allCases.filter { rows[$0.rawValue] == nil } }
 }

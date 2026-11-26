@@ -87,6 +87,10 @@ final class WorldValidationTests: XCTestCase {
     /// Content files load cleanly, with stable unique ids, and every quest the code asks for exists.
     func testContentFilesAreSound() {
         XCTAssertEqual(Recipes.loadErrors, [])
+        XCTAssertEqual(ItemTable.missing, [], "every item has a name and description in items.json")
+        XCTAssertEqual(ItemID.ration.name, "Tinned ration")
+        XCTAssertNotNil(ItemID.ration.food)
+        XCTAssertTrue(ItemID.pipe.bulky)
         XCTAssertGreaterThanOrEqual(Recipes.all.count, 21)
         XCTAssertEqual(Set(Recipes.all.map(\.id)).count, Recipes.all.count)
         for q in [Quest.blackout, .homeLight, .firstAscent, .dryTaps, .outpostWater, .farEdge, .lantern, .placeToReturn, .seedTin, .lights, .power] {

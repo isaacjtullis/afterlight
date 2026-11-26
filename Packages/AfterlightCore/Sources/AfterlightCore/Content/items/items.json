@@ -1,0 +1,190 @@
+[
+  {
+    "id": "chargeCrystal",
+    "name": "Charge crystal",
+    "blurb": "Violet, faintly warm. Could bridge a cracked cell."
+  },
+  {
+    "id": "liftTooth",
+    "name": "Lift tooth",
+    "blurb": "A hardened tooth off a lift rack. With a grip, it's a pick."
+  },
+  {
+    "id": "spareGrip",
+    "name": "Spare grip",
+    "blurb": "A worn shovel grip from the locker."
+  },
+  {
+    "id": "fasteners",
+    "name": "Fasteners",
+    "blurb": "Bolts, washers, a few rivets."
+  },
+  {
+    "id": "pipe",
+    "name": "Pipe length",
+    "blurb": "Bulky. Good for ladder rails or a tank.",
+    "bulky": true
+  },
+  {
+    "id": "wire",
+    "name": "Wire",
+    "blurb": "Copper, mostly unkinked."
+  },
+  {
+    "id": "lampCell",
+    "name": "Lamp cell",
+    "blurb": "Holds a charge for a long while."
+  },
+  {
+    "id": "seedTin",
+    "name": "Seed tin",
+    "blurb": "Old seeds. Some might still wake up."
+  },
+  {
+    "id": "pressureGauge",
+    "name": "Cracked pressure gauge",
+    "blurb": "Cracked glass, working needle. A pump needs one."
+  },
+  {
+    "id": "batteryCell",
+    "name": "Battery cell",
+    "blurb": "Heavy. Enough to wake a battery bank.",
+    "bulky": true
+  },
+  {
+    "id": "greens",
+    "name": "Greens",
+    "blurb": "Fresh. Grown at home.",
+    "food": {
+      "hunger": 25,
+      "stamina": 10,
+      "health": 5
+    }
+  },
+  {
+    "id": "trailMeal",
+    "name": "Trail meal",
+    "blurb": "Restores Max's strength on a long dig.",
+    "food": {
+      "hunger": 60,
+      "stamina": 30,
+      "health": 10
+    }
+  },
+  {
+    "id": "lamp",
+    "name": "Lantern",
+    "blurb": "Set it down anywhere and it keeps burning. Light the way home."
+  },
+  {
+    "id": "ladderSection",
+    "name": "Ladder section",
+    "blurb": "Place under an opening to climb it.",
+    "bulky": true
+  },
+  {
+    "id": "waterTank",
+    "name": "Water tank",
+    "blurb": "Place it in the workshop to store water.",
+    "bulky": true
+  },
+  {
+    "id": "pressureValve",
+    "name": "Pressure valve",
+    "blurb": "Brass, heavy, threaded both ends. A pump won't hold pressure without one."
+  },
+  {
+    "id": "rope",
+    "name": "Rope",
+    "blurb": "Old climbing line. Two lengths and an anchor will get you up a chimney."
+  },
+  {
+    "id": "ration",
+    "name": "Tinned ration",
+    "blurb": "Beans, mostly. Eat one at the pantry to get your strength back.",
+    "food": {
+      "hunger": 45,
+      "stamina": 20,
+      "health": 8
+    }
+  },
+  {
+    "id": "copperOre",
+    "name": "Copper ore",
+    "blurb": "Green-streaked rock. Smelted down, it’s wire."
+  },
+  {
+    "id": "ironOre",
+    "name": "Iron ore",
+    "blurb": "Heavy and rust-red. Good for tools and fittings."
+  },
+  {
+    "id": "quartz",
+    "name": "Quartz",
+    "blurb": "Clear as ice. Lenses, lamps, maybe a radio."
+  },
+  {
+    "id": "coin",
+    "name": "Old coin",
+    "blurb": "Money from before. Worth nothing, except to someone who misses it."
+  },
+  {
+    "id": "photo",
+    "name": "Faded photo",
+    "blurb": "A family at a beach, squinting into a sun nobody here has seen."
+  },
+  {
+    "id": "toy",
+    "name": "Tin toy",
+    "blurb": "A wind-up bird. It still hops, a little."
+  },
+  {
+    "id": "spores",
+    "name": "Glowcap spores",
+    "blurb": "A pinch of dust that glows faintly. They grow in the dark."
+  },
+  {
+    "id": "campCrate",
+    "name": "Camp crate",
+    "blurb": "Pitch it somewhere flat to make a camp: a crate to stash things in, far from home.",
+    "bulky": true
+  },
+  {
+    "id": "glowcap",
+    "name": "Glowcap",
+    "blurb": "A pale mushroom with a faint glow. Two of them, cooked, make a meal.",
+    "food": {
+      "hunger": 15,
+      "stamina": 5,
+      "health": 3
+    }
+  },
+  {
+    "id": "workbenchKit",
+    "name": "Field workbench",
+    "blurb": "Set it up anywhere and build there, not just at home.",
+    "bulky": true
+  },
+  {
+    "id": "cotKit",
+    "name": "Cot",
+    "blurb": "A place to lie down and get your strength back, wherever you set it.",
+    "bulky": true
+  },
+  {
+    "id": "woodLadder",
+    "name": "Wooden ladder",
+    "blurb": "Lean it against any ledge and it stays there: a way up and back down.",
+    "bulky": true
+  },
+  {
+    "id": "torch",
+    "name": "Root torch",
+    "blurb": "Bundled root fibre soaked in resin. Set it down for a warm light that keeps burning."
+  },
+  {
+    "id": "tape",
+    "name": "Duct tape",
+    "blurb": "Silver and sticky. Holds most things together, for a while."
+  }
+]
