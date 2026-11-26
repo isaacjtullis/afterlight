@@ -250,6 +250,11 @@ extension Game {
                         max.pos.x = prevX
                         max.vx = 0
                     }
+                } else if g < max.pos.y - 0.02 && max.vx != 0 && !max.swingOn
+                            && wallHit(max.pos.x + (max.vx > 0 ? 1 : -1) * (Tuning.halfWidth + 0.12), max.pos.y) {
+                    // The rounded foot of a wall is not a ramp: stop against the wall instead of riding up it.
+                    max.pos.x = prevX
+                    max.vx = 0
                 } else {
                     // While cutting sideways the floor is held level: uncut crumbs never lift Max.
                     let gg = (max.swingOn && max.swingKind == .side) ? Swift.max(g, max.digFloor - 0.04) : g
