@@ -135,7 +135,7 @@ extension Bot {
             guard go(32.5, timeout: 30) else { return false }
             let x = g.max.pos.x, y = g.max.pos.y
             note("at the rubble: L=\(g.world.solid(x - 0.95, y - 0.6)) R=\(g.world.solid(x + 0.95, y - 0.6)) head=\(g.world.solid(x, y - 2.2)) col=\((30...46).map { g.world.m(Int(x), $0).solid ? "#" : "." }.joined()) left=\((30...46).map { g.world.m(Int(x) - 1, $0).solid ? "#" : "." }.joined()) probe=\(stride(from: y - 1, to: y - 17, by: -1.0).map { yy in "\(Int(yy)):\(g.world.solid(x, yy - 1.8) ? "C" : "")\(!g.world.solid(x - 1, yy - 0.5) && g.world.solid(x - 1, yy + 0.2) ? "L" : "")" }.joined(separator: " ")) shaftClimb=\(g.tryShaftClimb()) climbs=\(g.world.climbs.filter { $0.kind == .foothold }.map { "\($0.x),\($0.top)-\($0.bottom)" })")
-            hold(GameInput(up: true), until: { self.g.max.pos.y < 30.3 && self.g.max.mode == .walk }, timeout: 60, "climb back up the dig")
+            hold(GameInput(up: true), until: { self.g.max.pos.y < 31 && self.g.max.mode == .walk }, timeout: 60, "climb back up the dig")
         case .walk:
             guard go(Double(Landmarks.serviceShaft.c1), timeout: 60) else { return false }
             hold(GameInput(up: true), until: { self.g.max.pos.y < 31 && self.g.max.mode == .walk }, timeout: 40, "climb the service ladder")
