@@ -8,7 +8,7 @@ extension Game {
         guard started, cine == nil, story.chapter == 2 else { return nil }
         let f = story.flags
         let ladderIn = world.climbs.contains { $0.id == "ladder.shaft" }
-        let hasPick = owned(.shortPick) > 0
+        let hasPick = inv.has(.shortPick)
         if !hasPick && owned(.liftTooth) == 0 {
             guard let car = world.prop("liftcar"), !car.stock.isEmpty else { return nil }
             if !f.contains("broke") { return V2(Double(Landmarks.caveStart) - 0.5, 29) }
