@@ -589,6 +589,33 @@ extension Game {
         return nil
     }
 
+    /// At the bottom of a narrow shaft Max dug straight down: walls close on both sides and open
+    /// above. He braces against both walls and climbs the whole way, cutting footholds as he goes.
+    @discardableResult
+    func tryShaftClimb() -> Bool {
+        let x = max.pos.x
+        let left = world.solid(x - 0.95, max.pos.y - 0.6), right = world.solid(x + 0.95, max.pos.y - 0.6)
+        guard left && right, !world.solid(x, max.pos.y - 2.2) else { return false }
+        if world.climbs.contains(where: { abs($0.x - x) < 0.45 && $0.bottom > max.pos.y - 0.6 && $0.top < max.pos.y - 0.5 }) { return false }
+        // Up the column to where it opens out sideways (a tunnel floor) or meets a ceiling.
+        var y = max.pos.y - 1.0
+        var top: Double? = nil
+        while y > max.pos.y - 60 && y > 1 {
+            if world.solid(x, y - 1.8) { top = y; break }
+            let lip = (!world.solid(x - 1.0, y - 0.5) && world.solid(x - 1.0, y + 0.2)) || (!world.solid(x + 1.0, y - 0.5) && world.solid(x + 1.0, y + 0.2))
+            if lip { top = (world.groundY(x + (world.solid(x - 1.0, y + 0.2) && !world.solid(x - 1.0, y - 0.5) ? -1.0 : 1.0), from: y - 0.6, to: y + 0.6) ?? y); break }
+            y -= 0.1
+        }
+        guard let t = top, max.pos.y - t > 1.45 else { return false }
+        world.climbs.append(Climb(id: "foot.\(Int(time * 100))", x: x, top: t, bottom: max.pos.y, kind: .foothold))
+        emit(.bite(at: V2(x, max.pos.y - 1), kind: .side, carved: true, face: max.face))
+        if !story.flags.contains("said.chimneyClimb") {
+            story.flags.insert("said.chimneyClimb")
+            think("Back to one wall, feet on the other. Up we go.", 2.4)
+        }
+        return true
+    }
+
     /// Cut footholds up an earth ledge so Max can climb it: out of a hole he dug, or up a bank.
     @discardableResult
     func tryFoothold(dir: Int) -> Bool {

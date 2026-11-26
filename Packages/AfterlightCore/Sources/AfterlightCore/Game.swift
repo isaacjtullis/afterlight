@@ -274,6 +274,7 @@ public final class Game {
             if upHeld > 0.3 && !input.dig && max.ground && max.oneShot == nil && climbCooldown <= 0 {
                 climbed = tryFoothold(dir: max.face)
                 if !climbed && wallBeside(max.face) { climbed = tryFoothold(dir: -max.face) }
+                if !climbed { climbed = tryShaftClimb() }
             }
             jumpTick(tap: freshJump, held: input.jump, blocked: climbed, dt: dt)
             // One DIG button: the wheel aims it. Up digs overhead, down digs the floor, otherwise straight ahead.
