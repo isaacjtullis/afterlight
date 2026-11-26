@@ -27,7 +27,7 @@ final class CampaignBuild4Tests: XCTestCase {
         g.begin()
         g.story.chapter = 6
         g.story.flags.formUnion(["flashOn", "hotel.seen", "hotel.inside", "answered"])
-        place(g, V2(229.6, 28))
+        place(g, V2(228.7, 28))
         return g
     }
 
@@ -150,7 +150,7 @@ final class CampaignBuild4Tests: XCTestCase {
         XCTAssertNil(g.world.prop("gallery.door"))
         XCTAssertNil(g.story.ending, "not until he walks back through the changed landing")
         // The short return: down the gallery stair.
-        place(g, V2(229.6, 12))
+        place(g, V2(228.7, 12))
         let b = Bot(g)
         b.hold(GameInput(climbDown: true), until: { g.max.pos.y > 27.5 }, timeout: 30, "down from the landing")
         sim(g, GameInput(), 0.5)
