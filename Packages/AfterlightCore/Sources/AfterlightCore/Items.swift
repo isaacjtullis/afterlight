@@ -8,6 +8,7 @@ public enum ItemID: String, Codable, CaseIterable, Sendable {
     case ration
     // finds in the earth
     case copperOre, ironOre, quartz, coin, photo, toy, spores
+    case campCrate
 
     public var name: String {
         switch self {
@@ -36,6 +37,7 @@ public enum ItemID: String, Codable, CaseIterable, Sendable {
         case .photo: return "Faded photo"
         case .toy: return "Tin toy"
         case .spores: return "Glowcap spores"
+        case .campCrate: return "Camp crate"
         }
     }
 
@@ -66,13 +68,14 @@ public enum ItemID: String, Codable, CaseIterable, Sendable {
         case .photo: return "A family at a beach, squinting into a sun nobody here has seen."
         case .toy: return "A wind-up bird. It still hops, a little."
         case .spores: return "A pinch of dust that glows faintly. They grow in the dark."
+        case .campCrate: return "Pitch it somewhere flat to make a camp: a crate to stash things in, far from home."
         }
     }
 
     /// Bulky things take a whole backpack slot and don't stack.
     public var bulky: Bool {
         switch self {
-        case .pipe, .batteryCell, .ladderSection, .waterTank: return true
+        case .pipe, .batteryCell, .ladderSection, .waterTank, .campCrate: return true
         default: return false
         }
     }
@@ -196,6 +199,8 @@ public struct Recipe: Identifiable, Sendable {
     public var note: String
     /// Story flag that makes this recipe appear (Max has seen the problem it solves).
     public var unlockFlag: String
+    /// Wood from the bundle on the bag.
+    public var wood = 0
 }
 
 public enum Recipes {
@@ -207,12 +212,14 @@ public enum Recipes {
         Recipe(id: "ladder", name: "Ladder section", inputs: [ItemStack(.pipe, 2), ItemStack(.fasteners, 4)], output: .item(.ladderSection, 1),
                note: "Bridges a tall opening, like the bottom of the shaft.", unlockFlag: "needLadder"),
         Recipe(id: "lamp", name: "Lamp", inputs: [ItemStack(.lampCell), ItemStack(.wire), ItemStack(.fasteners)], output: .item(.lamp, 1),
-               note: "Stays where you place it. Lights the way home.", unlockFlag: "ch2Done"),
+               note: "Stays where you place it. Lights the way home.", unlockFlag: "lampIdea"),
         Recipe(id: "tank", name: "Water tank", inputs: [ItemStack(.pipe), ItemStack(.fasteners, 2)], output: .item(.waterTank, 1),
                note: "Stores what the pump sends home.", unlockFlag: "sawPump"),
         Recipe(id: "meal", name: "Trail meal", inputs: [ItemStack(.greens, 2)], output: .item(.trailMeal, 1),
                note: "Eat it on a dig to get your strength back.", unlockFlag: "harvested"),
         Recipe(id: "rope", name: "Rope", inputs: [ItemStack(.wire, 2)], output: .item(.rope, 1),
                note: "Braid wire into a climbing line.", unlockFlag: "sawChimney"),
+        Recipe(id: "camp", name: "Camp crate", inputs: [ItemStack(.fasteners, 2)], output: .item(.campCrate, 1),
+               note: "Twenty wood and two fasteners. Pitch it far from home to keep things there.", unlockFlag: "sawPlatform", wood: 20),
     ]
 }

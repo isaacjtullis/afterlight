@@ -45,7 +45,7 @@ public enum GameEvent: Equatable, Sendable {
     case saveNow
 }
 
-public enum Sheet: String, Sendable { case workbench, storage, pack, journal, mission }
+public enum Sheet: String, Sendable { case workbench, storage, pack, journal, mission, camp, map }
 
 /// One contextual action shown near the work.
 public struct ContextAction: Equatable, Sendable {
@@ -115,6 +115,8 @@ public final class Game {
     public var cine: Cinematic? = nil
     public var context: ContextAction? = nil
     public var pinnedRecipe: String? = nil
+    /// The camp crate whose sheet is open.
+    public var openCamp: String? = nil
 
     public var appliedJobs: Set<String> = []
     public var activeJob: JobRecord? = nil
@@ -150,6 +152,7 @@ public final class Game {
         story.addQuest(.blackout)
         story.flags.insert(Game.worldVersionFlag)
         story.flags.insert("finds1")
+        story.flags.insert("world3")
     }
 
     public func drainEvents() -> [GameEvent] { defer { events.removeAll() }; return events }
@@ -345,7 +348,7 @@ public final class Game {
 
     public func canCraft(_ r: Recipe) -> Bool {
         if case .tool(let t) = r.output, inv.has(t) { return false }
-        return r.inputs.allSatisfy { available($0.id) >= $0.count }
+        return inv.wood >= r.wood && r.inputs.allSatisfy { available($0.id) >= $0.count }
     }
 
     public var knownRecipes: [Recipe] { Recipes.all.filter { story.flags.contains($0.unlockFlag) } }
@@ -353,6 +356,7 @@ public final class Game {
     public func craft(_ id: String) {
         guard let r = Recipes.all.first(where: { $0.id == id }), canCraft(r) else { return }
         for i in r.inputs { consume(i.id, i.count) }
+        inv.wood -= r.wood
         switch r.output {
         case .tool(let t):
             inv.belt.append(t)

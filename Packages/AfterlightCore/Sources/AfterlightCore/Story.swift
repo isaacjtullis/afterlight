@@ -57,11 +57,26 @@ public struct Story: Codable, Sendable {
     public var flags: Set<String> = []
     public var quests: [Quest] = []
     public var counters: [String: Int] = [:]
+    /// Map blocks Max has seen.
+    public var explored: Set<Int> = []
     public var waterTo: String? = nil      // where the home pump sends its water: "home" for now
     /// Shared jobs, agreements, ownership and water routing with other survivors.
     public var coop = Coop()
 
     public init() {}
+
+    enum CodingKeys: String, CodingKey { case chapter, flags, quests, counters, explored, waterTo, coop }
+    /// Every field is optional on the way in, so saves from older builds always load.
+    public init(from d: Decoder) throws {
+        let c = try d.container(keyedBy: CodingKeys.self)
+        chapter = try c.decodeIfPresent(Int.self, forKey: .chapter) ?? 1
+        flags = try c.decodeIfPresent(Set<String>.self, forKey: .flags) ?? []
+        quests = try c.decodeIfPresent([Quest].self, forKey: .quests) ?? []
+        counters = try c.decodeIfPresent([String: Int].self, forKey: .counters) ?? [:]
+        explored = try c.decodeIfPresent(Set<Int>.self, forKey: .explored) ?? []
+        waterTo = try c.decodeIfPresent(String.self, forKey: .waterTo)
+        coop = try c.decodeIfPresent(Coop.self, forKey: .coop) ?? Coop()
+    }
 
     public mutating func addQuest(_ q: Quest) {
         if !quests.contains(where: { $0.id == q.id }) { quests.append(q) }
@@ -205,6 +220,7 @@ extension Game {
 
     func storyTick(_ dt: Double) {
         guard started else { return }
+        expeditionTick(dt)
         let p = max.pos
         let f = story.flags
         func once(_ k: String, _ body: () -> Void) {
@@ -284,7 +300,7 @@ extension Game {
         guard story.chapter == 2 else { return }
         story.step("ascent", "maint")
         story.chapter = 3
-        story.flags.insert("ch2Done")
+        story.flags.formUnion(["ch2Done", "lampIdea"])
         story.addQuest(.dryTaps)
         story.addQuest(.lights)
         emit(.chapter(3, "Dry Taps"))
@@ -448,6 +464,7 @@ extension Game {
 
         if max.stamina < 25 && inv.count(.trailMeal) > 0 { return act("eat", "Eat a trail meal", V2(p.x, p.y - 2.4), true) }
         if let c = maraContext() { return c }
+        if let c = expeditionContext() { return c }
         if let s = plankSpot() { return act("plank", "Lay plank · \(Inventory.plankCost) wood", V2(Double(s.c) + 0.5, Double(s.r) - 0.9), true) }
         if nearOdi { return act("talk", odi.met ? "Talk to Odi" : "Say hello", V2(odi.pos.x, odi.pos.y - 2.4), !odi.met) }
         if underShaft && f.contains("sawShaft") && !f.contains("triedUp") { return act("tryUp", "Dig up", V2(p.x, p.y - 2.4)) }
@@ -509,6 +526,7 @@ extension Game {
         guard let a = context else { return }
         context = nil
         let p = max.pos
+        if performExpedition(a.id) { return }
         switch a.id {
         case "inspect":
             story.flags.formUnion(["inspected", "sawFlashlight"])

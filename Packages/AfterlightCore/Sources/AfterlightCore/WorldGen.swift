@@ -34,6 +34,11 @@ public enum Landmarks {
     public static let transit = (x0: 62, x1: 100, floor: 3)
     public static let maraHome = V2(80.5, 9)
     public static let liftX = 84.0
+    /// The old loading shaft from the east end of the transit platform down into the great cavern.
+    public static let loadingShaft = (c0: 104, c1: 105)
+    public static let signalLampX = 66.5
+    /// Where an optional first lamp goes: the mouth of the tunnel out of the workshop.
+    public static let lampSpot = V2(32.6, 30)
 }
 
 public enum WorldGen {
@@ -162,6 +167,22 @@ public enum WorldGen {
         }
         w.set(tr.x0 - 1, 1, .metal, back: .transit); w.set(tr.x0 - 1, 2, .metal, back: .transit)
         w.set(tr.x1 + 1, 1, .metal, back: .transit); w.set(tr.x1 + 1, 2, .metal, back: .transit)
+        // East end of the platform: the wall is broken through onto a stub of decking and the old
+        // loading shaft, which drops all the way into the great cavern.
+        for r in 1...2 { w.set(tr.x1 + 1, r, .air, back: .transit) }
+        for c in (tr.x1 + 1)...(Landmarks.loadingShaft.c1 + 1) {
+            w.set(c, 0, .rock)
+            for r in 1...2 { w.set(c, r, .air, back: .transit) }
+            if c < Landmarks.loadingShaft.c0 { w.set(c, tr.floor, .metal, back: .transit) }
+        }
+        w.set(Landmarks.loadingShaft.c1 + 2, 1, .metal, back: .transit); w.set(Landmarks.loadingShaft.c1 + 2, 2, .metal, back: .transit)
+        for c in Landmarks.loadingShaft.c0...Landmarks.loadingShaft.c1 {
+            for r in 3..<30 where !(w.m(c, r) == .air && w.bd(c, r) == .open) { w.set(c, r, .air, back: .shaft) }
+        }
+        for r in 3..<30 {
+            w.set(Landmarks.loadingShaft.c0 - 1, r, w.m(Landmarks.loadingShaft.c0 - 1, r) == .air && w.bd(Landmarks.loadingShaft.c0 - 1, r) == .open ? .air : .metal, back: .shaft)
+            w.set(Landmarks.loadingShaft.c1 + 1, r, w.m(Landmarks.loadingShaft.c1 + 1, r) == .air && w.bd(Landmarks.loadingShaft.c1 + 1, r) == .open ? .air : .metal, back: .shaft)
+        }
         // The old maintenance chimney: two tiles wide, from the warm passage's ceiling up through the platform.
         for r in 3...6 { for c in Landmarks.chimney...(Landmarks.chimney + 1) { w.set(c, r, .air, back: .shaft) } }
         // Mara dug the last stretch of the warm passage from her side, up to her door.
@@ -208,6 +229,8 @@ public enum WorldGen {
             Prop(id: "sump.valve", kind: .sunkValve, pos: V2(84.4, Double(Landmarks.sump.floor)), stock: [ItemStack(.pressureValve)]),
             Prop(id: "chimney", kind: .chimney, pos: V2(Double(Landmarks.chimney) + 1.0, 9)),
             Prop(id: "transit.lift", kind: .transitLift, pos: V2(Landmarks.liftX, Double(Landmarks.transit.floor))),
+            Prop(id: "signal", kind: .signalLamp, pos: V2(Landmarks.signalLampX, Double(Landmarks.transit.floor))),
+            Prop(id: "lantern.clue", kind: .lanternClue, pos: V2(96.2, Double(Landmarks.transit.floor))),
         ]
         if let i = w.propIndex("sump.intake") { w.props[i].flags = ["clogged"] }
         if let i = w.propIndex("mara.shelf") { w.props[i].flags = ["owner:mara"] }
@@ -216,17 +239,20 @@ public enum WorldGen {
 
         w.climbs = [
             Climb(id: Landmarks.shaftRungsID, x: 26.0, top: 13.0, bottom: 25.6, kind: .rungs),
+            Climb(id: "rungs.loading", x: Double(Landmarks.loadingShaft.c0) + 1.0, top: Double(Landmarks.transit.floor), bottom: 30, kind: .rungs),
             Climb(id: "rungs.sump", x: Double(Landmarks.hatch.c) + 0.5, top: 9.0, bottom: Double(Landmarks.sump.floor), kind: .rungs),
         ]
 
         w.decals = [
-            Decal(text: "LEVEL −214 MI", pos: V2(20.4, 27.3), size: 0.3, vertical: false),
+            Decal(text: "SHELTER 4 · −2,600 FT", pos: V2(20.4, 27.3), size: 0.3, vertical: false),
             Decal(text: "SERVICE SHAFT 7  ▸  MAINT", pos: V2(25.08, 18.8), size: 0.28, vertical: true),
-            Decal(text: "MAINT · −213.98 MI", pos: V2(27.6, 6.1), size: 0.3, vertical: false),
+            Decal(text: "MAINT · −2,475 FT", pos: V2(27.6, 6.1), size: 0.3, vertical: false),
             Decal(text: "LINE 4 · WARM", pos: V2(31.6, 8.2), size: 0.22, vertical: false),
-            Decal(text: "OUTPOST 9 · −213.95 MI", pos: V2(74.4, 5.9), size: 0.26, vertical: false),
+            Decal(text: "OUTPOST 9 · −2,475 FT", pos: V2(74.4, 5.9), size: 0.26, vertical: false),
             Decal(text: "SUMP", pos: V2(80.4, 11.0), size: 0.26, vertical: false),
-            Decal(text: "TRANSIT · −213.9 MI", pos: V2(64.0, 1.5), size: 0.26, vertical: false),
+            Decal(text: "TRANSIT · −2,440 FT", pos: V2(64.0, 1.5), size: 0.26, vertical: false),
+            Decal(text: "LOADING ▾ DEPOT", pos: V2(101.2, 1.4), size: 0.22, vertical: false),
+            Decal(text: "↓ gardens  —O.", pos: V2(102.0, 2.6), size: 0.2, vertical: false),
         ]
         return w
     }

@@ -64,6 +64,8 @@ public enum PropKind: String, Codable, Sendable {
     case crate                               // a tool crate in the root hollow
     case pantry                              // food and water at home
     case pile                                // something Max put down
+    case signalLamp, lanternClue             // the transit platform
+    case camp                                // a camp crate Max pitched
     case pump, batteryBank, warmPipe         // maintenance room
     case lamp, planter, waterTank            // placed by the player
     case outpostDoor, odiStall

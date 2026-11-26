@@ -71,7 +71,7 @@ extension Game {
         let g = Game()
         g.clock = clock
         let w = g.world
-        let freshMat = w.mat, freshDens = w.dens, freshProps = w.props
+        let freshMat = w.mat, freshDens = w.dens, freshProps = w.props, freshClimbs = w.climbs
         if let m = RLE.decode(s.mat, count: w.w * w.h) {
             for i in m.indices { w.mat[i] = Mat(rawValue: m[i]) ?? .dirt }
         }
@@ -82,7 +82,15 @@ extension Game {
         w.props = s.props
         w.climbs = s.climbs
         for f in freshProps where Game.addedLater.contains(f.id) && w.propIndex(f.id) == nil { w.props.append(f) }
+        for c in freshClimbs where c.kind == .rungs && !w.climbs.contains(where: { $0.id == c.id }) { w.climbs.append(c) }
+        if !s.story.flags.contains("world3") {
+            // The broken east end of the transit platform and the loading shaft, added after these saves.
+            let K = World.K
+            for r in 0..<w.h { for c in 100...108 { w.mat[r * w.w + c] = freshMat[r * w.w + c] } }
+            for j in 0..<w.dh { for i in (100 * K)...(109 * K) where i < w.dw { w.dens[j * w.dw + i] = freshDens[j * w.dw + i] } }
+        }
         var story = s.story
+        story.flags.insert("world3")
         if !story.flags.contains("finds1") {
             let have = Set(w.buried.map(\.id))
             for b in WorldGen.scatterFinds(w) where !have.contains(b.id) && w.m(Int(b.pos.x), Int(b.pos.y)) == .dirt { w.buried.append(b) }

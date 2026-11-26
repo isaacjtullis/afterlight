@@ -181,6 +181,8 @@ extension Game {
         story.chapter = 4
         emit(.chapter(4, "The Transit Level"))
         later(2.5) { $0.think("A platform. Tracks, going both ways into the dark.", 3.6) }
+        story.addQuest(.farEdge)
+        story.flags.insert("sawPlatform")
         emit(.saveNow)
     }
 
@@ -435,7 +437,7 @@ extension Game {
         let at = world.prop("chimney")?.pos ?? max.pos
         let rigged = world.climbs.contains { $0.id == "rope.chimney" }
         var rows: [PanelRow] = []
-        var lines = ["An old maintenance chimney. Six metres straight up to the transit platform. The rungs rusted off long ago."]
+        var lines = ["An old maintenance chimney. Twenty feet straight up to the transit platform. The rungs rusted off long ago."]
         if rigged {
             lines.append("Your rope’s rigged. Push the wheel up to climb.")
         } else {
