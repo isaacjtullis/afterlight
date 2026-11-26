@@ -72,8 +72,13 @@ final class GameModel: ObservableObject {
 
     init() {
         if ProcessInfo.processInfo.arguments.contains("-uitest") { LocalStore().erase() }
+        let iCloudSave = ProcessInfo.processInfo.arguments.contains("-uitest") ? nil : ICloudStore().load()
         if let s = LocalStore().load() {
-            game = Game.load(s)
+            // A newer copy from another device wins.
+            if let c = iCloudSave, c.savedAt > s.savedAt.addingTimeInterval(5) { game = Game.load(c) } else { game = Game.load(s) }
+            showTitle = true
+        } else if let c = iCloudSave {
+            game = Game.load(c)
             showTitle = true
         } else {
             game = Game()
@@ -147,12 +152,14 @@ final class GameModel: ObservableObject {
 
     func resetForNewGame() {
         local.erase()
+        ICloudStore().erase()
         game = Game()
         scene?.reset(game)
     }
 
     func newGame() {
         local.erase()
+        ICloudStore().erase()
         game = Game()
         scene?.reset(game)
         start()
@@ -407,6 +414,7 @@ final class GameModel: ObservableObject {
 
     private func pushCloud() {
         guard let d = try? game.encodeSave() else { return }
+        if !uiTesting { ICloudStore().save(d) }
         Task { await cloud.save(d) }
     }
 

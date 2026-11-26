@@ -125,3 +125,22 @@ actor CloudSync {
         return try? await client.rpc("job_progress", params: ClaimParams(p_id: id)).execute().value
     }
 }
+
+
+/// A copy of the save in the player's iCloud (key-value storage), so progress survives a reinstall
+/// and follows them to another device signed in to the same account. Compressed to stay well under the 1 MB limit.
+struct ICloudStore {
+    private var kv: NSUbiquitousKeyValueStore { .default }
+    func save(_ data: Data) {
+        guard let z = try? (data as NSData).compressed(using: .lzfse) as Data, z.count < 900_000 else { return }
+        kv.set(z, forKey: "save.v1")
+        kv.set(Date().timeIntervalSince1970, forKey: "save.at")
+        kv.synchronize()
+    }
+    func load() -> SaveGame? {
+        kv.synchronize()
+        guard let z = kv.data(forKey: "save.v1"), let d = try? (z as NSData).decompressed(using: .lzfse) as Data else { return nil }
+        return try? Game.decodeSave(d)
+    }
+    func erase() { kv.removeObject(forKey: "save.v1"); kv.synchronize() }
+}
