@@ -325,7 +325,7 @@ final class GameScene: SKScene {
                 var y = c.bottom - 0.45
                 var k = 0
                 while y > c.top - 0.1 {
-                    let wx = c.x + d * (k % 2 == 0 ? 0.32 : 0.42)
+                    let wx = c.x + d * (k % 2 == 0 ? 0.55 : 0.66)
                     path.move(to: sp(wx, y)); path.addLine(to: sp(wx + d * 0.22, y - 0.08))
                     y -= 0.5; k += 1
                 }

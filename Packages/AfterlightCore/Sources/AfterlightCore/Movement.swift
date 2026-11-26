@@ -457,8 +457,9 @@ extension Game {
                 guard let t = world.groundY(x, from: y, to: max.pos.y), max.pos.y - t > 0.9 else { return nil }
                 // Room to stand at the top, and a clear line for Max's own body on the way up.
                 if world.solid(x + Double(dir) * 0.4, t - 1.2) { return nil }
+                let lineX = max.pos.x + Double(dir) * 0.08
                 var yy = max.pos.y - 0.4
-                while yy > t + 0.2 { if world.solid(max.pos.x, yy - 1.2) { return nil }; yy -= 0.25 }
+                while yy > t + 0.2 { if world.solid(lineX, yy - 1.2) { return nil }; yy -= 0.25 }
                 return t
             }
             y -= 0.1
@@ -471,7 +472,7 @@ extension Game {
     func tryFoothold(dir: Int) -> Bool {
         guard let t = footholdTop(dir) else { return false }
         let x = max.pos.x + Double(dir) * 0.75
-        let lineX = max.pos.x + Double(dir) * 0.35
+        let lineX = max.pos.x + Double(dir) * 0.08
         if world.climbs.contains(where: { abs($0.x - lineX) < 0.45 && $0.bottom > max.pos.y - 0.6 && $0.top < max.pos.y - 0.5 }) { return false }
         world.climbs.append(Climb(id: "foot.\(Int(time * 100))", x: lineX, top: t, bottom: max.pos.y, kind: .foothold))
         emit(.bite(at: V2(x, max.pos.y - 1), kind: .side, carved: true, face: dir))
