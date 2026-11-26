@@ -28,8 +28,7 @@ struct SheetHost: View {
                         switch sheet {
                         case .workbench: WorkbenchView()
                         case .storage: StorageView()
-                        case .pack: PackView()
-                        case .journal: JournalView()
+                        case .pack, .journal: EmptyView()
                         case .mission: MissionView()
                         }
                     }

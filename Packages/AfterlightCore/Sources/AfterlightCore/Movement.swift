@@ -417,10 +417,10 @@ extension Game {
         // step off at the top onto whichever side has floor
         if max.pos.y <= c.top + 0.01 && input.up {
             // The edge of an opening is rounded; reach a little further for flat floor if needed.
-            for reach in [1.05, 1.5, 2.0] {
+            for reach in [1.05, 1.5, 2.0, 2.5] {
                 for side in [max.face, -max.face] {
                     let x = c.x + Double(side) * reach
-                    if let g = world.groundY(x, from: c.top - 0.6, to: c.top + 0.6), !wallHit(x, g) {
+                    if let g = world.groundY(x, from: c.top - 0.8, to: c.top + 0.9), !wallHit(x, g) {
                         max.pos = V2(x, g); max.face = side
                         exitClimb(); return
                     }
@@ -445,25 +445,33 @@ extension Game {
         return world.solid(x, max.pos.y - 0.5) && !world.hardAt(x, max.pos.y - 0.5)
     }
 
-    /// Cut footholds up an earth ledge (up to about eight tiles) so Max can climb it.
-    /// Works anywhere he can see the top: out of a hole he dug, or up a bank.
-    @discardableResult
-    func tryFoothold(dir: Int) -> Bool {
+    /// The top of the earth ledge on this side, if Max could climb it: the first opening with
+    /// headroom above it, up to about eight tiles.
+    func footholdTop(_ dir: Int) -> Double? {
         let x = max.pos.x + Double(dir) * 0.75
-        guard wallBeside(dir) else { return false }
+        guard wallBeside(dir) else { return nil }
         var y = max.pos.y - 0.5
-        var top: Double? = nil
         while y > max.pos.y - 8.5 {
-            if world.hardAt(x, y) { return false }
-            if !world.solid(x, y) { top = world.groundY(x, from: y - 0.05, to: y + 0.7); break }
+            if world.hardAt(x, y) { return nil }
+            if !world.solid(x, y) && !world.solid(x, y - 0.6) && !world.solid(x, y - 1.2) {
+                guard let t = world.groundY(x, from: y, to: max.pos.y), max.pos.y - t > 0.9 else { return nil }
+                // Room to stand at the top, and a clear line for Max's own body on the way up.
+                if world.solid(x + Double(dir) * 0.4, t - 1.2) { return nil }
+                var yy = max.pos.y - 0.4
+                while yy > t + 0.2 { if world.solid(max.pos.x, yy - 1.2) { return nil }; yy -= 0.25 }
+                return t
+            }
             y -= 0.1
         }
-        guard let t = top, max.pos.y - t > 0.9 else { return false }
-        // Room to stand at the top, and a clear line for Max's own body on the way up.
-        if world.solid(x, t - 1.5) || world.solid(x + Double(dir) * 0.4, t - 1.2) { return false }
+        return nil
+    }
+
+    /// Cut footholds up an earth ledge so Max can climb it: out of a hole he dug, or up a bank.
+    @discardableResult
+    func tryFoothold(dir: Int) -> Bool {
+        guard let t = footholdTop(dir) else { return false }
+        let x = max.pos.x + Double(dir) * 0.75
         let lineX = max.pos.x + Double(dir) * 0.35
-        var yy = max.pos.y - 0.4
-        while yy > t + 0.2 { if world.solid(max.pos.x, yy - 1.2) { return false }; yy -= 0.25 }
         if world.climbs.contains(where: { abs($0.x - lineX) < 0.45 && $0.bottom > max.pos.y - 0.6 && $0.top < max.pos.y - 0.5 }) { return false }
         world.climbs.append(Climb(id: "foot.\(Int(time * 100))", x: lineX, top: t, bottom: max.pos.y, kind: .foothold))
         emit(.bite(at: V2(x, max.pos.y - 1), kind: .side, carved: true, face: dir))

@@ -238,6 +238,13 @@ extension Game {
                 if f.contains("needPick") { later(3.2) { $0.think("The drive teeth are hard steel. That’s my pick.", 3.4) } }
             }
         }
+        // In a hole with no way to walk out: point at ▲.
+        if max.mode == .walk && max.ground && !max.swingOn && Int(time * 2) % 4 == 0 && time - (story.counters["climbHintAt"].map(Double.init) ?? -99) > 14,
+           (footholdTop(max.face) != nil || footholdTop(-max.face) != nil), wallBeside(max.face) || wallBeside(-max.face),
+           world.solid(max.pos.x - 0.9, max.pos.y - 0.5) && world.solid(max.pos.x + 0.9, max.pos.y - 0.5) {
+            story.counters["climbHintAt"] = Int(time)
+            hint("Hold ▲ to cut footholds and climb out.", 4)
+        }
         // The root door: say what roots are good for the first time Max stands at them.
         if abs(p.x - Double(Landmarks.hollow.door) - 1.2) < 1.2 && abs(p.y - 30) < 0.6 && world.m(Landmarks.hollow.door, 28) == .root {
             once("roots") {

@@ -49,8 +49,8 @@ final class WorldTests: XCTestCase {
 
     func testSteelDoesNotCarve() {
         let g = Game()
-        let r = g.world.carve(center: V2(19.5, 28), radius: 0.8, floorY: nil, tool: .shovel)
-        XCTAssertEqual(g.world.m(19, 28), .metal)
+        let r = g.world.carve(center: V2(24.5, 18.5), radius: 0.8, floorY: nil, tool: .shovel)
+        XCTAssertEqual(g.world.m(24, 18), .metal)
         XCTAssertTrue(r.cleared.isEmpty)
     }
 
@@ -75,6 +75,9 @@ final class ChapterTests: XCTestCase {
         sim(g, GameInput(down: true), 1.2)
         sim(g, GameInput(), 1.5)
         XCTAssertEqual(g.inv.count(.chargeCrystal), 1, "digging down beside the glint should pop the crystal")
+        // He's in the hole he dug: ▲ climbs out.
+        sim(g, GameInput(up: true), 4)
+        sim(g, GameInput(), 0.5)
 
         var trail: [String] = []
         var tt = 0.0

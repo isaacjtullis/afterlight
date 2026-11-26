@@ -137,7 +137,7 @@ extension Game {
             steps.append(JobStep(label: "Dig", seconds: 300, stamina: Int(Tuning.columnCost), endPos: V2(cx - Double(dir) * 0.9, floorY), carves: ops))
             // an unfamiliar opening beyond this column? stop and let the player look first
             let next = [world.m(col + dir, f - 2), world.m(col + dir, f - 1)]
-            if next.contains(where: { $0 == .air }) && world.bd(col + dir, f - 1) == .open { pause = steps.count; reason = "Broke into open air. Max waited at the edge for you."; break }
+            if next.contains(where: { $0 == .air }) { pause = steps.count; reason = "Broke into open air. Max waited at the edge for you."; break }
             col += dir
         }
         guard !steps.isEmpty else { return nil }
