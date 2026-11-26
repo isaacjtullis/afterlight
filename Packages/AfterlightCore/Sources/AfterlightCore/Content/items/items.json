@@ -186,5 +186,42 @@
     "id": "tape",
     "name": "Duct tape",
     "blurb": "Silver and sticky. Holds most things together, for a while."
+  },
+  {
+    "id": "strap",
+    "name": "Bunk strap",
+    "blurb": "A canvas strap off a broken bunk, with a steel buckle. Cinches tight."
+  },
+  {
+    "id": "gasket",
+    "name": "Rubber gasket",
+    "blurb": "A ring of rubber from an old washstand. Still soft."
+  },
+  {
+    "id": "hoseClamp",
+    "name": "Hose clamp",
+    "blurb": "A proper steel clamp. It seals a fitting on its own."
+  },
+  {
+    "id": "waterCan",
+    "name": "Sealed water can",
+    "blurb": "Builders’ stock, still sealed. Six clean cups. Another outing’s worth.",
+    "bulky": true
+  },
+  {
+    "id": "filterAssembly",
+    "name": "Filter assembly",
+    "blurb": "A whole replacement filter, housing and all. Heavy. It could make the intake run clean.",
+    "bulky": true
+  },
+  {
+    "id": "sketch",
+    "name": "Dad’s sketch",
+    "blurb": "Dad’s pencil: a forked pipe, three white stripes, and a question mark where a second way in might be."
+  },
+  {
+    "id": "roster",
+    "name": "Crew roster",
+    "blurb": "The builders’ crew list. Halfway down, in pencil, Dad’s name in his own hand."
   }
 ]

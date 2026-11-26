@@ -74,6 +74,7 @@ public enum PropKind: String, Codable, Sendable {
     case outpostDoor, odiStall
     // Mara's outpost (chapter 3)
     case maraTap, maraPump, maraLift, maraShelf, sumpHatch, intake, sunkValve, chimney, transitLift
+    case waterDrum, brokenBunk, washstand, floorGrate, landmark, storeShelf
 }
 
 public struct Prop: Codable, Identifiable, Equatable, Sendable {

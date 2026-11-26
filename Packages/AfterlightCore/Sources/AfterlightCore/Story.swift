@@ -215,6 +215,7 @@ extension Game {
     func storyTick(_ dt: Double) {
         guard started else { return }
         expeditionTick(dt)
+        waterTick(dt)
         let p = max.pos
         let f = story.flags
         func once(_ k: String, _ body: () -> Void) {
@@ -458,11 +459,12 @@ extension Game {
         func act(_ id: String, _ label: String, _ at: V2, _ big: Bool = false) -> ContextAction { ContextAction(id: id, label: label, anchor: at, prominent: big) }
 
         if max.stamina < 25 && inv.count(.trailMeal) > 0 { return act("eat", "Eat a trail meal", V2(p.x, p.y - 2.4), true) }
+        if let c = waterContext() { return c }
         if let c = maraContext() { return c }
         if let c = expeditionContext() { return c }
         if let s = plankSpot() { return act("plank", "Lay plank · \(Inventory.plankCost) wood", V2(Double(s.c) + 0.5, Double(s.r) - 0.9), true) }
         if nearOdi { return act("talk", odi.met ? "Talk to Odi" : "Say hello", V2(odi.pos.x, odi.pos.y - 2.4), !odi.met) }
-        if underShaft && f.contains("sawShaft") && !f.contains("triedUp") { return act("tryUp", "Dig up", V2(p.x, p.y - 2.4)) }
+        if underShaft && f.contains("sawShaft") && !f.contains("triedUp") && !waterQuestActive { return act("tryUp", "Dig up", V2(p.x, p.y - 2.4)) }
         if underShaft && available(.ladderSection) > 0 && !world.climbs.contains(where: { $0.id == "ladder.shaft" }) {
             return act("placeLadder", "Place ladder", V2(26, 27.5), true)
         }
@@ -519,6 +521,7 @@ extension Game {
         context = nil
         let p = max.pos
         if performExpedition(a.id) { return }
+        if performWater(a.id) { return }
         switch a.id {
         case "inspect":
             story.flags.formUnion(["inspected", "sawFlashlight"])
@@ -536,6 +539,14 @@ extension Game {
             // The first look up the shaft plays once.
             if !story.flags.contains("sawShaft") { cine = Cinematic(kind: "flash") }
             emit(.flashOn)
+            // In the new light: the drum, and the reason to leave home.
+            if !quarters.filterFitted && !story.quests.contains(where: { $0.id == "drum" }) {
+                story.addQuest(.homeWater)
+                later(11) { g in
+                    guard !g.drumTraced else { return }
+                    g.think("Four cups of clean water in the drum. About two days of work. And something’s dripping.", 4.2)
+                }
+            }
             clearHint()
         case "bench": emit(.openSheet(.workbench))
         case "storage": emit(.openSheet(.storage))

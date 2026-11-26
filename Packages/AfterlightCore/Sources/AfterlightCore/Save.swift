@@ -27,6 +27,7 @@ public struct SaveGame: Codable, Sendable {
     public var battery: Double?
     public var quarters: Quarters?
     public var hunger: Double?
+    public var hydration: Double? = nil
 }
 
 enum RLE {
@@ -65,7 +66,7 @@ extension Game {
                         inventory: inv, storage: storage, story: story, odi: odi,
                         mat: RLE.encode(matBytes), dens: RLE.encode(densBytes),
                         buried: world.buried, props: world.props, climbs: world.climbs,
-                        appliedJobs: Array(appliedJobs).sorted(), activeJob: activeJob, pinnedRecipe: pinnedRecipe, mara: mara, health: max.health, battery: battery, quarters: quarters, hunger: max.hunger)
+                        appliedJobs: Array(appliedJobs).sorted(), activeJob: activeJob, pinnedRecipe: pinnedRecipe, mara: mara, health: max.health, battery: battery, quarters: quarters, hunger: max.hunger, hydration: hydration)
     }
 
     /// Restore a saved game on top of a freshly generated world.
@@ -85,6 +86,18 @@ extension Game {
         w.climbs = s.climbs
         for f in freshProps where Game.addedLater.contains(f.id) && w.propIndex(f.id) == nil { w.props.append(f) }
         for c in freshClimbs where c.kind == .rungs && !w.climbs.contains(where: { $0.id == c.id }) { w.climbs.append(c) }
+        if !s.story.flags.contains("storeB1") {
+            // Builders' Store B and the service walk came later: lay them into this save's world.
+            let K = World.K, bx = Landmarks.storeBox
+            for r in bx.r0...bx.r1 { for c in bx.x0...bx.x1 { w.mat[r * w.w + c] = freshMat[r * w.w + c] } }
+            for j in (bx.r0 * K)..<((bx.r1 + 1) * K) where j < w.dh { for i in (bx.x0 * K)..<((bx.x1 + 1) * K) where i < w.dw { w.dens[j * w.dw + i] = freshDens[j * w.dw + i] } }
+            // The service shaft cuts through the lift pit floor.
+            let sh = Landmarks.serviceShaft, pf = Landmarks.liftPit.floor
+            for c in sh.c0...sh.c1 { w.mat[pf * w.w + c] = freshMat[pf * w.w + c] }
+            for j in (pf * K)...((pf + 1) * K) where j < w.dh { for i in (sh.c0 * K)...((sh.c1 + 1) * K) where i < w.dw { w.dens[j * w.dw + i] = freshDens[j * w.dw + i] } }
+            for f in freshProps where WorldGen.storeBPropIDs.contains(f.id) && w.propIndex(f.id) == nil { w.props.append(f) }
+            for c in freshClimbs where c.id == "rungs.service" && !w.climbs.contains(where: { $0.id == c.id }) { w.climbs.append(c) }
+        }
         if !s.story.flags.contains("world3") {
             // The broken east end of the transit platform and the loading shaft, added after these saves.
             let K = World.K
@@ -93,6 +106,7 @@ extension Game {
         }
         var story = s.story
         story.flags.insert("world3")
+        story.flags.insert("storeB1")
         // The steel over the warm-pipe patch was low enough to catch Max's head: it's packed earth now.
         if w.m(35, 6) == .metal { w.mat[6 * w.w + 35] = Mat.dirt }
         if !story.flags.contains("gen1") {
@@ -142,6 +156,7 @@ extension Game {
         g.battery = s.battery ?? 100
         if let q = s.quarters { g.quarters = q }
         g.max.hunger = s.hunger ?? 100
+        g.hydration = s.hydration ?? 100
         g.max.digFloor = maxPos.y
         g.inv = s.inventory
         g.storage = s.storage

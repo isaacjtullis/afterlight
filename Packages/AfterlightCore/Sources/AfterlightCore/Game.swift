@@ -130,6 +130,8 @@ public final class Game {
     public var talk: Talk? = nil
     /// The item Max is about to set down (a torch, a lantern, a ladder…), or nil.
     public var placing: ItemID? = nil
+    /// How watered Max is, 0…100. Hard work dries him out; a cup from the drum puts it back.
+    public var hydration = 100.0
     public var openLoot: String? = nil
 
     public var appliedJobs: Set<String> = []
@@ -172,6 +174,8 @@ public final class Game {
         story.flags.insert("world3")
         story.flags.insert("gen1")
         story.flags.insert("tape1")
+        story.flags.insert("storeB1")
+        quarters.clean = 4; quarters.drumSealed = false; quarters.filterFitted = false
     }
 
     public func drainEvents() -> [GameEvent] { defer { events.removeAll() }; return events }
@@ -305,7 +309,7 @@ public final class Game {
         if !max.swingOn && max.oneShot == nil {
             max.restT += dt
             // Catching his breath brings stamina back; an empty belly slows it down.
-            let regen = Tuning.restRegen * (max.hunger < 20 ? 0.35 : 1)
+            let regen = Tuning.restRegen * (max.hunger < 20 ? 0.35 : 1) * (hydration < 30 ? 0.5 : 1)
             if max.restT > 0.9 && order == nil && max.stamina < max.staminaMax { max.stamina = Swift.min(max.staminaMax, max.stamina + regen * dt) }
         }
         pickupsTick(dt)

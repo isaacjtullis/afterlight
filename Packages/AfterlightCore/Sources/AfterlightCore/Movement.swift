@@ -157,6 +157,7 @@ extension Game {
             if res.touchedOpen == nil { res.touchedOpen = r2.touchedOpen }
         }
         emit(.bite(at: c, kind: kind, carved: res.changed, face: max.face))
+        if res.changed { thirst(Game.thirstPerBite) }
         max.lantV += Double(max.face) * 1.3
         max.squash = 0.09
         digLatch = false; downLatch = false

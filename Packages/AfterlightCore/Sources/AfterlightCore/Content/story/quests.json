@@ -1,5 +1,41 @@
 [
   {
+    "key": "homeWater",
+    "id": "drum",
+    "title": "A Home Worth Saving",
+    "side": false,
+    "steps": [
+      {
+        "id": "drip",
+        "text": "Find where the drum is leaking"
+      },
+      {
+        "id": "clamp",
+        "text": "Clamp the drum’s drain fitting"
+      },
+      {
+        "id": "stamp",
+        "text": "Look at the failed filter"
+      },
+      {
+        "id": "map",
+        "text": "Find Dad’s sketch"
+      },
+      {
+        "id": "store",
+        "text": "Find Builders’ Store B"
+      },
+      {
+        "id": "assembly",
+        "text": "Bring the filter assembly home"
+      },
+      {
+        "id": "cup",
+        "text": "Draw the first clean cup"
+      }
+    ]
+  },
+  {
     "key": "farEdge",
     "id": "far",
     "title": "The Far Edge",
@@ -27,7 +63,7 @@
     "key": "homeLight",
     "id": "homeLight",
     "title": "Power for Home",
-    "side": false,
+    "side": true,
     "steps": [
       {
         "id": "look",

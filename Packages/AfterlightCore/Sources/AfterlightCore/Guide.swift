@@ -7,7 +7,8 @@ extension Game {
     public var guide: V2? {
         guard started, cine == nil else { return nil }
         let f = story.flags
-        if f.contains("flashOn") && !f.contains("shelterLit") && story.chapter <= 2, let gen = world.prop("generator") {
+        if waterQuestActive, let w = waterGuide() { return w }
+        if f.contains("flashOn") && !f.contains("shelterLit") && story.chapter <= 2 && !waterQuestActive, let gen = world.prop("generator") {
             if f.contains("genFreed") && available(.batteryCell) == 0, let car = world.prop("liftcar"), car.stock.contains(where: { $0.id == .batteryCell }) {
                 return V2(car.pos.x, car.pos.y - 1.5)
             }

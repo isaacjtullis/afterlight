@@ -37,6 +37,15 @@ public enum Landmarks {
     /// The old loading shaft from the east end of the transit platform down into the great cavern.
     public static let loadingShaft = (c0: 104, c1: 105)
     public static let signalLampX = 66.5
+    /// Builders' Store B: a sealed supply room below the workshop, and the broken service walk to it.
+    public static let storeB = (x0: 30, x1: 38, top: 41, floor: 46)
+    public static let serviceWalk = (x0: 39, x1: 49, gap0: 42, gap1: 44, floor: 46)
+    /// The service ladder down from the lift pit.
+    public static let serviceShaft = (c0: 46, c1: 47)
+    public static let drum = V2(30.7, 30)
+    public static let grate = V2(27.3, 30)
+    /// Box rewritten for saves made before the store existed.
+    public static let storeBox = (x0: 28, x1: 50, r0: 31, r1: 50)
     /// Where an optional first lamp goes: the mouth of the tunnel out of the workshop.
     public static let lampSpot = V2(32.6, 30)
 }
@@ -54,6 +63,59 @@ public enum WorldGen {
             }
         }
         return 41
+    }
+
+    /// The store, the walk with its broken span, the ladder shaft down from the lift pit,
+    /// and the collapsed corner of the store's roof that a long dig from home can reach.
+    static func buildStoreB(_ w: World) {
+        let bx = Landmarks.storeBox
+        // No bedrock pockets in the way of either route.
+        for r in bx.r0...bx.r1 { for c in bx.x0...bx.x1 where w.m(c, r) == .rock { w.set(c, r, .dirt, back: .earth) } }
+        let st = Landmarks.storeB
+        for c in (st.x0 - 1)...(st.x1 + 1) {
+            for r in (st.top - 1)...st.floor {
+                let wall = c == st.x0 - 1 || c == st.x1 + 1 || r == st.top - 1 || r == st.floor
+                w.set(c, r, wall ? .metal : .air, back: .room)
+            }
+        }
+        // The roof caved in at the west end: packed earth a shovel can get through.
+        for c in st.x0...(st.x0 + 2) { w.set(c, st.top - 1, .loose, back: .room) }
+        // The door onto the walk.
+        for r in (st.floor - 2)...(st.floor - 1) { w.set(st.x1 + 1, r, .air, back: .room) }
+        // The service walk east to the ladder shaft, with a span fallen into a pit.
+        let sw = Landmarks.serviceWalk
+        for c in sw.x0...sw.x1 {
+            w.set(c, sw.floor - 3, .metal, back: .maint)
+            for r in (sw.floor - 2)...(sw.floor - 1) { w.set(c, r, .air, back: .maint) }
+            let broken = c >= sw.gap0 && c <= sw.gap1
+            w.set(c, sw.floor, broken ? .air : .metal, back: .maint)
+            if broken { for r in (sw.floor + 1)...(sw.floor + 3) { w.set(c, r, .air, back: .earth) }; w.set(c, sw.floor + 4, .dirt, back: .earth) }
+        }
+        w.set(sw.x1 + 1, sw.floor - 2, .metal, back: .maint); w.set(sw.x1 + 1, sw.floor - 1, .metal, back: .maint)
+        // The ladder shaft from the lift pit floor down to the walk.
+        let sh = Landmarks.serviceShaft
+        for r in (Landmarks.liftPit.floor + 1)...(sw.floor - 1) { for c in sh.c0...sh.c1 { w.set(c, r, .air, back: .shaft) } }
+        // An old plank cover over the top: walk across it, or dig through it to climb down.
+        for c in sh.c0...sh.c1 { w.set(c, Landmarks.liftPit.floor, .plank, back: .shaft) }
+        for r in (Landmarks.liftPit.floor + 1)...(sw.floor - 3) { w.set(sh.c0 - 1, r, .metal, back: .shaft); w.set(sh.c1 + 1, r, .metal, back: .shaft) }
+    }
+
+    static let storeBPropIDs: Set<String> = ["drum", "grate", "bunk.broken", "washstand", "store.shelf", "store.locker", "lm.pipe", "lm.stripes", "lm.mark"]
+
+    static func storeBProps(_ w: World) -> [Prop] {
+        let st = Landmarks.storeB, sw = Landmarks.serviceWalk
+        let fl = Double(st.floor)
+        return [
+            Prop(id: "drum", kind: .waterDrum, pos: Landmarks.drum),
+            Prop(id: "grate", kind: .floorGrate, pos: Landmarks.grate),
+            Prop(id: "bunk.broken", kind: .brokenBunk, pos: V2(14.4, 30), stock: [ItemStack(.strap)]),
+            Prop(id: "washstand", kind: .washstand, pos: V2(16.6, 30), stock: [ItemStack(.gasket)]),
+            Prop(id: "store.shelf", kind: .storeShelf, pos: V2(36.2, fl), stock: [ItemStack(.waterCan), ItemStack(.filterAssembly)]),
+            Prop(id: "store.locker", kind: .locker, pos: V2(31.4, fl), stock: [ItemStack(.wire, 2), ItemStack(.seedTin), ItemStack(.roster)]),
+            Prop(id: "lm.pipe", kind: .landmark, pos: V2(48.6, Double(sw.floor) - 2)),
+            Prop(id: "lm.stripes", kind: .landmark, pos: V2(40.4, Double(sw.floor) - 2)),
+            Prop(id: "lm.mark", kind: .landmark, pos: V2(Double(st.x1) + 0.5, Double(st.floor) - 2.4)),
+        ]
     }
 
     public static func make() -> World {
@@ -188,6 +250,7 @@ public enum WorldGen {
         // Mara dug the last stretch of the warm passage from her side, up to her door.
         for c in (Landmarks.chimney - 1)...(op.door - 1) { for r in 7...8 { w.set(c, r, .dug, back: .earth) } }
 
+        buildStoreB(w)
         w.rebuildDensity()
 
         // Buried things.
@@ -207,7 +270,8 @@ public enum WorldGen {
             let top = (10..<58).first { w.m(x, $0) == .air && w.bd(x, $0) == .open } ?? 20
             return w.groundY(Double(x) + 0.5, from: Double(top) + 0.5, to: 58) ?? 30
         }
-        w.props = [
+        let storeProps = storeBProps(w)
+        w.props = storeProps + [
             Prop(id: "bench", kind: .workbench, pos: Landmarks.bench),
             Prop(id: "locker.ws", kind: .locker, pos: V2(20.7, 30), stock: [ItemStack(.spareGrip), ItemStack(.fasteners, 3), ItemStack(.lampCell, 3), ItemStack(.wire, 3), ItemStack(.tape, 2)]),
             Prop(id: "shelter.light", kind: .shelterLight, pos: V2(23.6, 26.0)),
@@ -247,6 +311,7 @@ public enum WorldGen {
             Climb(id: Landmarks.shaftRungsID, x: 26.0, top: 13.0, bottom: 25.6, kind: .rungs),
             Climb(id: "rungs.loading", x: Double(Landmarks.loadingShaft.c0) + 1.0, top: Double(Landmarks.transit.floor), bottom: 30, kind: .rungs),
             Climb(id: "rungs.sump", x: Double(Landmarks.hatch.c) + 0.5, top: 9.0, bottom: Double(Landmarks.sump.floor), kind: .rungs),
+            Climb(id: "rungs.service", x: Double(Landmarks.serviceShaft.c1), top: Double(Landmarks.liftPit.floor), bottom: Double(Landmarks.serviceWalk.floor), kind: .rungs),
         ]
 
         w.decals = [
@@ -256,6 +321,8 @@ public enum WorldGen {
             Decal(text: "LINE 4 · WARM", pos: V2(31.6, 8.2), size: 0.22, vertical: false),
             Decal(text: "OUTPOST 9 · −2,475 FT", pos: V2(74.4, 5.9), size: 0.26, vertical: false),
             Decal(text: "SUMP", pos: V2(80.4, 11.0), size: 0.26, vertical: false),
+            Decal(text: "BUILDERS’ STORE B", pos: V2(31.2, 42.3), size: 0.26, vertical: false),
+            Decal(text: "SERVICE WALK · B", pos: V2(44.6, 43.3), size: 0.22, vertical: false),
             Decal(text: "TRANSIT · −2,440 FT", pos: V2(64.0, 1.5), size: 0.26, vertical: false),
             Decal(text: "LOADING ▾ DEPOT", pos: V2(101.2, 1.4), size: 0.22, vertical: false),
             Decal(text: "↓ gardens  —O.", pos: V2(102.0, 2.6), size: 0.2, vertical: false),

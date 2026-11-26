@@ -19,8 +19,14 @@ public struct Quarters: Codable, Equatable, Sendable {
     /// Things Max built for the room.
     public var decor: Set<String> = []
     public var barrelCap = 100.0
+    /// Clean drinking water in the drum, in cups. A new game starts with four: about two working days.
+    public var clean = 4.0
+    /// The drum's drain fitting is clamped (until then it slowly leaks).
+    public var drumSealed = false
+    /// The new filter assembly is fitted and primed: the intake runs clean and refills the drum.
+    public var filterFitted = false
 
-    enum CodingKeys: String, CodingKey { case plots, water, filter, charge, last, decor, barrelCap }
+    enum CodingKeys: String, CodingKey { case plots, water, filter, charge, last, decor, barrelCap, clean, drumSealed, filterFitted }
     public init(from d: Decoder) throws {
         let c = try d.container(keyedBy: CodingKeys.self)
         plots = try c.decodeIfPresent([GardenPlot].self, forKey: .plots) ?? [GardenPlot(), GardenPlot(), GardenPlot()]
@@ -30,6 +36,10 @@ public struct Quarters: Codable, Equatable, Sendable {
         last = try c.decodeIfPresent(Date.self, forKey: .last)
         decor = try c.decodeIfPresent(Set<String>.self, forKey: .decor) ?? []
         barrelCap = try c.decodeIfPresent(Double.self, forKey: .barrelCap) ?? 100
+        // Saves from before the water mission already lived past it: a sealed drum and a working filter.
+        clean = try c.decodeIfPresent(Double.self, forKey: .clean) ?? 8
+        drumSealed = try c.decodeIfPresent(Bool.self, forKey: .drumSealed) ?? true
+        filterFitted = try c.decodeIfPresent(Bool.self, forKey: .filterFitted) ?? true
     }
 
     public static let growMinutes = 45.0
@@ -55,6 +65,8 @@ extension Game {
         quarters.filter = Swift.max(0, quarters.filter - hours * 3)
         // Lamps: wired to power they stay full; otherwise they drain.
         quarters.charge = story.flags.contains("power") ? 100 : Swift.max(0, quarters.charge - hours * 4)
+        // A working filter refills the clean drum: a cup every half hour, up to twelve.
+        if quarters.filterFitted { quarters.clean = Swift.min(Self.drumCap, quarters.clean + hours * 2) }
         // Crops grow while watered and lit.
         let lit = quarters.charge > 0
         for i in quarters.plots.indices where quarters.plots[i].crop != nil {

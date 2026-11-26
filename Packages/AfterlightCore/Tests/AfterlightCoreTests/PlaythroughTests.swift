@@ -50,29 +50,148 @@ final class Bot {
     }
 }
 
+extension Bot {
+    /// Tap a row in the panel that's open (the drum, a pump…), like a finger would.
+    @discardableResult
+    func row(_ panel: String, _ id: String) -> Bool {
+        guard let r = g.panel(panel)?.rows.first(where: { $0.id == id }), r.enabled else {
+            note("panel \(panel) has no enabled row \(id); rows: \(g.panel(panel)?.rows.map { "\($0.id)\($0.enabled ? "" : "(off)")" } ?? [])")
+            return false
+        }
+        g.choosePanel(panel, id)
+        note("tapped \(panel)/\(id)")
+        idle(0.3)
+        return true
+    }
+
+    /// Search or salvage whatever's here and take everything.
+    @discardableResult
+    func takeAll(_ prop: String) -> Bool {
+        var k = 0.0
+        while !(g.context?.id.hasSuffix(prop) ?? false) && k < 2 { step(GameInput()); k += 1 / 60 }
+        guard let id = g.context?.id, id.hasSuffix(prop) else { note("expected to search \(prop), button shows \(g.context?.id ?? "nothing")"); return false }
+        g.performContext(); note("took from \(prop)"); idle(0.4)
+        return true
+    }
+
+    /// Chapter 1 from a fresh game, up to the flashlight's first look around.
+    func playChapterOne() -> Bool {
+        g.begin()
+        guard go(31.3),
+              hold(GameInput(dig: true), until: { self.g.max.pos.x > 37.1 }, timeout: 40, "dig east to the glint") else { return false }
+        go(37.5)
+        hold(GameInput(down: true), until: { self.g.inv.count(.chargeCrystal) > 0 }, timeout: 4, "dig down to the crystal")
+        idle(1)
+        hold(GameInput(up: true), until: { self.g.max.pos.y < 30.2 && self.g.max.ground }, timeout: 6, "climb out of the hole")
+        guard go(26.2), use("repair") else { return false }
+        idle(2)
+        guard use("switchOn") else { return false }
+        idle(12)
+        return g.story.flags.contains("sawShaft")
+    }
+
+    /// Trace the drip, fetch strap and gasket from the old bunk room, clamp it, read the old filter.
+    func playDrumRepair() -> Bool {
+        guard go(30.7), use("panel:drum"), row("drum", "drum.trace") else { return false }
+        idle(4)
+        // West through the roots into the old bunk room.
+        guard go(16.6, dig: true, timeout: 120), takeAll("washstand") else { return false }
+        guard go(14.4), takeAll("bunk.broken") else { return false }
+        guard go(30.7, timeout: 120), use("panel:drum"), row("drum", "drum.clamp") else { return false }
+        idle(2)
+        guard g.quarters.drumSealed else { note("drum not sealed"); return false }
+        row("drum", "drum.pour")
+        guard row("drum", "drum.intake") else { return false }
+        idle(4)
+        // Dad's map: the corner at the bench, the sketch under the grate.
+        guard go(26.25), use("mapClip") else { return false }
+        idle(4)
+        guard go(27.3), use("grate") else { return false }
+        idle(2)
+        return g.available(.sketch) > 0
+    }
+}
+
+extension Bot {
+    /// Route A: the long dig. Down from the tunnel mouth through the store's caved-in roof.
+    func playStoreByDigging() -> Bool {
+        guard go(32.5, timeout: 60) else { return false }
+        hold(GameInput(down: true, dig: true), until: { self.g.story.flags.contains("foundStore") }, timeout: 200, "dig down into Store B")
+        guard g.story.flags.contains("foundStore") else { return false }
+        return fetchAndFit(back: .digUp)
+    }
+
+    enum Way { case digUp, walk }
+
+    /// Take both essentials off the shelf, get home, fit the filter, prime it, draw the first cup.
+    func fetchAndFit(back: Way) -> Bool {
+        guard let shelf = g.world.prop("store.shelf") else { return false }
+        guard go(shelf.pos.x, timeout: 30), takeAll("store.shelf") else { return false }
+        guard g.available(.filterAssembly) > 0 else { note("no filter assembly in the bag"); return false }
+        note("carrying can=\(g.available(.waterCan)) filter=\(g.available(.filterAssembly))")
+        switch back {
+        case .digUp:
+            guard go(32.5, timeout: 30) else { return false }
+            hold(GameInput(up: true), until: { self.g.max.pos.y < 30.3 && self.g.max.mode == .walk }, timeout: 60, "climb back up the dig")
+        case .walk:
+            guard go(Double(Landmarks.serviceShaft.c1), timeout: 60) else { return false }
+            hold(GameInput(up: true), until: { self.g.max.pos.y < 30.3 && self.g.max.mode == .walk }, timeout: 40, "climb the service ladder")
+        }
+        guard g.max.pos.y < 30.5 else { note("didn't make it back up"); return false }
+        guard go(30.7, timeout: 120), use("panel:drum") else { return false }
+        row("drum", "drum.can")
+        guard row("drum", "drum.fit") else { return false }
+        idle(2.5)
+        guard row("drum", "drum.prime") else { return false }
+        idle(4.5)
+        guard row("drum", "drum.cup") else { return false }
+        idle(1)
+        return true
+    }
+}
+
 final class PlaythroughTests: XCTestCase {
+
+    /// Route B: down the service ladder, planks over the broken span, both essentials home in one trip.
+    func testWaterMissionByTheServiceWalk() {
+        let g = Game()
+        let b = Bot(g)
+        XCTAssertTrue(b.playChapterOne(), b.trail)
+        XCTAssertTrue(b.playDrumRepair(), b.trail)
+        XCTAssertGreaterThanOrEqual(g.inv.wood, 15, "the roots gave enough wood for three planks\n" + b.trail)
+        // East to the lift pit, through the plank cover, down the ladder.
+        XCTAssertTrue(b.go(36), b.trail)
+        XCTAssertTrue(b.go(Double(Landmarks.serviceShaft.c1), dig: true, timeout: 200), b.trail)
+        b.hold(GameInput(down: true, dig: true), until: { g.max.pos.y > 31 }, timeout: 6, "dig through the plank cover")
+        b.hold(GameInput(down: true), until: { g.max.pos.y > Double(Landmarks.serviceWalk.floor) - 0.3 && g.max.mode == .walk }, timeout: 20, "climb down the service ladder")
+        XCTAssertTrue(g.story.flags.contains("lm.pipe"), "passed the forked pipe\n" + b.trail)
+        // West along the walk to the broken span: lay planks across it.
+        let sw = Landmarks.serviceWalk
+        b.hold(GameInput(dx: -1), until: { g.max.pos.x < Double(sw.gap1) + 1.6 }, timeout: 10, "walk to the broken span")
+        for _ in 0..<4 where g.world.m(sw.gap0, sw.floor) != .plank {
+            b.hold(GameInput(dx: -1), until: { g.context?.id == "plank" }, timeout: 3, "edge of the gap")
+            if g.context?.id == "plank" { g.performContext(); b.note("laid a plank") }
+            b.idle(0.4)
+        }
+        XCTAssertTrue((sw.gap0...sw.gap1).allSatisfy { g.world.m($0, sw.floor) == .plank }, "the span is bridged\n" + b.trail)
+        XCTAssertTrue(b.go(Double(Landmarks.storeB.x1) - 1, timeout: 20), b.trail)
+        XCTAssertTrue(g.story.flags.contains("foundStore"), b.trail)
+        XCTAssertTrue(g.story.flags.contains("lm.stripes") && g.story.flags.contains("lm.mark"), "saw every landmark\n" + b.trail)
+        XCTAssertTrue(b.fetchAndFit(back: .walk), b.trail)
+        XCTAssertTrue(g.quarters.filterFitted, b.trail)
+        XCTAssertGreaterThan(g.quarters.clean, 6, "the sealed can went into the drum too\n" + b.trail)
+    }
 
     /// From the candle to a lit home, playing only with the controls.
     func testFreshGameToALitHome() {
         let g = Game()
         let b = Bot(g)
-        g.begin()
 
-        // Chapter 1: the crystal glint, the flashlight, the shaft.
-        XCTAssertTrue(b.go(31.3), b.trail)
-        XCTAssertTrue(b.hold(GameInput(dig: true), until: { g.max.pos.x > 37.1 }, timeout: 40, "dig east to the glint"), b.trail)
-        b.go(37.5)
-        b.hold(GameInput(down: true), until: { g.inv.count(.chargeCrystal) > 0 }, timeout: 4, "dig down to the crystal")
-        b.idle(1)
-        XCTAssertEqual(g.inv.count(.chargeCrystal), 1, b.trail)
-        b.hold(GameInput(up: true), until: { g.max.pos.y < 30.2 && g.max.ground }, timeout: 6, "climb out of the hole")
-        XCTAssertTrue(b.go(26.2), b.trail)
-        XCTAssertTrue(b.use("repair"), b.trail)
-        b.idle(2)
-        XCTAssertTrue(g.inv.has(.flashlight), b.trail)
-        XCTAssertTrue(b.use("switchOn"), b.trail)
-        b.idle(10)
-        XCTAssertTrue(g.story.flags.contains("sawShaft"), b.trail)
+        XCTAssertTrue(b.playChapterOne(), b.trail)
+        XCTAssertTrue(b.playDrumRepair(), b.trail)
+        XCTAssertTrue(b.playStoreByDigging(), b.trail)
+        XCTAssertTrue(g.quarters.filterFitted, "the first clean cup\n" + b.trail)
+        XCTAssertTrue(g.story.isDone("drum", "cup"), b.trail)
         b.go(26.0)
         XCTAssertTrue(b.use("tryUp"), b.trail)
         b.idle(10)

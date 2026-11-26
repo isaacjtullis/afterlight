@@ -247,6 +247,7 @@ extension Game {
         case "mara.shelf": return shelfPanel()
         case "sump.hatch": return hatchPanel()
         case "chimney": return chimneyPanel()
+        case "drum": return drumPanel()
         default: return nil
         }
     }
@@ -481,6 +482,7 @@ extension Game {
         case "hatch.open": setHatch(open: true)
         case "chimney.rig": rigChimney()
         default:
+            if row.hasPrefix("drum.") { drumAction(row); break }
             if row.hasPrefix("deliver.") {
                 let parts = row.split(separator: ".").map(String.init)   // deliver.job.<name>.c.<name>
                 if parts.count >= 5 { deliver(job: parts[1] + "." + parts[2], contribution: parts[3...].joined(separator: ".")) }
