@@ -44,6 +44,8 @@ public enum GameEvent: Equatable, Sendable {
     case hammerHit
     case panel(String)
     case checkpoint(Checkpoint)
+    /// A conversation opened (read `talk`).
+    case talk
     /// Max lies down: the app plays the sleep (Zs, the clock spinning) while he recovers.
     case sleep
     case saveNow
@@ -124,6 +126,8 @@ public final class Game {
     public var openCamp: String? = nil
     /// The app shows a loot list for lockers and wrecks; tests and jobs take everything at once.
     public var lootUI = false
+    /// A conversation in progress (conversation mode), or nil.
+    public var talk: Talk? = nil
     /// The item Max is about to set down (a torch, a lantern, a ladder…), or nil.
     public var placing: ItemID? = nil
     public var openLoot: String? = nil

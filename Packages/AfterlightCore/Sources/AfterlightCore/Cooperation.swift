@@ -160,7 +160,7 @@ public struct PanelRow: Equatable, Sendable, Identifiable {
     public init(id: String, label: String, detail: String? = nil, enabled: Bool = true, confirm: String? = nil, style: Style = .action) {
         self.id = id; self.label = label; self.detail = detail; self.enabled = enabled; self.confirm = confirm; self.style = style
     }
-    static func info(_ id: String, _ text: String, done: Bool = false) -> PanelRow {
+    public static func info(_ id: String, _ text: String, done: Bool = false) -> PanelRow {
         PanelRow(id: id, label: text, enabled: false, style: done ? .done : .info)
     }
 }

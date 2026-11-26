@@ -209,6 +209,14 @@ struct HUDView: View {
             if let t = ui.jobTitle { jobBanner(t, ui) }
             if let c = model.conversation { ConversationCard(convo: c) }
             if let p = model.panel { if p.speaker != nil { TalkPanel(panel: p) } else { PanelCard(panel: p) } }
+            if let t = model.talk {
+                TalkStage(speaker: t.speaker, line: t.lines.joined(separator: " "), progress: nil,
+                          choices: t.choices.map { TalkStage.Choice(id: $0.id, label: $0.label, detail: $0.detail, enabled: $0.enabled, primary: $0.primary) },
+                          ledger: model.game.agreementLines(with: t.graph).enumerated().map { i, l in PanelRow.info("l\(i)", l.text, done: l.done) },
+                          onChoose: { model.chooseTalk($0) }, onAdvance: nil, onClose: { model.closeTalk() })
+                    .id(t.node)
+                    .transition(.opacity)
+            }
             if let s = model.sheet { SheetHost(sheet: s) }
             if let r = model.report { ReportCard(report: r) }
         }

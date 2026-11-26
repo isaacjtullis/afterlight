@@ -664,7 +664,9 @@ extension Game {
             think("Buckled shut. A pry bar would open it.", 2.6)
         default:
             if a.id.hasPrefix("panel:") {
-                emit(.panel(String(a.id.dropFirst("panel:".count))))
+                let id = String(a.id.dropFirst("panel:".count))
+                // People talk through their dialogue graph; things still show a panel.
+                if hasTalk(id) { startTalk(id); emit(.talk) } else { emit(.panel(id)) }
             } else if a.id.hasPrefix("search:") || a.id.hasPrefix("salvage:") {
                 let id = String(a.id.split(separator: ":")[1])
                 if lootUI {

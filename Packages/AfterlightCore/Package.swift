@@ -8,7 +8,7 @@ let package = Package(
         .library(name: "AfterlightCore", targets: ["AfterlightCore"])
     ],
     targets: [
-        .target(name: "AfterlightCore"),
+        .target(name: "AfterlightCore", resources: [.process("Content")]),
         .testTarget(name: "AfterlightCoreTests", dependencies: ["AfterlightCore"])
     ]
 )

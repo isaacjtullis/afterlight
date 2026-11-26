@@ -62,6 +62,8 @@ final class GameModel: ObservableObject {
     @Published var sleeping = false
     @Published var report: JobReport? = nil
     @Published var panel: Panel? = nil
+    /// Conversation mode, driven by a dialogue graph.
+    @Published var talk: Talk? = nil
     @Published var confirming: PanelRow? = nil
     @Published var panelPoint: CGPoint = .zero
 
@@ -155,7 +157,7 @@ final class GameModel: ObservableObject {
         game = Game.load(s)
         game.lootUI = true
         scene?.reset(game)
-        sheet = nil; panel = nil; conversation = nil; cards = []
+        sheet = nil; panel = nil; conversation = nil; cards = []; talk = nil
         saveNow(cloud: true)
         game.think("Back at: \(e.title).", 2.6)
     }
@@ -203,7 +205,7 @@ final class GameModel: ObservableObject {
         clock += dt
         frames += 1
         guard !showTitle else { return }
-        let paused = sleeping || conversation != nil || sheet != nil || banner != nil || game.activeJob != nil || panel != nil || showQuarters
+        let paused = sleeping || talk != nil || conversation != nil || sheet != nil || banner != nil || game.activeJob != nil || panel != nil || showQuarters
         game.update(dt: dt, input: paused ? GameInput() : input)
         for e in game.drainEvents() { handle(e) }
         if let d = saveDue, clock >= d { saveDue = nil; saveNow(cloud: false) }
@@ -312,6 +314,8 @@ final class GameModel: ObservableObject {
         case .placed(let what): audio.play(what == "plank" ? .plank : .scoop); haptics.bite()
         case .wood: audio.play(.chop); haptics.bite()
         case .hammerHit: audio.play(.pick); haptics.bite()
+        case .talk:
+            withAnimation(.easeOut(duration: 0.3)) { talk = game.talk }
         case .panel(let id):
             confirming = nil
             if let p = game.panel(id) { panelPoint = scene?.viewPoint(p.anchor) ?? .zero; panel = p }
@@ -369,6 +373,20 @@ final class GameModel: ObservableObject {
         for e in game.drainEvents() { handle(e) }
         scheduleCoopNotifications()
         if ["ride.up", "ride.down", "chimney.rig"].contains(row.id) { closePanel() } else { panel = game.panel(p.id) }
+    }
+
+    func chooseTalk(_ id: String) {
+        game.chooseTalk(id)
+        for e in game.drainEvents() { handle(e) }
+        haptics.tap()
+        withAnimation(.easeInOut(duration: 0.25)) { talk = game.talk }
+    }
+
+    /// Closing a talk always hands movement and digging straight back.
+    func closeTalk() {
+        game.endTalk()
+        for e in game.drainEvents() { handle(e) }
+        withAnimation(.easeOut(duration: 0.25)) { talk = nil }
     }
 
     func closePanel() {

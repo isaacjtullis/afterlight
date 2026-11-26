@@ -1,0 +1,131 @@
+{
+  "id": "mara",
+  "speaker": "Mara",
+  "entries": [
+    { "node": "spare.seen", "when": ["evidence:saw.spare", "holding:mara:pressureValve"] },
+    { "node": "spare.missing", "when": ["flag:mara.missingSpare", "holding:mara:pressureValve"] },
+    { "node": "first", "when": ["!flag:mara.met"] },
+    { "node": "diverted", "when": ["waterAway"] },
+    { "node": "hub" }
+  ],
+  "nodes": {
+    "first": {
+      "lines": ["…You’re real.", "I heard boots on the line and told myself it was the pipes again."],
+      "choices": [
+        { "id": "alive", "label": "I thought I was the last one.", "next": "alive" },
+        { "id": "who", "label": "Who are you?", "next": "who" }
+      ]
+    },
+    "alive": {
+      "lines": ["So did I. For eleven years.", "I’m Mara. There were six of us out here once."],
+      "choices": [
+        { "id": "tap", "label": "Your tap’s dry.", "next": "problem" },
+        { "id": "others", "label": "What happened to the others?", "next": "others" }
+      ]
+    },
+    "who": {
+      "lines": ["Mara. I keep this outpost. Kept it, anyway.", "And you came down my line from the old shelter. I thought that place was empty."],
+      "choices": [
+        { "id": "dad", "label": "It is now. My father died.", "next": "dad" },
+        { "id": "tap", "label": "Your tap’s dry.", "next": "problem" }
+      ]
+    },
+    "dad": {
+      "lines": ["…I’m sorry. Then it’s just us, as far as either of us knows."],
+      "choices": [ { "id": "tap", "label": "What happened to your water?", "next": "problem" } ]
+    },
+    "others": {
+      "lines": ["Up. They took the lift up looking for the surface and the cage came back empty.", "I stayed with the beds."],
+      "choices": [ { "id": "tap", "label": "And the water?", "next": "problem" } ]
+    },
+    "problem": {
+      "lines": ["The pressure valve blew a week back. The pump’s been knocking dry ever since, and the intake’s choked with silt.",
+                "No water means no lift: I won’t run that drive dry."],
+      "choices": [
+        { "id": "help", "label": "I could help with the water.", "when": ["!job:job.water"], "next": "terms.water", "primary": true },
+        { "id": "lift", "label": "What would the lift cost me?", "when": ["!job:job.lift", "!liftRepaired"], "next": "terms.lift" },
+        { "id": "other", "label": "Is there another way up?", "when": ["!job:job.water", "!job:job.lift", "!flag:declinedDeal"], "next": "terms.chimney" },
+        { "id": "think", "label": "Let me think about it.", "effects": ["meet:mara"] }
+      ]
+    },
+    "terms.water": {
+      "lines": ["Here’s how it’d go.",
+                "You bring up the valve from the sump and clear the intake. I fit the valve and get the pump running. In return, {liftReward}.",
+                "And the water stays here. The beds die without it."],
+      "choices": [
+        { "id": "agree", "label": "Deal.", "detail": "You: valve from the sump, clear the intake · Mara: fits the valve, then {liftReward} · The outpost keeps its water",
+          "effects": ["row:offer.collab"], "next": "agreed.water", "primary": true },
+        { "id": "back", "label": "Not yet.", "next": "problem" }
+      ]
+    },
+    "terms.lift": {
+      "lines": ["Parts. {price}. Bring them to the cage and I’ll free the drive.", "My pump stays dry, but that’s my problem, not yours."],
+      "choices": [
+        { "id": "agree", "label": "Deal.", "detail": "You pay {price} · Mara repairs the lift · Her tap stays dry",
+          "effects": ["row:offer.trade"], "next": "agreed.lift" },
+        { "id": "back", "label": "That’s steep.", "next": "problem" }
+      ]
+    },
+    "terms.chimney": {
+      "lines": ["The old maintenance chimney, back along the line. Twenty feet, rungs long gone.",
+                "Two good ropes and something to anchor them. {chimneyCost}. Nobody owes anybody."],
+      "choices": [
+        { "id": "agree", "label": "I’ll find my own way up.", "detail": "Costs {chimneyCost} · No deal with Mara", "effects": ["row:offer.decline"] },
+        { "id": "back", "label": "Let me think.", "next": "problem" }
+      ]
+    },
+    "agreed.water": {
+      "lines": ["Valve’s down in the sump, by the intake. Mind the cold.", "Water first. Then I keep my end."],
+      "choices": [ { "id": "ok", "label": "I’ll be back with it." } ]
+    },
+    "agreed.lift": {
+      "lines": ["Bring the parts to the cage. I start when they’re all there."],
+      "choices": [ { "id": "ok", "label": "I’ll get them." } ]
+    },
+    "hub": {
+      "lines": ["{status}"],
+      "choices": [
+        { "id": "help", "label": "About the water…", "when": ["!job:job.water"], "next": "terms.water", "primary": true },
+        { "id": "lift", "label": "About the lift…", "when": ["!job:job.lift", "!liftRepaired"], "next": "terms.lift" },
+        { "id": "other", "label": "The chimney, again?", "when": ["!job:job.water", "!job:job.lift", "!flag:declinedDeal"], "next": "terms.chimney" },
+        { "id": "give", "label": "Here’s a valve back.", "when": ["holding:mara:pressureValve", "has:pressureValve"], "effects": ["row:return.spare"], "next": "returned" },
+        { "id": "story", "label": "Tell me about the outpost.", "when": ["!flag:mara.toldStory"], "effects": ["flag:mara.toldStory"], "next": "outpost" },
+        { "id": "bye", "label": "See you, Mara." }
+      ]
+    },
+    "outpost": {
+      "lines": ["Grow beds, a pump, a lift. The crews built it as a waystation between the shelters and the transit level.",
+                "When the tunnels came down it was just the six of us and the beds."],
+      "choices": [ { "id": "back", "label": "Thanks.", "next": "hub" } ]
+    },
+    "diverted": {
+      "lines": ["My tap’s dry again and the line valve’s turned toward your place. I can see it from here."],
+      "choices": [
+        { "id": "sorry", "label": "I needed it at home.", "effects": ["trust:mara:-1"], "next": "diverted.cold" },
+        { "id": "bye", "label": "I’ll think about it." }
+      ]
+    },
+    "diverted.cold": {
+      "lines": ["We all need it. That’s why we made a deal."],
+      "choices": [ { "id": "bye", "label": "…" } ]
+    },
+    "spare.seen": {
+      "lines": ["I watched you take my spare valve off that shelf.", "Put it back, or bring me another."],
+      "choices": [
+        { "id": "give", "label": "Here. It’s yours.", "when": ["has:pressureValve"], "locked": "You don’t have a valve on you.", "effects": ["row:return.spare"], "next": "returned", "primary": true },
+        { "id": "later", "label": "I’ll bring it back." }
+      ]
+    },
+    "spare.missing": {
+      "lines": ["My spare valve’s gone from the shelf.", "I’m not saying it was you. I’m saying it’s gone."],
+      "choices": [
+        { "id": "give", "label": "I took it. Here.", "when": ["has:pressureValve"], "locked": "You don’t have a valve on you.", "effects": ["row:return.spare"], "next": "returned", "primary": true },
+        { "id": "deny", "label": "Haven’t seen it.", "effects": ["trust:mara:-1"], "next": "hub" }
+      ]
+    },
+    "returned": {
+      "lines": ["…Thank you."],
+      "choices": [ { "id": "ok", "label": "Sorry about that.", "next": "hub" } ]
+    }
+  }
+}
