@@ -453,7 +453,7 @@ final class GameScene: SKScene {
         let scarfPts = scarf.map { CGPoint(x: $0.x - m.pos.x, y: $0.y - m.pos.y) }
         let img = Art.image(widthTiles: 5.2, heightTiles: 4.6, ppt: ppt, originX: CGFloat(ox), originY: CGFloat(oy)) { ctx in
             ActorArt.drawScarf(ctx, scarfPts)
-            ActorArt.drawMax(ctx, m, time: g.time, flashlight: g.inv.has(.flashlight), flashOn: g.story.flags.contains("flashOn"), carrying: g.inv.count(.chargeCrystal) > 0, wood: g.inv.wood, back: backView)
+            ActorArt.drawMax(ctx, m, time: g.time, flashlight: g.inv.has(.flashlight), flashOn: g.flashlightLit, carrying: g.inv.count(.chargeCrystal) > 0, wood: g.inv.wood, back: backView)
             if lanternK > 0.02 {
                 ActorArt.drawLantern(ctx, hook: CGPoint(x: hx - m.pos.x, y: hy - m.pos.y), lamp: CGPoint(x: lampX - m.pos.x, y: lampY - m.pos.y), swing: m.lant, flicker: flick)
             }

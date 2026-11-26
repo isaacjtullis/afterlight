@@ -153,7 +153,9 @@ extension Game {
         g.started = true
         g.candle = 1
         if g.story.flags.contains("broke") { g.ambient = 1 }
-        if g.inv.has(.flashlight) && g.story.flags.contains("flashOn") { g.max.flashI = 1 }
+        // Older builds turned the light off by clearing the story flag; keep the story, just switch it off.
+        if g.inv.has(.flashlight) && !g.story.flags.contains("flashOn") && g.story.flags.contains("sawShaft") { g.story.flags.formUnion(["flashOn", "lightOff"]) }
+        if g.flashlightLit { g.max.flashI = 1 }
         // Work that continued while the game was closed.
         g.advanceSharedJobs(to: g.clock())
         return g

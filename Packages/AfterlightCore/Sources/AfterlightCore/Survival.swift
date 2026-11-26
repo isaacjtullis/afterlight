@@ -5,7 +5,7 @@ extension Game {
     func survivalTick(_ dt: Double) {
         guard started, cine == nil else { return }
         // Flashlight battery
-        if inv.has(.flashlight) && story.flags.contains("flashOn") {
+        if flashlightLit {
             battery = Swift.max(0, battery - dt * 100 / (Tuning.batteryMinutes * 60))
             if battery < 15 && !story.flags.contains("said.lowBattery") {
                 story.flags.insert("said.lowBattery")
@@ -13,7 +13,7 @@ extension Game {
                 later(2.6) { $0.hint("Tap the battery meter to swap in a lamp cell from your bag.", 6) }
             }
             if battery <= 0 {
-                story.flags.remove("flashOn")
+                story.flags.insert("lightOff")
                 think(available(.lampCell) > 0 ? "Dead. I’ve got a cell in the bag." : "Dead. I need a lamp cell.", 2.6)
                 emit(.flashOn)
             }
@@ -63,7 +63,7 @@ extension Game {
         guard available(.lampCell) > 0 else { think("No lamp cells. I’ll have to find some.", 2.4); return }
         consume(.lampCell, 1)
         battery = 100
-        story.flags.insert("flashOn")
+        story.flags.insert("flashOn"); story.flags.remove("lightOff")
         emit(.flashOn)
         think("Fresh cell. Good.", 1.6)
         emit(.saveNow)

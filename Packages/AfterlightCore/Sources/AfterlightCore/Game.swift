@@ -319,7 +319,7 @@ public final class Game {
         if lookUp && input.dx != 0 { target = -0.75 }
         if down { target = input.dx != 0 ? 0.6 : 1.15 }
         max.beamA = damp(max.beamA, target + sin(max.phase * 2) * 0.025 * max.walkAmp, 9, dt)
-        if inv.has(.flashlight) { max.flashI = damp(max.flashI, story.flags.contains("flashOn") ? 1 : 0, 18, dt) }
+        if inv.has(.flashlight) { max.flashI = damp(max.flashI, flashlightLit ? 1 : 0, 18, dt) }
     }
 
     public var underShaft: Bool { max.pos.x > 24.7 && max.pos.x < 27.3 && abs(max.pos.y - 30) < 0.5 }

@@ -288,7 +288,7 @@ final class HomeGroundTests: XCTestCase {
         g.battery = 1
         sim(g, GameInput(), 20)
         XCTAssertEqual(g.battery, 0, accuracy: 0.01)
-        XCTAssertFalse(g.story.flags.contains("flashOn"), "a dead flashlight goes out")
+        XCTAssertFalse(g.flashlightLit, "a dead flashlight goes out")
         g.inv.add(.lampCell)
         g.swapCell()
         XCTAssertEqual(g.battery, 100)

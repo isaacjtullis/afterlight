@@ -558,8 +558,9 @@ extension Game {
             for i in 0..<6 { later(Double(i) * 0.22) { $0.emit(.spark(at: V2(26.4, 29.0))) } }
             later(1.6) { $0.craft("flashlight") }
         case "switchOn":
-            story.flags.insert("flashOn")
-            cine = Cinematic(kind: "flash")
+            story.flags.insert("flashOn"); story.flags.remove("lightOff")
+            // The first look up the shaft plays once.
+            if !story.flags.contains("sawShaft") { cine = Cinematic(kind: "flash") }
             emit(.flashOn)
             clearHint()
         case "bench": emit(.openSheet(.workbench))

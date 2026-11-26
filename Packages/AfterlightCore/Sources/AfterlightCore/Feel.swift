@@ -17,11 +17,15 @@ extension Game {
     /// The flashlight goes on and off; with it off, Max's candle lantern comes out of the bag.
     public func toggleFlashlight() {
         guard inv.has(.flashlight) else { return }
-        if story.flags.contains("flashOn") { story.flags.remove("flashOn") } else { story.flags.insert("flashOn") }
+        // "flashOn" is the story beat (it's been switched on once); "lightOff" is just the switch.
+        story.flags.insert("flashOn")
+        if story.flags.contains("lightOff") { story.flags.remove("lightOff") } else { story.flags.insert("lightOff") }
         emit(.flashOn)
         emit(.saveNow)
     }
 
     /// The candle lantern hangs off the pack only while the flashlight is off (or not yet working).
-    public var lanternOut: Bool { !(inv.has(.flashlight) && story.flags.contains("flashOn")) }
+    public var lanternOut: Bool { !flashlightLit }
+    /// The beam is on right now.
+    public var flashlightLit: Bool { inv.has(.flashlight) && story.flags.contains("flashOn") && !story.flags.contains("lightOff") }
 }
