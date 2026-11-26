@@ -179,7 +179,10 @@ extension Game {
         max.slope = damp(max.slope, slope, 10, dt)
         let sinT = max.slope / (1 + max.slope * max.slope).squareRoot()
         let uphill = (dir != 0 && Double(dir) * max.slope < 0) ? abs(sinT) : 0
-        let vmax = (max.swingOn ? 1.4 : Tuning.walkSpeed) * (1 - 0.35 * uphill)
+        // Keep holding a direction on the ground and Max picks up into a run.
+        if dir != 0 && max.ground && !max.swingOn && (max.vx == 0 || (max.vx > 0 ? 1 : -1) == dir) { max.runT += dt } else { max.runT = 0 }
+        max.running = max.runT > Tuning.runAfter
+        let vmax = (max.swingOn ? 1.4 : (max.running ? Tuning.runSpeed : Tuning.walkSpeed)) * (1 - 0.35 * uphill)
         if dir != 0 {
             if max.vx != 0 && (max.vx > 0 ? 1 : -1) == -dir {
                 max.vx += Double(dir) * Tuning.decel * dt
@@ -189,15 +192,15 @@ extension Game {
                 max.vx -= (max.vx > 0 ? 1 : -1) * 1.1 * dt
             }
         } else {
-            let fr = (max.ground && abs(max.vx) > Tuning.walkSpeed * 1.05) ? 2.0 : Tuning.decel
+            let fr = (max.ground && abs(max.vx) > Tuning.runSpeed * 1.05) ? 2.0 : Tuning.decel
             let s = max.vx > 0 ? 1.0 : (max.vx < 0 ? -1.0 : 0)
             max.vx -= s * Swift.min(abs(max.vx), fr * dt)
         }
-        if max.ground && !max.swingOn && abs(sinT) > 0.04 && (abs(max.vx) > Tuning.walkSpeed * 0.95 || (dir == 0 && abs(sinT) > 0.45)) {
+        if max.ground && !max.swingOn && abs(sinT) > 0.04 && (abs(max.vx) > (max.running ? Tuning.runSpeed : Tuning.walkSpeed) * 0.95 || (dir == 0 && abs(sinT) > 0.45)) {
             max.vx += 15 * sinT * dt
         }
         max.vx = clampD(max.vx, -8.5, 8.5)
-        if dir == 0 && abs(prevVx) > 1.5 && abs(prevVx) < Tuning.walkSpeed * 1.1 && !max.stopping { max.stopping = true; max.crK = 0.075 }
+        if dir == 0 && abs(prevVx) > 1.5 && abs(prevVx) < Tuning.runSpeed * 1.1 && !max.stopping { max.stopping = true; max.crK = abs(prevVx) > Tuning.walkSpeed * 1.1 ? 0.12 : 0.075 }
         if dir != 0 { max.stopping = false }
         max.ax = clampD((max.vx - prevVx) / Swift.max(dt, 1e-3), -25, 25)
 
@@ -282,7 +285,7 @@ extension Game {
         }
 
         let ph0 = Int((max.phase / .pi).rounded(.down))
-        max.sliding = max.ground && abs(max.vx) > Tuning.walkSpeed * 1.12
+        max.sliding = max.ground && abs(max.vx) > Tuning.runSpeed * 1.12
         max.phase += abs(max.vx) * dt * (max.sliding ? 0.6 : 4.3)
         if !max.sliding && Int((max.phase / .pi).rounded(.down)) != ph0 && max.walkAmp > 0.35 && max.ground {
             emit(.step)
@@ -302,7 +305,7 @@ extension Game {
         max.pom = clampD(max.pom + max.pomV * dt, -0.25, 0.25)
 
         var tA = -2.2, rate = 8.0, tCr = 0.0, stance = 0.07
-        var tLean = clampD(max.vx * 0.03, -0.1, 0.1) - max.ax * 0.005
+        var tLean = clampD(max.vx * 0.03, max.running ? -0.2 : -0.1, max.running ? 0.2 : 0.1) - max.ax * 0.005
         if max.swingOn {
             let s = max.swing
             let high = s < 0.6 ? !max.biteHigh : max.biteHigh
@@ -348,7 +351,7 @@ extension Game {
         max.crouch = damp(max.crouch, tCr + max.crK, 16, dt)
         max.stance = damp(max.stance, stance, 10, dt)
         let moving = !(max.swingOn || max.sliding || !max.ground || max.mode == .climb)
-        max.walkAmp = damp(max.walkAmp, moving ? Swift.min(1, abs(max.vx) / Tuning.walkSpeed) : 0, 8, dt)
+        max.walkAmp = damp(max.walkAmp, moving ? Swift.min(1.45, abs(max.vx) / Tuning.walkSpeed) : 0, 8, dt)
         max.tilt = damp(max.tilt, max.ground && max.mode == .walk ? clampD(atan(max.slope * Double(max.face)) * 0.35, -0.16, 0.16) : 0, max.ground ? 8 : 3, dt)
         let breathe = (max.walkAmp < 0.2 && max.ground && !max.swingOn) ? 0.012 * sin(time * 2.4) : 0
         max.bob = -abs(sin(max.phase)) * 0.075 * max.walkAmp + breathe

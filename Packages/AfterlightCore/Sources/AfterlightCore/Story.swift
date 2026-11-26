@@ -453,7 +453,9 @@ extension Game {
             if !inv.has(.flashlight) && available(.chargeCrystal) > 0 { return act("repair", "Repair flashlight", at, true) }
             if !f.contains("inspected") && !inv.has(.flashlight) { return act("inspect", "Look at flashlight", at) }
             if inv.has(.flashlight) && !f.contains("flashOn") { return act("switchOn", "Switch on", at, true) }
-            if f.contains("inspected") { return act("bench", "Workbench", at) }
+            // Always reachable once the flashlight works, whether or not Max looked at it first.
+            if let r = knownRecipes.first(where: { canCraft($0) }) { return act("bench", "Make \(r.name.lowercased())", at, true) }
+            if inv.has(.flashlight) || f.contains("inspected") { return act("bench", "Workbench", at) }
         }
         if abs(p.y - 30) < 0.5 && p.x > 32 && p.x < 47 {
             if let bed = world.props(of: .planter).first(where: { near($0, 1.2) }) {

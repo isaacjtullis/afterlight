@@ -29,6 +29,7 @@ public struct Max: Codable, Sendable {
     public var pom = 0.0, pomV = 0.0
     public var slope = 0.0, vyG = 0.0, air = 0.0
     public var sliding = false, stopping = false
+    public var runT = 0.0, running = false
 
     // climbing: the body swings like a pendulum under the hands
     public var sway = 0.0, swayV = 0.0
@@ -51,6 +52,9 @@ public enum Tuning {
     public static let halfWidth = 0.3
     public static let height = 1.68
     public static let walkSpeed = 3.0
+    /// Hold an arrow for a moment and Max breaks into a run.
+    public static let runSpeed = 5.4
+    public static let runAfter = 0.55
     public static let accel = 16.0
     public static let decel = 15.0
     public static let gravity = 34.0

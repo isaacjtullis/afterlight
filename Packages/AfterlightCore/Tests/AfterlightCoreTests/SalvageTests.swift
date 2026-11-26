@@ -111,4 +111,32 @@ final class HomeGroundTests: XCTestCase {
         walk(g, to: Double(hx) - 1.0)
         XCTAssertEqual(g.max.pos.y, 30, accuracy: 0.25, "Max walks across the plank instead of dropping in")
     }
+
+    /// Repairing the flashlight without looking at it first must still leave the workbench usable.
+    func testBenchOffersThePickWithoutInspecting() {
+        let g = Game()
+        g.begin()
+        g.story.chapter = 2
+        g.story.flags.formUnion(["needPick", "needLadder", "sawShaft", "triedUp", "flashOn"])
+        g.inv.belt.append(.flashlight)
+        g.inv.add(.liftTooth); g.inv.add(.spareGrip)
+        walk(g, to: Landmarks.bench.x)
+        sim(g, GameInput(), 0.3)
+        XCTAssertEqual(g.context?.id, "bench")
+        XCTAssertEqual(g.context?.label, "Make short pick")
+    }
+
+    /// Holding an arrow, Max walks and then breaks into a run.
+    func testHoldingAnArrowBreaksIntoARun() {
+        let g = Game()
+        g.begin()
+        for c in 32...56 { for r in 27...29 { g.world.set(c, r, .dug, back: .earth) }; g.world.set(c, 30, .dirt) }
+        g.world.rebuildDensity()
+        g.max.pos = V2(32.6, 30)
+        sim(g, GameInput(dx: 1), 0.3)
+        XCTAssertLessThanOrEqual(abs(g.max.vx), Tuning.walkSpeed + 0.01)
+        sim(g, GameInput(dx: 1), 1.0)
+        XCTAssertTrue(g.max.running)
+        XCTAssertGreaterThan(abs(g.max.vx), Tuning.walkSpeed + 0.5)
+    }
 }
