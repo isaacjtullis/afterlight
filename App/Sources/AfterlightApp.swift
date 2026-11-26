@@ -13,6 +13,7 @@ struct AfterlightApp: App {
                 // The story shows the time like Instagram; play is full screen.
                 .statusBarHidden(!model.showIntro)
                 .persistentSystemOverlays(.hidden)
+                .defersSystemGestures(on: .all)
         }
         .onChange(of: phase) { _, p in
             switch p {

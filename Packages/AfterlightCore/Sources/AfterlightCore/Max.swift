@@ -47,8 +47,8 @@ public struct Max: Codable, Sendable {
 public enum Tuning {
     public static let halfWidth = 0.3
     public static let height = 1.68
-    public static let walkSpeed = 3.3
-    public static let accel = 9.0
+    public static let walkSpeed = 3.0
+    public static let accel = 7.0
     public static let decel = 15.0
     public static let gravity = 34.0
     public static let airGravity = 17.0

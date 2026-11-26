@@ -200,6 +200,7 @@ extension Game {
         if dir != 0 { max.stopping = false }
         max.ax = clampD((max.vx - prevVx) / Swift.max(dt, 1e-3), -25, 25)
 
+        let prevX = max.pos.x
         if max.vx != 0 {
             let nx = max.pos.x + max.vx * dt
             let sgn: Double = max.vx > 0 ? 1 : -1
@@ -208,7 +209,7 @@ extension Game {
                 // A knee-high lip (the rim of a hole he dug) is stepped over, not a wall.
                 if max.ground && !max.swingOn,
                    let top = world.groundY(fx, from: max.pos.y - 1.0, to: max.pos.y),
-                   max.pos.y - top > 0.12, max.pos.y - top < 0.95,
+                   max.pos.y - top > 0.12, max.pos.y - top < 0.85,
                    !world.solid(fx, top - 0.1), !wallHit(fx, top),
                    !world.solid(nx, top - 0.4), !world.solid(nx, top - 1.0), !world.solid(nx, top - Tuning.height),
                    world.groundY(nx, from: max.pos.y - 1.2, to: max.pos.y + 0.2).map({ $0 >= top - 0.05 }) ?? true {
@@ -233,6 +234,18 @@ extension Game {
                 let pred = max.pos.y + max.vyG * dt + 0.5 * Tuning.airGravity * dt * dt
                 if abs(max.vx) > 4.6 && g > pred + 0.045 {
                     max.ground = false; max.vy = max.vyG
+                } else if !(max.swingOn && max.swingKind == .side) && g < max.pos.y - (Swift.abs(max.vx) * dt * 1.8 + 0.035) {
+                    // Too steep to walk up in one step: a small lip gets a little hop, anything taller is a wall.
+                    let h = max.pos.y - g
+                    if h < 0.85 && dir != 0 && !wallHit(max.pos.x, g) {
+                        max.ground = false
+                        max.vy = -(2 * Tuning.gravity * (h + 0.12)).squareRoot()
+                        max.air = 0
+                        max.squash = Swift.max(max.squash, 0.08)
+                    } else {
+                        max.pos.x = prevX
+                        max.vx = 0
+                    }
                 } else {
                     // While cutting sideways the floor is held level: uncut crumbs never lift Max.
                     let gg = (max.swingOn && max.swingKind == .side) ? Swift.max(g, max.digFloor - 0.04) : g
@@ -335,7 +348,7 @@ extension Game {
         max.stance = damp(max.stance, stance, 10, dt)
         let moving = !(max.swingOn || max.sliding || !max.ground || max.mode == .climb)
         max.walkAmp = damp(max.walkAmp, moving ? Swift.min(1, abs(max.vx) / Tuning.walkSpeed) : 0, 8, dt)
-        max.tilt = damp(max.tilt, max.ground && max.mode == .walk ? atan(max.slope * Double(max.face)) * 0.7 : 0, max.ground ? 10 : 3, dt)
+        max.tilt = damp(max.tilt, max.ground && max.mode == .walk ? clampD(atan(max.slope * Double(max.face)) * 0.35, -0.16, 0.16) : 0, max.ground ? 8 : 3, dt)
         let breathe = (max.walkAmp < 0.2 && max.ground && !max.swingOn) ? 0.012 * sin(time * 2.4) : 0
         max.bob = -abs(sin(max.phase)) * 0.075 * max.walkAmp + breathe
     }

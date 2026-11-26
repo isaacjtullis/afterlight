@@ -1,5 +1,52 @@
 import SwiftUI
+import UIKit
 import AfterlightCore
+
+/// Raw UIKit touch handling: reacts the instant a finger lands, tracks it as it slides, and survives
+/// other fingers on other controls. SwiftUI gestures were too slow and too picky for game controls.
+final class TouchPadView: UIView {
+    enum Mode { case button, leftRight }
+    var mode: Mode = .button
+    var onChange: ((Int) -> Void)?
+    private var finger: UITouch?
+    private var value = 0
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        isMultipleTouchEnabled = true
+        isExclusiveTouch = false
+        backgroundColor = .clear
+    }
+    required init?(coder: NSCoder) { fatalError() }
+
+    private func set(_ v: Int) {
+        guard v != value else { return }
+        value = v
+        if v != 0 { UIImpactFeedbackGenerator(style: .light).impactOccurred(intensity: 0.5) }
+        onChange?(v)
+    }
+    private func read(_ t: UITouch) -> Int {
+        mode == .button ? 1 : (t.location(in: self).x < bounds.midX ? -1 : 1)
+    }
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if finger == nil, let t = touches.first { finger = t; set(read(t)) }
+    }
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if let f = finger, touches.contains(f) { set(read(f)) }
+    }
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) { release(touches) }
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) { release(touches) }
+    private func release(_ touches: Set<UITouch>) {
+        if let f = finger, touches.contains(f) { finger = nil; set(0) }
+    }
+}
+
+struct TouchPad: UIViewRepresentable {
+    var mode: TouchPadView.Mode = .button
+    var onChange: (Int) -> Void
+    func makeUIView(context: Context) -> TouchPadView { let v = TouchPadView(); v.mode = mode; v.onChange = onChange; return v }
+    func updateUIView(_ v: TouchPadView, context: Context) { v.mode = mode; v.onChange = onChange }
+}
 
 /// A button you hold. Several can be held at once (walk + dig).
 struct HoldButton<Label: View>: View {
@@ -9,14 +56,37 @@ struct HoldButton<Label: View>: View {
     @State private var down = false
     var body: some View {
         label(down)
-            .contentShape(Rectangle())
-            .gesture(DragGesture(minimumDistance: 0)
-                .onChanged { _ in if !down { down = true; onChange(true) } }
-                .onEnded { _ in down = false; onChange(false) })
+            .overlay(TouchPad { v in
+                let d = v != 0
+                if d != down { down = d; onChange(d) }
+            })
             .accessibilityElement(children: .ignore)
             .accessibilityAddTraits(.isButton)
             .accessibilityIdentifier(id)
             .accessibilityLabel(id)
+    }
+}
+
+/// ◀ ▶ as one pad: press either side, slide your thumb across to turn around.
+struct MovePad: View {
+    var onChange: (Int) -> Void
+    @State private var dir = 0
+    var body: some View {
+        HStack(spacing: 0) {
+            Image(systemName: "chevron.left").font(.system(size: 24, weight: .light))
+                .frame(width: 92, height: 76).background(dir == -1 ? Color.white.opacity(0.16) : .clear)
+                .accessibilityElement().accessibilityAddTraits(.isButton).accessibilityIdentifier("move.left").accessibilityLabel("move.left")
+            Rectangle().fill(Color.white.opacity(0.18)).frame(width: 1, height: 38)
+            Image(systemName: "chevron.right").font(.system(size: 24, weight: .light))
+                .frame(width: 92, height: 76).background(dir == 1 ? Color.white.opacity(0.16) : .clear)
+                .accessibilityElement().accessibilityAddTraits(.isButton).accessibilityIdentifier("move.right").accessibilityLabel("move.right")
+        }
+        .foregroundStyle(Color.cream)
+        .clipShape(Capsule())
+        .background(.ultraThinMaterial.opacity(0.35), in: Capsule())
+        .overlay(Capsule().stroke(Color.white.opacity(0.22), lineWidth: 1))
+        .overlay(TouchPad(mode: .leftRight) { v in dir = v; onChange(v) }.accessibilityHidden(true))
+        .animation(.easeOut(duration: 0.08), value: dir)
     }
 }
 
@@ -167,20 +237,7 @@ struct HUDView: View {
                         }
                         .padding(.leading, 52)
                     }
-                    HStack(spacing: 0) {
-                        HoldButton(id: "move.left", onChange: { v in model.input.dx = v ? -1 : (model.input.dx == -1 ? 0 : model.input.dx) }) { p in
-                            Image(systemName: "chevron.left").font(.system(size: 22, weight: .light)).foregroundStyle(Color.cream)
-                                .frame(width: 82, height: 72).background(p ? Color.white.opacity(0.14) : .clear)
-                        }
-                        Rectangle().fill(Color.white.opacity(0.18)).frame(width: 1, height: 36)
-                        HoldButton(id: "move.right", onChange: { v in model.input.dx = v ? 1 : (model.input.dx == 1 ? 0 : model.input.dx) }) { p in
-                            Image(systemName: "chevron.right").font(.system(size: 22, weight: .light)).foregroundStyle(Color.cream)
-                                .frame(width: 82, height: 72).background(p ? Color.white.opacity(0.14) : .clear)
-                        }
-                    }
-                    .clipShape(Capsule())
-                    .background(.ultraThinMaterial.opacity(0.35), in: Capsule())
-                    .overlay(Capsule().stroke(Color.white.opacity(0.22), lineWidth: 1))
+                    MovePad { model.input.dx = $0 }
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 12) {

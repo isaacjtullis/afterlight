@@ -21,6 +21,7 @@ struct RootView: View {
         GeometryReader { geo in
             ZStack {
                 Color.black.ignoresSafeArea()
+                    .defersSystemGestures(on: .all)
                 if let scene {
                     SpriteView(scene: scene, preferredFramesPerSecond: 60, options: [.ignoresSiblingOrder])
                         .ignoresSafeArea()
