@@ -238,7 +238,7 @@ extension Game {
                 let pred = max.pos.y + max.vyG * dt + 0.5 * Tuning.airGravity * dt * dt
                 if abs(max.vx) > 4.6 && g > pred + 0.045 {
                     max.ground = false; max.vy = max.vyG
-                } else if !(max.swingOn && max.swingKind == .side) && g < max.pos.y - (Swift.abs(max.vx) * dt * 1.8 + 0.035) {
+                } else if !(max.swingOn && max.swingKind == .side) && g < max.pos.y - (Swift.min(Swift.abs(max.vx), Tuning.walkSpeed) * dt * 1.8 + 0.035) {
                     // Too steep to walk up in one step: a small lip gets a little hop, anything taller is a wall.
                     let h = max.pos.y - g
                     if h < 0.85 && dir != 0 && !wallHit(max.pos.x, g) {

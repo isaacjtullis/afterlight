@@ -94,16 +94,14 @@ final class HomeGroundTests: XCTestCase {
         g.begin()
         walk(g, to: 31.3)
         sim(g, GameInput(dig: true), 6)
-        // a hole one tile ahead of where Max stands
-        let hx = Int(g.max.pos.x) - 2
-        _ = g.world.carve(center: V2(Double(hx) + 0.5, 30.6), radius: 0.8, tool: .shovel)
-        _ = g.world.carve(center: V2(Double(hx) + 0.5, 31.4), radius: 0.8, tool: .shovel)
+        // a hole one tile wide, two deep, just behind where Max stands
+        let hx = Int(g.max.pos.x) - 3
+        for r in 30...31 { g.world.set(hx, r, .dug, back: .earth) }
+        g.world.rebuildDensity()
         XCTAssertFalse(g.world.m(hx, 30).solid)
         g.inv.wood = 20
-        g.max.pos = V2(Double(hx) + 1.9, 30); g.max.face = -1; g.max.vx = 0
-        sim(g, GameInput(), 0.4)
-        var tries = 0
-        while g.context?.id != "plank" && tries < 40 { sim(g, GameInput(dx: -1), 1.0 / 30); sim(g, GameInput(), 0.2); tries += 1 }
+        g.max.pos = V2(Double(hx) + 1.45, 30); g.max.face = -1; g.max.vx = 0; g.max.ground = true
+        sim(g, GameInput(), 0.3)
         XCTAssertEqual(g.context?.id, "plank", "max at \(g.max.pos)")
         g.performContext()
         XCTAssertEqual(g.inv.wood, 15)
