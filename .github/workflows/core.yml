@@ -11,10 +11,3 @@ jobs:
         env:
           DUMP: "1"
         run: swift test
-      - name: Upload map snapshot and playthrough logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: mapdump
-          path: /tmp/mapdump
-          if-no-files-found: ignore
