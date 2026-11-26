@@ -34,7 +34,7 @@ extension Game {
         for dx in [-0.9, 0.0, 0.9] {
             guard let g = world.groundY(p.x + dx, from: p.y - 0.6, to: p.y + 0.6), abs(g - p.y) < 0.25 else { return "Too uneven. I need a flat spot." }
         }
-        if world.solid(p.x, p.y - 2.1) || world.solid(p.x + Double(max.face) * 0.8, p.y - 1.2) { return "Too cramped. I need some headroom." }
+        if world.solid(p.x, p.y - 1.9) || world.solid(p.x + Double(max.face) * 0.8, p.y - 1.2) { return "Too cramped. I need some headroom." }
         if world.props.contains(where: { $0.kind == .camp && $0.pos.dist(p) < 6 }) { return "There’s already a camp right here." }
         return nil
     }

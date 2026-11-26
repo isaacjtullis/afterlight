@@ -410,12 +410,12 @@ extension Game {
     func reachableClimb(up: Bool) -> Climb? {
         let p = max.pos
         for c in world.climbs where abs(c.x - p.x) < (up ? 0.55 : 1.4) {
-            if !up && abs(c.x - p.x) >= 0.55 && abs(c.top - p.y) >= 0.35 { continue }
+            if !up && abs(c.x - p.x) >= 0.55 && abs(c.top - p.y) >= 0.8 { continue }
             if up {
                 // hands reach about 2.1 above the feet
                 if c.bottom >= p.y - 2.1 && c.top < p.y - 0.05 { return c }
             } else {
-                if abs(c.top - p.y) < 0.35 || (c.top < p.y - 0.05 && c.bottom > p.y + 0.05) { return c }
+                if abs(c.top - p.y) < 0.8 || (c.top < p.y - 0.05 && c.bottom > p.y + 0.05) { return c }
             }
         }
         return nil
