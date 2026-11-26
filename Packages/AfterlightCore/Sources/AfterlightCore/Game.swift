@@ -329,6 +329,7 @@ public final class Game {
             if max.swing >= 1 { max.swingOn = false; max.swing = 0 }
         }
         physics(dir: dir, dt: dt)
+        catchRungs()
         unstick(dir: dir, dt: dt)
         trapCheck(input, dt: dt)
         updateFeel(dt)

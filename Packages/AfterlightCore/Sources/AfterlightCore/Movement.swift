@@ -457,6 +457,20 @@ extension Game {
 
     // MARK: climbing
 
+    /// Falling down a shaft that has rungs or a ladder in it: Max grabs hold on the way past
+    /// instead of dropping the whole way.
+    func catchRungs() {
+        guard max.mode == .walk, !max.ground, max.vy > 5 else { return }
+        let p = max.pos
+        if let c = world.climbs.first(where: { ($0.kind == .rungs || $0.kind == .ladder) && abs($0.x - p.x) < 0.8 && p.y > $0.top + 0.6 && p.y < $0.bottom - 0.8 }) {
+            max.mode = .climb; max.climbID = c.id
+            max.vx = 0; max.vy = 0; max.ground = false
+            max.pos.x = c.x
+            emit(.climbStep)
+            if !story.flags.contains("said.caught") { story.flags.insert("said.caught"); think("Got it. Hold on.", 1.6) }
+        }
+    }
+
     func reachableClimb(up: Bool) -> Climb? {
         let p = max.pos
         for c in world.climbs where abs(c.x - p.x) < (up ? 0.55 : 1.4) {

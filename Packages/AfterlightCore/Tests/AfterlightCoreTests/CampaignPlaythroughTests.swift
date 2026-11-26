@@ -99,7 +99,7 @@ final class CampaignPlaythroughTests: XCTestCase {
         XCTAssertEqual(g.outings, 1, b.trail)
 
         // Back up to the gallery by the stairs he opened.
-        XCTAssertTrue(b.go(197.8, timeout: 60), b.trail)
+        XCTAssertTrue(b.go(Landmarks.luggageX - 0.3, timeout: 60), b.trail)
         b.hold(GameInput(up: true), until: { g.max.pos.y < 40.4 && g.max.mode == .walk }, timeout: 30, "up the luggage stair")
         XCTAssertTrue(b.go(172.9, timeout: 60), b.trail)
         b.hold(GameInput(up: true), until: { g.max.pos.y < 28.4 && g.max.mode == .walk }, timeout: 30, "up the upper stair")
