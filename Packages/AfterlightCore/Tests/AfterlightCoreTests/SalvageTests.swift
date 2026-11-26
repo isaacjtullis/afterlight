@@ -304,4 +304,25 @@ final class HomeGroundTests: XCTestCase {
         XCTAssertEqual(g.max.pos.x, 22.4, accuracy: 0.01)
         XCTAssertGreaterThan(g.max.health, 0)
     }
+
+    /// Bedrock stops the shovel; the rock breaker cracks it to rubble the shovel then clears.
+    func testRockBreakerCracksBedrock() {
+        let g = Game()
+        g.begin()
+        walk(g, to: 31.3)
+        sim(g, GameInput(dig: true), 3)
+        let cx = Int((g.max.pos.x + 1.0).rounded(.down))
+        for c in cx...(cx + 2) { for r in 27...29 { g.world.set(c, r, .rock) } }
+        g.world.rebuildDensity()
+        g.max.stamina = 100
+        sim(g, GameInput(dig: true), 1.5)
+        XCTAssertTrue(g.story.flags.contains("hitRock"), "hitting bedrock gives Max the idea for a breaker")
+        XCTAssertEqual(g.world.m(cx, 28), .rock, "the shovel can't cut bedrock")
+        g.inv.belt.append(.breaker)
+        g.max.stamina = 100
+        sim(g, GameInput(dig: true), 4)
+        XCTAssertNotEqual(g.world.m(cx, 28), .rock, "the breaker should crack bedrock")
+        XCTAssertGreaterThan(g.max.pos.x, Double(cx) + 0.4, "Max should dig on through the cracked rock, at \(g.max.pos)")
+        XCTAssertTrue(Recipes.all.contains { $0.id == "breaker" })
+    }
 }

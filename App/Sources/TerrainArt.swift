@@ -74,6 +74,7 @@ enum TerrainArt {
                     if q.solid && q != .metal { t = q; cc = c + dc; break }
                 }
             }
+            if t == .rock { return cc >= Landmarks.caveStart - 1 ? 0x3b3a47 : 0x4a4952 }
             if t == .loose { return 0x86604a }
             if t == .seam { return 0x7a5a48 }
             return cc >= Landmarks.caveStart - 1 ? 0x55323d : 0x66412f
@@ -146,6 +147,21 @@ enum TerrainArt {
                     ctx.setFillColor(color(0x3a3036))
                     ctx.fillEllipse(in: CGRect(x: X + 0.12, y: Y + 0.12, width: 0.07, height: 0.07))
                     ctx.fillEllipse(in: CGRect(x: X + 0.8, y: Y + 0.12, width: 0.07, height: 0.07))
+                } else if t == .rock {
+                    // Bedrock: cold grey stone with hard facets and hairline cracks, unlike the warm soil.
+                    ctx.setFillColor(color(0xd8dcef, 0.10))
+                    for i in 0..<3 {
+                        let px = Double(c) + 0.1 + hash2(c * 5 + i, r * 2) * 0.7, py = Double(r) + 0.1 + hash2(r * 7 + i, c) * 0.7
+                        if w.solid(px, py) { ctx.fill(CGRect(x: px, y: py, width: 0.22, height: 0.06)) }
+                    }
+                    ctx.setStrokeColor(color(0x000000, 0.35)); ctx.setLineWidth(0.035)
+                    let h = hash2(c * 11, r * 3)
+                    if h < 0.6 && w.solid(Double(c) + 0.5, Double(r) + 0.5) {
+                        ctx.move(to: CGPoint(x: X + 0.15 + h * 0.3, y: Y + 0.1))
+                        ctx.addLine(to: CGPoint(x: X + 0.45, y: Y + 0.5))
+                        ctx.addLine(to: CGPoint(x: X + 0.35 + h * 0.4, y: Y + 0.9))
+                        ctx.strokePath()
+                    }
                 } else if t == .loose || t == .seam {
                     ctx.setFillColor(color(0xffe6c8, 0.14))
                     for i in 0..<4 {

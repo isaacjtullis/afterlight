@@ -637,16 +637,25 @@ extension Game {
                 emit(.panel(String(a.id.dropFirst("panel:".count))))
             } else if a.id.hasPrefix("search:") || a.id.hasPrefix("salvage:") {
                 let id = String(a.id.split(separator: ":")[1])
-                takeFrom(propID: id)
+                if lootUI {
+                    // Show what's here and let the player pick.
+                    openLoot = id
+                    if let pr = world.prop(id) { emit(.bite(at: V2(pr.pos.x, pr.pos.y - 1), kind: .side, carved: false, face: max.face)) }
+                    emit(.openSheet(.loot))
+                } else {
+                    takeFrom(propID: id)
+                }
             }
         }
     }
 
-    func takeFrom(propID: String) {
+    /// Take one stack (or everything, when `only` is nil) from a locker, crate, wreck or pile.
+    public func takeFrom(propID: String, only: ItemID? = nil) {
         guard let i = world.propIndex(propID) else { return }
         var left: [ItemStack] = []
         var got: [String] = []
         for s in world.props[i].stock {
+            if let only, s.id != only { left.append(s); continue }
             let n = inv.add(s.id, s.count)
             if n > 0 { got.append(n > 1 ? "\(s.id.name) ×\(n)" : s.id.name) }
             if n < s.count { left.append(ItemStack(s.id, s.count - n)) }
@@ -654,8 +663,8 @@ extension Game {
         world.props[i].stock = left
         clearEmptyPiles()
         if !got.isEmpty { emit(.chime); emit(.pickup(got.joined(separator: ", "))); explainBag() }
-        if !left.isEmpty {
-            think("My bag’s full. I’ll leave the rest here and come back.", 3)
+        if !left.isEmpty && (only == nil || got.isEmpty) {
+            think(got.isEmpty ? "No room in the bag." : "My bag’s full. I’ll leave the rest here and come back.", 3)
             later(3.2) { $0.hint("Put things away in workshop storage to make room.", 5) }
         }
         if got.contains(where: { $0.hasPrefix(ItemID.seedTin.name) }) { think("A seed tin. Some of these might still wake up.", 3) }

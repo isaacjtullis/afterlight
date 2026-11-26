@@ -137,6 +137,8 @@ public final class World {
         mat[r * w + c] = v
         if let b { back[r * w + c] = b }
     }
+    /// The world's outer shell: nothing ever cuts it.
+    public func isFrame(_ c: Int, _ r: Int) -> Bool { r < 2 || r > h - 3 || c < 1 || c > w - 3 }
     public func setBack(_ c: Int, _ r: Int, _ b: Backdrop) {
         guard inside(c, r) else { return }
         back[r * w + c] = b

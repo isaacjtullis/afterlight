@@ -102,13 +102,14 @@ public struct ItemStack: Codable, Equatable, Hashable, Sendable {
 }
 
 public enum Tool: String, Codable, CaseIterable, Sendable {
-    case shovel, flashlight, shortPick, hammer
+    case shovel, flashlight, shortPick, hammer, breaker
     public var name: String {
         switch self {
         case .shovel: return "Shovel"
         case .flashlight: return "Flashlight"
         case .shortPick: return "Short pick"
         case .hammer: return "Hammer"
+        case .breaker: return "Rock breaker"
         }
     }
 }
@@ -262,6 +263,8 @@ public enum Recipes {
                note: "Lean it on any ledge up to six tiles high. It stays: a way up and back.", unlockFlag: "wood", wood: 15),
         Recipe(id: "torch", name: "Root torch", inputs: [], output: .item(.torch, 1),
                note: "A warm light that keeps burning. No cell needed.", unlockFlag: "wood", wood: 6, bench: false),
+        Recipe(id: "breaker", name: "Rock breaker", inputs: [ItemStack(.ironOre, 4), ItemStack(.fasteners, 2)], output: .tool(.breaker),
+               note: "An iron wedge-hammer. Cracks bedrock into rubble the shovel can clear.", unlockFlag: "hitRock", wood: 10),
         Recipe(id: "plot", name: "Garden plot", inputs: [], output: .upgrade("plot"),
                note: "A raised bed for the quarters. More plots, more food.", unlockFlag: "wood", wood: 12),
         Recipe(id: "barrel", name: "Bigger barrel", inputs: [ItemStack(.pipe, 1)], output: .upgrade("barrel"),

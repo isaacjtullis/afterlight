@@ -32,6 +32,7 @@ struct SheetHost: View {
                         case .mission: MissionView()
                         case .camp: CampView()
                         case .pantry: PantryView()
+                        case .loot: LootView()
                         case .map: MapView()
                         }
                     }
@@ -56,6 +57,7 @@ struct SheetHost: View {
         case .camp: return model.game.openCamp.flatMap { id in model.game.world.prop(id)?.flags.first { $0.hasPrefix("name:") }.map { String($0.dropFirst(5)) } } ?? "Camp crate"
         case .map: return "Map"
         case .pantry: return "Pantry"
+        case .loot: return LootView.title(model.game)
         }
     }
 }
@@ -420,6 +422,7 @@ extension Tool {
         case .flashlight: return "One soft beam. Shows what’s ahead."
         case .shortPick: return "Dig UP to open soft seams overhead, and packed earth too."
         case .hammer: return "For fixing things: seized machines, stuck panels, setting things up."
+        case .breaker: return "Swing at bedrock to crack it into rubble, then dig the rubble out."
         }
     }
 }
@@ -556,6 +559,7 @@ struct BagSheet: View {
         case .flashlight: Image(systemName: "flashlight.on.fill").resizable().scaledToFit()
         case .shortPick: Image(systemName: "hammer.fill").resizable().scaledToFit()
         case .hammer: Image(systemName: "hammer").resizable().scaledToFit()
+        case .breaker: Image(systemName: "wrench.and.screwdriver.fill").resizable().scaledToFit()
         }
     }
 
@@ -994,4 +998,76 @@ struct MapView: View {
                 .font(.avenir(13)).foregroundStyle(Color.cream.opacity(0.7))
         }
     }
+}
+
+
+/// What's in a locker, crate or wreck: pick what to take, like going through a container.
+struct LootView: View {
+    @EnvironmentObject var model: GameModel
+    @State private var tick = 0
+
+    static func title(_ g: Game) -> String {
+        guard let id = g.openLoot, let p = g.world.prop(id) else { return "Search" }
+        switch p.kind {
+        case .liftCar: return "Wrecked lift car"
+        case .drillRig: return "Old drill rig"
+        case .gantry: return "Lifting gantry"
+        case .locker: return "Locker"
+        case .crate: return "Tool crate"
+        case .pile: return "Your pile"
+        default: return "Search"
+        }
+    }
+
+    var body: some View {
+        let g = model.game
+        let id = g.openLoot ?? ""
+        let stock = g.world.prop(id)?.stock ?? []
+        HStack {
+            Text("Bag \(Inventory.capacity - g.inv.freeSlots)/\(Inventory.capacity) pockets").font(.avenir(13, "DemiBold"))
+                .foregroundStyle(g.inv.freeSlots == 0 ? Color(red: 0.95, green: 0.55, blue: 0.45) : Color.amber)
+            Spacer()
+            if stock.count > 1 {
+                Button("Take all") { g.takeFrom(propID: id); flush(); tick += 1 }.buttonStyle(PillStyle(prominent: true))
+            }
+        }
+        if stock.isEmpty {
+            Text("Nothing left here.").font(.avenir(15)).foregroundStyle(Color.cream.opacity(0.7))
+        }
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+            ForEach(stock, id: \.self) { s in
+                Button { g.takeFrom(propID: id, only: s.id); flush(); model.haptics.tap(); tick += 1 } label: {
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 10).fill(Color.black.opacity(0.3))
+                                Image(systemName: s.id.symbol).font(.system(size: 20, weight: .medium)).foregroundStyle(s.id.tint)
+                                    .shadow(color: s.id.tint.opacity(0.4), radius: 6)
+                            }
+                            .frame(width: 44, height: 44)
+                            Spacer()
+                            if s.count > 1 {
+                                Text("×\(s.count)").font(.avenir(13, "Bold")).foregroundStyle(.black).padding(.horizontal, 6).background(Capsule().fill(Color.amber))
+                            }
+                        }
+                        Text(s.id.name).font(.avenir(14, "DemiBold")).foregroundStyle(Color.cream).lineLimit(1).minimumScaleFactor(0.8)
+                        Text(s.id.bulky ? "Bulky · whole pocket" : "Stacks to \(s.id.maxStack)").font(.avenir(11)).foregroundStyle(Color.cream.opacity(0.55))
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.down.to.line").font(.system(size: 10, weight: .bold))
+                            Text("Take").font(.avenir(12, "DemiBold"))
+                        }
+                        .foregroundStyle(Color.amber)
+                    }
+                    .padding(10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(RoundedRectangle(cornerRadius: 14).fill(LinearGradient(colors: [Color(red: 0.27, green: 0.17, blue: 0.11), Color(red: 0.17, green: 0.1, blue: 0.07)], startPoint: .top, endPoint: .bottom)))
+                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color(red: 0.85, green: 0.68, blue: 0.45).opacity(0.35), style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Take \(s.id.name)")
+            }
+        }
+        .id(tick)
+    }
+    private func flush() { for e in model.game.drainEvents() { model.handleExternal(e) } }
 }

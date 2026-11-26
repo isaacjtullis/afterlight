@@ -202,6 +202,7 @@ final class GameModel: ObservableObject {
         u.hunger = Int(g.max.hunger.rounded())
         if g.thoughtT > 0, !g.thoughtText.isEmpty, thoughtLog.last != g.thoughtText { thoughtLog.append(g.thoughtText); if thoughtLog.count > 8 { thoughtLog.removeFirst() } }
         u.depth = Depth.label(atY: g.max.pos.y)
+        g.lootUI = true
         u.canGoInside = g.atHome && g.max.pos.y > 25 && g.max.mode == .walk
         u.staminaMax = Int(g.max.staminaMax)
         u.showStamina = g.story.flags.contains("dug") && (g.max.stamina < g.max.staminaMax - 0.5 || g.planning != nil || g.order != nil)

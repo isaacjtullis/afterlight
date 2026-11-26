@@ -131,6 +131,7 @@ extension Game {
             let close = V2(max.pos.x + Double(max.face) * (Tuning.halfWidth + 0.12), c.y)
             if hasEarth(close) { c = close; near = true }
         }
+        if !near, crackRock(near: c, R: R, kind: kind) { return }
         if !near {
             if kind == .up && world.solid(c.x, c.y) && !world.hardAt(c.x, c.y) && tool == .shovel {
                 if time - clankAt > 5 { clankAt = time; think("Packed too hard overhead. I need a pick for that.", 2.8) }
@@ -170,6 +171,47 @@ extension Game {
         }
         if let o = res.touchedOpen { breakthrough(o.c, o.r) }
         onCarved(res)
+    }
+
+    /// Bedrock in reach: with the breaker, crack it into rubble; without it, Max learns he needs one.
+    func crackRock(near c: V2, R: Double, kind: SwingKind) -> Bool {
+        var spots = [c]
+        if kind == .side { spots.append(V2(c.x, max.digFloor - (max.biteHigh ? 0.55 : 1.55))) }
+        if kind == .up { spots.append(V2(c.x, c.y - 0.9)) }
+        var tiles: [(Int, Int)] = []
+        for s in spots {
+            let c0 = Int((s.x - R).rounded(.down)), c1 = Int((s.x + R).rounded(.down))
+            let r0 = Int((s.y - R).rounded(.down)), r1 = Int((s.y + R).rounded(.down))
+            for r in r0...r1 { for cc in c0...c1 where world.m(cc, r) == .rock && !world.isFrame(cc, r) {
+                let dx = Double(cc) + 0.5 - s.x, dy = Double(r) + 0.5 - s.y
+                if (dx * dx + dy * dy).squareRoot() < R + 0.45, !tiles.contains(where: { $0 == (cc, r) }) { tiles.append((cc, r)) }
+            } }
+        }
+        guard !tiles.isEmpty else { return false }
+        guard inv.has(.breaker) else {
+            if !story.flags.contains("hitRock") {
+                story.flags.insert("hitRock")
+                think("Bedrock. The shovel just rings off it. Iron ore and a few fasteners… I could make a breaker.", 4)
+            } else if time - clankAt > 5 { clankAt = time; think("Bedrock. I need the rock breaker for this.", 2.4) }
+            emit(.hammerHit); return true
+        }
+        guard max.stamina >= Tuning.biteCost * 2 else {
+            if time - clankAt > 4 { clankAt = time; think("Too tired to swing the breaker. Rest first.", 2.4) }
+            return true
+        }
+        for (cc, r) in tiles { world.set(cc, r, .loose) }
+        world.markDirty(x0: c.x - 2, y0: c.y - 3, x1: c.x + 2, y1: c.y + 2)
+        max.stamina = Swift.max(0, max.stamina - Tuning.biteCost * 2)
+        max.restT = 0
+        max.squash = 0.12
+        digLatch = false; downLatch = false
+        emit(.hammerHit)
+        emit(.bite(at: c, kind: kind, carved: false, face: max.face))
+        if !story.flags.contains("said.crack") {
+            story.flags.insert("said.crack")
+            later(0.4) { $0.think("Cracked it. Now the shovel can take the rubble.", 3) }
+        }
+        return true
     }
 
     func breakthrough(_ c: Int, _ r: Int) {

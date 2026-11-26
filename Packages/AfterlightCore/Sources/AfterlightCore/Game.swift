@@ -46,7 +46,7 @@ public enum GameEvent: Equatable, Sendable {
     case saveNow
 }
 
-public enum Sheet: String, Sendable { case workbench, storage, pack, journal, mission, camp, map, pantry }
+public enum Sheet: String, Sendable { case workbench, storage, pack, journal, mission, camp, map, pantry, loot }
 
 /// One contextual action shown near the work.
 public struct ContextAction: Equatable, Sendable {
@@ -119,6 +119,9 @@ public final class Game {
     public var pinnedRecipe: String? = nil
     /// The camp crate whose sheet is open.
     public var openCamp: String? = nil
+    /// The app shows a loot list for lockers and wrecks; tests and jobs take everything at once.
+    public var lootUI = false
+    public var openLoot: String? = nil
 
     public var appliedJobs: Set<String> = []
     public var activeJob: JobRecord? = nil
