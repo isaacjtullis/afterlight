@@ -11,7 +11,6 @@ final class IntroTests: XCTestCase {
         let s = IntroScript.scenes
         XCTAssertEqual(s.map(\.image), ["01-valley", "02-rumor", "03-shifts", "04-shelves", "05-road", "06-rich",
                                          "07-families", "08-strikes", "09-collapse", "10-radio", "11-generations", "12-max"])
-        XCTAssertEqual(s[0].text, "In 3100 AD…")
         XCTAssertEqual(s[0].text, "The year was 2087.")
         XCTAssertFalse(s.contains { $0.text.contains(" AD") })
         XCTAssertTrue(s[8].text.contains("caved in"))

@@ -280,7 +280,8 @@ public final class World {
         set(c, r, .plank)
         let K = World.K
         for j in (r * K)...(r * K + 1) {
-            for i in (c * K)...((c + 1) * K) where j * dw + i < dens.count {
+            // Reach a little past the tile so the board bridges the rounded lips on either side.
+            for i in Swift.max(0, c * K - 2)...Swift.min(dw - 1, (c + 1) * K + 2) where j * dw + i < dens.count {
                 dens[j * dw + i] = Swift.max(dens[j * dw + i], j == r * K + 1 ? 0.55 : 1)
             }
         }
