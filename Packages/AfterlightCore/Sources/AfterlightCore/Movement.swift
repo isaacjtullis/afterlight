@@ -140,6 +140,13 @@ extension Game {
             emit(.whoosh); return
         }
         var res = world.carve(center: c, radius: R, floorY: floor, tool: tool)
+        if kind == .up {
+            // Overhead, one swing clears a tall column: the near earth and the earth above it.
+            let r2 = world.carve(center: V2(c.x, c.y - 0.9), radius: R * 0.95, floorY: nil, tool: tool)
+            res.changed = res.changed || r2.changed
+            res.cleared += r2.cleared; res.revealed += r2.revealed
+            if res.touchedOpen == nil { res.touchedOpen = r2.touchedOpen }
+        }
         if kind == .side {
             // One chomp clears head to toe, so a single swing always opens room to step into.
             let other = V2(c.x, max.digFloor - (max.biteHigh ? 0.55 : 1.55))
@@ -466,11 +473,14 @@ extension Game {
             max.climbID = next.id
             return
         }
-        // step off at the top onto whichever side has floor
-        if max.pos.y <= c.top + 0.01 && input.up {
+        // Step off near the top onto whichever side has floor: by pushing on up, or by pushing
+        // the wheel toward the side you want.
+        let atTop = max.pos.y <= c.top + 0.6
+        if atTop && (input.up && max.pos.y <= c.top + 0.01 || input.dx != 0) {
             // The edge of an opening is rounded; reach a little further for flat floor if needed.
+            let sides = input.dx != 0 ? [input.dx] : [max.face, -max.face]
             for reach in [1.05, 1.5, 2.0, 2.5] {
-                for side in [max.face, -max.face] {
+                for side in sides {
                     let x = c.x + Double(side) * reach
                     if let g = world.groundY(x, from: c.top - 0.8, to: c.top + 0.9), !wallHit(x, g) {
                         max.pos = V2(x, g); max.face = side

@@ -178,13 +178,13 @@ extension Game {
         if !story.isDone("blackout", "dig") && res.changed { story.step("blackout", "dig"); clearHint() }
         // The hatch seam: once it's open, the rungs continue up into the room.
         if !story.flags.contains("hatchOpen") {
-            var open = true
-            // The bottom three rows are what the climber can reach; the lip at the room's floor
-            // crumbles once the plug beneath it is gone.
-            for r in (Landmarks.hatchRows.lowerBound + 1)...Landmarks.hatchRows.upperBound where world.m(25, r).solid || world.m(26, r).solid { open = false }
-            if open {
-                _ = world.carve(center: V2(26, 9.6), radius: 1.05, tool: .pick)
-                for c in 25...26 where world.m(c, 9).solid { world.set(c, 9, .dug, back: .shaft) }
+            // The bottom three rows are what the climber can reach. Once most of the plug is gone,
+            // the rest crumbles and the way into the room is open.
+            var solid = 0
+            for r in (Landmarks.hatchRows.lowerBound + 1)...Landmarks.hatchRows.upperBound { for c in 25...26 where world.m(c, r).solid { solid += 1 } }
+            if solid <= 2 {
+                for y in [9.6, 10.6, 11.6, 12.4] { _ = world.carve(center: V2(26, y), radius: 1.1, tool: .pick) }
+                for r in Landmarks.hatchRows { for c in 25...26 where world.m(c, r).solid { world.set(c, r, .dug, back: .shaft) } }
                 story.flags.insert("hatchOpen")
                 if let i = world.climbs.firstIndex(where: { $0.id == Landmarks.shaftRungsID }) { world.climbs[i].top = 9.0 }
                 story.step("ascent", "seam")

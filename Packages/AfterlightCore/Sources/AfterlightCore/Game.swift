@@ -208,11 +208,11 @@ public final class Game {
         if freshDx { walkHold = 0.16; walkHoldDir = input.dx }
         walkHold = Swift.max(0, walkHold - dt)
         if input.dx == 0 && walkHold > 0 && max.mode == .walk { input.dx = walkHoldDir }
-        if fresh.dig && max.mode == .walk { digLatch = true; latchT = 0 }
+        if fresh.dig { digLatch = true; latchT = 0 }
         if fresh.down && max.mode == .walk && max.ground { downLatch = true; latchT = 0 }
         if digLatch || downLatch {
             latchT += dt
-            if latchT > 0.7 || max.mode != .walk { digLatch = false; downLatch = false }
+            if latchT > 0.7 { digLatch = false; downLatch = false }
         }
         if digLatch && !input.dig { input.dig = true }
         if downLatch && !input.down { input.down = true }
