@@ -606,7 +606,8 @@ extension Game {
         var y = max.pos.y - 1.0
         var top: Double? = nil
         while y > max.pos.y - 60 && y > 1 {
-            if world.solid(x, y - 1.8) { if braced { top = y }; break }
+            // A ceiling only if there's no way past it a hand's width either side (dug holes are ragged).
+            if world.solid(x, y - 1.8) && world.solid(x - 0.35, y - 1.8) && world.solid(x + 0.35, y - 1.8) { if braced { top = y }; break }
             let lip = (!world.solid(x - 1.0, y - 0.5) && world.solid(x - 1.0, y + 0.2)) || (!world.solid(x + 1.0, y - 0.5) && world.solid(x + 1.0, y + 0.2))
             if lip { top = (world.groundY(x + (world.solid(x - 1.0, y + 0.2) && !world.solid(x - 1.0, y - 0.5) ? -1.0 : 1.0), from: y - 0.6, to: y + 0.6) ?? y); break }
             y -= 0.1
