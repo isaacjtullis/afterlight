@@ -22,15 +22,17 @@ final class AudioEngine {
 
     /// How loud each sound sits in the mix.
     private func gain(_ s: Sfx) -> Float {
+        // Quiet and soft: sound should sit under the picture, not on top of it.
         switch s {
-        case .step: return 0.55
-        case .stepMetal: return 0.5
-        case .stepWood: return 0.55
-        case .climb: return 0.45
-        case .whoosh: return 0.5
-        case .swell: return 0.9
-        case .spark: return 0.6
-        default: return 0.9
+        case .step, .stepMetal, .stepWood: return 0.14
+        case .climb: return 0.12
+        case .whoosh: return 0.12
+        case .scoop, .pick, .chop: return 0.3
+        case .bag, .plank: return 0.3
+        case .swell: return 0.5
+        case .chime: return 0.35
+        case .spark: return 0.2
+        default: return 0.4
         }
     }
 
@@ -81,7 +83,7 @@ final class AudioEngine {
         for p in players where !p.isPlaying { p.play() }
         if !ambientNode.isPlaying {
             ambientNode.scheduleBuffer(ambientBuffer(), at: nil, options: .loops)
-            ambientNode.volume = 0.45
+            ambientNode.volume = 0.12
             ambientNode.play()
         }
         if !windNode.isPlaying {

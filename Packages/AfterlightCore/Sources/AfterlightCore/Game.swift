@@ -120,6 +120,8 @@ public final class Game {
     // A quick tap still does something: a short step, or one full swing of the shovel.
     var digLatch = false, downLatch = false, latchT = 0.0
     var walkHold = 0.0, walkHoldDir = 0
+    // Never stuck: pushing at something soft for a moment clears a way through it.
+    var stuckT = 0.0, stuckX = 0.0
 
     /// Saves made before the cavern moved away from home don't carry this flag.
     public static let worldVersionFlag = "world2"
@@ -239,6 +241,7 @@ public final class Game {
             if max.swing >= 1 { max.swingOn = false; max.swing = 0 }
         }
         physics(dir: dir, dt: dt)
+        unstick(dir: dir, dt: dt)
         updateFeel(dt)
         if !max.swingOn && max.oneShot == nil {
             max.restT += dt
