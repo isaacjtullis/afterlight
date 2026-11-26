@@ -14,7 +14,7 @@ extension Game {
     func frontProbe(_ dir: Int) -> Probe? {
         var d = 0.0
         while d <= 1.8 {
-            for h in [1.38, 0.92, 0.6] {
+            for h in [1.6, 1.38, 0.92, 0.6] {
                 let p = V2(max.pos.x + Double(dir) * (Tuning.halfWidth + d), max.pos.y - h)
                 if world.solid(p.x, p.y) { return Probe(d: d, point: p, hard: world.hardAt(p.x, p.y)) }
             }
