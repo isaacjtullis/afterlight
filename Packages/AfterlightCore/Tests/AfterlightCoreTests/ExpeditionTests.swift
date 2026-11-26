@@ -26,6 +26,9 @@ final class ExpeditionTests: XCTestCase {
         let g = onPlatform(78)
         g.inv.add(.campCrate)
         sim(g, GameInput(), 0.2)
+        XCTAssertNotEqual(g.context?.id, "pitchCamp", "nothing to set until Max chooses to")
+        g.beginPlacing(.campCrate)
+        sim(g, GameInput(), 0.2)
         XCTAssertEqual(g.context?.id, "pitchCamp", "at \(g.max.pos): \(g.campObstruction() ?? "-")")
         g.performContext()
         let camp = g.world.props(of: .camp).first!
@@ -203,5 +206,37 @@ final class ExpeditionTests: XCTestCase {
         XCTAssertEqual(g.inv.wood, 0); XCTAssertEqual(g.storage.wood, 120); XCTAssertEqual(g.woodAvailable, 120)
         g.takeWood(50)
         XCTAssertEqual(g.inv.wood, 50); XCTAssertEqual(g.storage.wood, 70)
+    }
+
+    /// A torch only offers to be set once Max picks it to place, and placing ends after.
+    func testPlacingATorch() {
+        let g = onPlatform(78)
+        g.inv.add(.torch)
+        sim(g, GameInput(), 0.2)
+        XCTAssertNotEqual(g.context?.id, "placeTorch")
+        g.beginPlacing(.torch)
+        XCTAssertEqual(g.placing, .torch)
+        sim(g, GameInput(), 0.2)
+        XCTAssertEqual(g.context?.id, "placeTorch")
+        g.performContext()
+        XCTAssertNil(g.placing)
+        XCTAssertEqual(g.inv.count(.torch), 0)
+        XCTAssertTrue(g.world.props.contains { $0.flags.contains("torch") })
+    }
+
+    /// A wooden ladder that stops short of the shaft rungs still hands Max over, up and back down.
+    func testLadderToRungsWithAGap() {
+        let g = Game()
+        g.begin()
+        g.world.climbs.removeAll { $0.id == "ladder.shaft" }
+        g.world.climbs.append(Climb(id: "wl", x: 26.0, top: 26.5, bottom: 30.0, kind: .ladder))
+        g.max.pos = V2(26, 29); g.max.mode = .climb; g.max.climbID = "wl"; g.max.ground = false
+        var t = 0.0
+        while g.max.pos.y > 20 && t < 8 { g.update(dt: 1 / 60, input: GameInput(up: true)); _ = g.drainEvents(); t += 1 / 60 }
+        XCTAssertEqual(g.max.climbID, Landmarks.shaftRungsID, "Max should grab the rungs above the ladder")
+        XCTAssertLessThan(g.max.pos.y, 20.5, "and keep climbing, at \(g.max.pos)")
+        t = 0
+        while g.max.pos.y < 28 && t < 10 { g.update(dt: 1 / 60, input: GameInput(down: true)); _ = g.drainEvents(); t += 1 / 60 }
+        XCTAssertGreaterThan(g.max.pos.y, 27.5, "and climb back down onto the ladder, at \(g.max.pos) on \(g.max.climbID ?? "-")")
     }
 }

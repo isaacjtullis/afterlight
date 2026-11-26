@@ -235,7 +235,7 @@ struct QuartersView: View {
         case .bed:
             Text("Rest a while. It brings back some strength and heals a little.").font(.avenir(14)).foregroundStyle(Ink.soft)
             bar("Health", g.max.health, Color(red: 0.95, green: 0.42, blue: 0.4)); bar("Stamina", g.max.stamina, Color.amber)
-            action("Sleep until rested") { g.recover(stamina: 100, health: 60); g.think("Slept like a stone. Better.", 2) }
+            action("Sleep until rested") { g.recover(stamina: 100, health: 60); model.playSleep(); g.think("Slept like a stone. Better.", 2) }
         case .pantry:
             let tins = g.world.prop("pantry")?.stock.first { $0.id == .ration }?.count ?? 0
             Text("\(tins) tins left. Greens and trail meals work too.").font(.avenir(14)).foregroundStyle(Ink.soft)

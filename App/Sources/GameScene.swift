@@ -34,6 +34,8 @@ final class GameScene: SKScene {
     private let markerNode = SKSpriteNode(texture: Art.radial)
     private var lanternK = 1.0
     private let guideNode = SKShapeNode()
+    /// A dashed outline of where the thing Max is placing would go: amber if it fits, red if not.
+    private let ghostNode = SKShapeNode()
     private let bubble = SKShapeNode()
     private let bubbleLabel = SKLabelNode(fontNamed: "AvenirNext-MediumItalic")
     private var bubbleText = ""
@@ -100,6 +102,7 @@ final class GameScene: SKScene {
         guideNode.path = chev; guideNode.lineWidth = 3.5; guideNode.lineCap = .round; guideNode.lineJoin = .round
         guideNode.strokeColor = UIColor(red: 1, green: 0.82, blue: 0.55, alpha: 1); guideNode.fillColor = .clear
         guideNode.glowWidth = 3; guideNode.zPosition = 89; guideNode.isHidden = true; cam.addChild(guideNode)
+        ghostNode.lineWidth = 2; ghostNode.zPosition = 88; ghostNode.isHidden = true; cam.addChild(ghostNode)
         buildDecals()
         resetScarf()
         camX = game.max.pos.x + 0.5; camY = game.max.pos.y - 1.4
@@ -167,7 +170,7 @@ final class GameScene: SKScene {
         let steps: [(String, () -> Void)] = [
             ("camera", { self.updateCamera(dt) }), ("chunks", updateChunks), ("props", updateProps), ("climbs", updateClimbs),
             ("parallax", updateParallax), ("scarf", { self.updateScarf(dt) }), ("actors", drawActors), ("particles", { self.updateParticles(dt) }),
-            ("lights", updateLights), ("plan", updatePlan), ("bubble", updateBubble), ("marker", updateMarker), ("guide", updateGuide),
+            ("lights", updateLights), ("plan", updatePlan), ("bubble", updateBubble), ("marker", updateMarker), ("guide", updateGuide), ("ghost", updateGhost),
         ]
         for (name, f) in steps {
             if GameScene.profiling {
@@ -676,6 +679,17 @@ final class GameScene: SKScene {
         ctx.scaleBy(x: sc, y: sc)
         ctx.setBlendMode(.destinationOut)
         let space = CGColorSpaceCreateDeviceRGB()
+        // Places Max has already been stay faintly visible: remembered, not pitch black.
+        do {
+            let b = Game.mapBlock, cols = Game.mapCols
+            let (ex0, ey0, ex1, ey1) = visibleTileRect(margin: 2)
+            ctx.setFillColor(TerrainArt.color(0, 0.42))
+            for by in max(0, ey0 / b)...max(0, ey1 / b) {
+                for bx in max(0, ex0 / b)...max(0, ex1 / b) where g.story.explored.contains(by * cols + bx) {
+                    ctx.fill(CGRect(x: bx * b, y: by * b, width: b, height: b))
+                }
+            }
+        }
         // A "flat" light (lanterns, home) holds nearly full strength most of the way out, then fades fast:
         // it really pushes the darkness back instead of a small hot spot.
         let flatG = CGGradient(colorsSpace: space, colors: [TerrainArt.color(0, 1), TerrainArt.color(0, 0.97), TerrainArt.color(0, 0.8), TerrainArt.color(0, 0)] as CFArray, locations: [0, 0.55, 0.78, 1])!
@@ -837,6 +851,32 @@ final class GameScene: SKScene {
     }
 
     /// Points toward the current objective from the edge of the screen when it's out of view.
+    private func updateGhost() {
+        guard let item = game.placing else { ghostNode.isHidden = true; return }
+        let spot = game.placementCheck(item)
+        let ok = spot.reason == nil
+        // footprint in tiles: width, height above the floor
+        let (w, h): (Double, Double) = {
+            switch item {
+            case .woodLadder: return (0.9, max(1, game.max.pos.y - spot.pos.y))
+            case .torch: return (0.5, 1.6)
+            case .lamp: return (0.7, 1.4)
+            case .campCrate: return (1.8, 1.2)
+            default: return (1.6, 1.1)
+            }
+        }()
+        let base = item == .woodLadder ? V2(spot.pos.x, game.max.pos.y) : V2(game.max.pos.x + Double(game.max.face) * 0.2, game.max.pos.y)
+        let x = CGFloat(base.x - camX) * sc, y = -CGFloat(base.y - camY) * sc
+        let r = CGRect(x: -CGFloat(w / 2) * sc, y: 0, width: CGFloat(w) * sc, height: CGFloat(h) * sc)
+        ghostNode.path = CGPath(roundedRect: r, cornerWidth: 6, cornerHeight: 6, transform: nil).copy(dashingWithPhase: CGFloat(game.time * 20), lengths: [7, 5])
+        let col = ok ? UIColor(red: 1, green: 0.8, blue: 0.5, alpha: 1) : UIColor(red: 1, green: 0.4, blue: 0.35, alpha: 1)
+        ghostNode.strokeColor = col
+        ghostNode.fillColor = col.withAlphaComponent(0.12)
+        ghostNode.position = CGPoint(x: x, y: y)
+        ghostNode.alpha = 0.75 + 0.25 * CGFloat(sin(game.time * 5))
+        ghostNode.isHidden = false
+    }
+
     private func updateGuide() {
         guard let t = game.guide, game.context == nil else { guideNode.isHidden = true; return }
         let x = CGFloat(t.x - camX) * sc, y = -CGFloat(t.y - camY) * sc

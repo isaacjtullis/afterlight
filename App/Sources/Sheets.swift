@@ -301,48 +301,63 @@ struct PantryView: View {
 struct ThoughtsCard: View {
     @EnvironmentObject var model: GameModel
     var body: some View {
+        let log = Array(model.thoughtLog.suffix(3))
         ZStack {
             Color.black.opacity(0.35).ignoresSafeArea().onTapGesture { close() }
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(spacing: 10) {
-                    ZStack {
-                        Circle().fill(LinearGradient(colors: [Color(red: 0.36, green: 0.28, blue: 0.45), Color(red: 0.2, green: 0.15, blue: 0.26)], startPoint: .top, endPoint: .bottom))
-                        Text("M").font(.avenir(18, "DemiBold")).foregroundStyle(Color.cream)
+            VStack(alignment: .leading, spacing: 16) {
+                // What's on Max's mind: the latest thought large, a couple before it quieter.
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(Array(log.dropLast().enumerated()), id: \.offset) { _, t in
+                        Text(t).font(.avenir(14)).italic().foregroundStyle(Color.cream.opacity(0.45)).fixedSize(horizontal: false, vertical: true)
                     }
-                    .frame(width: 40, height: 40)
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text("Max").font(.avenir(17, "DemiBold")).foregroundStyle(Color.amber)
-                        Text("thinking out loud").font(.avenir(12)).foregroundStyle(Color.cream.opacity(0.5))
-                    }
-                    Spacer()
-                    Button { close() } label: { Image(systemName: "xmark").foregroundStyle(Color.cream).frame(width: 40, height: 40) }
-                }
-                let log = model.thoughtLog.suffix(4)
-                if log.isEmpty { Text("Quiet down here.").font(.avenir(17)).italic().foregroundStyle(Color.cream) }
-                ForEach(Array(log.enumerated()), id: \.offset) { i, t in
-                    Text("“\(t)”").font(.avenir(i == log.count - 1 ? 19 : 15)).italic()
-                        .foregroundStyle(Color.cream.opacity(i == log.count - 1 ? 1 : 0.55))
+                    Text(log.last ?? "Quiet down here.").font(.avenir(20, "Medium")).italic().foregroundStyle(Color.cream)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+                .padding(.trailing, 28)
                 if let c = model.ui.clue {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("WHAT’S NEXT").font(.avenir(11, "DemiBold")).tracking(1.5).foregroundStyle(Color.amber)
-                        Text(c).font(.avenir(16, "DemiBold")).foregroundStyle(Color.cream)
+                    Button { close(); model.sheet = .journal } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: "scope").font(.system(size: 16, weight: .semibold)).foregroundStyle(Color.amber)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("NEXT").font(.avenir(10, "Bold")).tracking(1.8).foregroundStyle(Color.amber.opacity(0.8))
+                                Text(c).font(.avenir(16, "DemiBold")).foregroundStyle(Color.cream).multilineTextAlignment(.leading)
+                            }
+                            Spacer(minLength: 0)
+                            Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Color.cream.opacity(0.4))
+                        }
+                        .padding(.horizontal, 14).padding(.vertical, 12)
+                        .background(RoundedRectangle(cornerRadius: 16).fill(Color.white.opacity(0.06)))
                     }
-                    .padding(14).frame(maxWidth: .infinity, alignment: .leading)
-                    .background(RoundedRectangle(cornerRadius: 16).fill(Color(red: 0.33, green: 0.21, blue: 0.14)))
+                    .buttonStyle(.plain)
                 }
-                HStack {
-                    Button("Journal") { close(); model.sheet = .journal }.buttonStyle(PillStyle(prominent: false))
-                    Button("Build") { close(); model.sheet = .workbench }.buttonStyle(PillStyle(prominent: false))
-                    Button("Bag") { close(); model.sheet = .pack }.buttonStyle(PillStyle(prominent: false))
+                HStack(spacing: 10) {
+                    shortcut("book.closed", "Journal") { model.sheet = .journal }
+                    shortcut("hammer", "Build") { model.sheet = .workbench }
+                    shortcut("backpack", "Bag") { model.sheet = .pack }
+                    shortcut("map", "Map") { model.sheet = .map }
                 }
             }
             .padding(20)
-            .background(RoundedRectangle(cornerRadius: 26).fill(LinearGradient(colors: [Color(red: 0.13, green: 0.09, blue: 0.1), Color(red: 0.09, green: 0.06, blue: 0.07)], startPoint: .top, endPoint: .bottom)))
-            .overlay(RoundedRectangle(cornerRadius: 26).stroke(Color.amber.opacity(0.25)))
+            .background(RoundedRectangle(cornerRadius: 26).fill(Color(red: 0.11, green: 0.075, blue: 0.08)))
+            .overlay(RoundedRectangle(cornerRadius: 26).stroke(Color.white.opacity(0.08)))
+            .overlay(alignment: .topTrailing) {
+                Button { close() } label: { Image(systemName: "xmark").font(.system(size: 12, weight: .bold)).foregroundStyle(Color.cream.opacity(0.6)).frame(width: 40, height: 40) }
+                    .padding(6)
+            }
             .padding(.horizontal, 18)
         }
+    }
+    private func shortcut(_ icon: String, _ label: String, _ f: @escaping () -> Void) -> some View {
+        Button { close(); f() } label: {
+            VStack(spacing: 5) {
+                Image(systemName: icon).font(.system(size: 17, weight: .medium))
+                Text(label).font(.avenir(11, "DemiBold"))
+            }
+            .foregroundStyle(Color.cream.opacity(0.85))
+            .frame(maxWidth: .infinity).frame(height: 56)
+            .background(RoundedRectangle(cornerRadius: 14).fill(Color.white.opacity(0.05)))
+        }
+        .buttonStyle(.plain)
     }
     private func close() { withAnimation(.easeOut(duration: 0.2)) { model.showThoughts = false } }
 }
@@ -666,6 +681,11 @@ struct BagSheet: View {
             VStack(spacing: 6) {
                 if g.atHome {
                     Button("Store") { g.storeSlot(i); picked = nil; model.haptics.tap(); bump += 1 }
+                        .font(.avenir(13, "DemiBold")).foregroundStyle(.black)
+                        .padding(.horizontal, 12).frame(height: 30).background(Capsule().fill(Color.amber))
+                }
+                if Game.placeables.contains(s.id) {
+                    Button("Set") { g.beginPlacing(s.id); model.haptics.tap(); close() }
                         .font(.avenir(13, "DemiBold")).foregroundStyle(.black)
                         .padding(.horizontal, 12).frame(height: 30).background(Capsule().fill(Color.amber))
                 }
@@ -1379,19 +1399,16 @@ struct BuildSheet: View {
                         .font(.avenir(15)).foregroundStyle(Color.cream.opacity(0.8)).padding(.vertical, 30)
                 }
                 ScrollView {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 4), spacing: 10) {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4), spacing: 12) {
                         ForEach(shown, id: \.id) { r in tile(r, g, on: r.id == sel?.id) }
                     }
-                    .padding(.horizontal, 2).padding(.bottom, 6)
+                    .padding(.horizontal, 2).padding(.vertical, 4)
                 }
-                .frame(maxHeight: 220)
+                .frame(maxHeight: 240)
             }
             .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 28)
-                    .fill(LinearGradient(colors: [Color(red: 0.16, green: 0.11, blue: 0.1), Color(red: 0.08, green: 0.05, blue: 0.06)], startPoint: .top, endPoint: .bottom))
-            )
-            .overlay(RoundedRectangle(cornerRadius: 28).stroke(Color.amber.opacity(0.22)))
+            .background(RoundedRectangle(cornerRadius: 28).fill(Color(red: 0.11, green: 0.075, blue: 0.08)))
+            .overlay(RoundedRectangle(cornerRadius: 28).stroke(Color.white.opacity(0.08)))
             .padding(.horizontal, 10).padding(.bottom, 8)
             .id(tick)
         }
@@ -1407,91 +1424,108 @@ struct BuildSheet: View {
     }
 
     private func header(_ g: Game) -> some View {
-        HStack(spacing: 10) {
-            ZStack {
-                Circle().fill(Color.amber.opacity(0.18)).frame(width: 40, height: 40)
-                Image(systemName: "hammer.fill").foregroundStyle(Color.amber)
-            }
-            VStack(alignment: .leading, spacing: 1) {
-                Text("Build").font(.avenir(22, "Bold")).foregroundStyle(Color.cream)
-                HStack(spacing: 5) {
-                    Circle().fill(g.atBench ? Color.green : Color.amber).frame(width: 7, height: 7)
-                    Text(g.atBench ? "At a workbench" : "In the field · bench builds locked").font(.avenir(12, "DemiBold")).foregroundStyle(Color.cream.opacity(0.7))
-                }
+        HStack(alignment: .center, spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Build").font(.avenir(24, "Bold")).foregroundStyle(Color.cream)
+                Text(g.atBench ? "At a workbench" : "In the field · some builds need a bench")
+                    .font(.avenir(12, "DemiBold")).foregroundStyle(g.atBench ? Color.amber : Color.cream.opacity(0.55))
             }
             Spacer()
-            HStack(spacing: 5) {
-                WoodIcon().frame(width: 20, height: 15)
+            HStack(spacing: 6) {
+                WoodIcon().frame(width: 18, height: 14)
                 Text("\(g.woodAvailable)").font(.avenir(15, "Bold")).monospacedDigit().foregroundStyle(Color.cream)
             }
-            .padding(.horizontal, 10).frame(height: 34)
-            .background(Capsule().fill(Color.black.opacity(0.35)))
-            Button { model.sheet = nil } label: { Image(systemName: "xmark").font(.system(size: 14, weight: .bold)).foregroundStyle(Color.cream).frame(width: 40, height: 40).background(Circle().fill(Color.white.opacity(0.08))) }
+            .padding(.horizontal, 12).frame(height: 34)
+            .background(Capsule().fill(Color.white.opacity(0.07)))
+            Button { model.sheet = nil } label: {
+                Image(systemName: "xmark").font(.system(size: 13, weight: .bold)).foregroundStyle(Color.cream.opacity(0.8))
+                    .frame(width: 34, height: 34).background(Circle().fill(Color.white.opacity(0.07)))
+            }
         }
     }
 
     private func tabs(_ all: [Recipe]) -> some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
-                ForEach(BuildTab.allCases, id: \.self) { t in
-                    let n = t == .all ? all.count : all.filter { Self.tab(of: $0) == t }.count
-                    if n > 0 || t == .all {
-                        Button { withAnimation(.spring(duration: 0.25)) { tab = t; selected = nil }; model.haptics.tap() } label: {
-                            HStack(spacing: 5) {
-                                Image(systemName: t.icon).font(.system(size: 11, weight: .semibold))
-                                Text(t.rawValue).font(.avenir(13, "DemiBold"))
-                            }
-                            .foregroundStyle(tab == t ? Color.black : Color.cream.opacity(0.8))
-                            .padding(.horizontal, 12).frame(height: 32)
-                            .background(Capsule().fill(tab == t ? Color.amber : Color.white.opacity(0.07)))
-                        }
-                        .buttonStyle(.plain)
+        HStack(spacing: 4) {
+            ForEach(BuildTab.allCases, id: \.self) { t in
+                let n = t == .all ? all.count : all.filter { Self.tab(of: $0) == t }.count
+                Button { withAnimation(.spring(duration: 0.25)) { tab = t; selected = nil }; model.haptics.tap() } label: {
+                    VStack(spacing: 3) {
+                        Image(systemName: t.icon).font(.system(size: 14, weight: .semibold))
+                        Text(t.rawValue).font(.avenir(11, "DemiBold"))
                     }
+                    .foregroundStyle(tab == t ? Color.black : Color.cream.opacity(n == 0 ? 0.25 : 0.75))
+                    .frame(maxWidth: .infinity).frame(height: 46)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(tab == t ? Color.amber : Color.clear))
                 }
+                .buttonStyle(.plain)
+                .disabled(n == 0 && t != .all)
             }
         }
+        .padding(4)
+        .background(RoundedRectangle(cornerRadius: 16).fill(Color.white.opacity(0.05)))
+    }
+
+    private func outputItem(_ r: Recipe) -> ItemID? {
+        if case .item(let it, _) = r.output, Game.placeables.contains(it) { return it }
+        return nil
     }
 
     private func detail(_ r: Recipe, _ g: Game) -> some View {
         let blocker = g.buildBlocker(r)
         let ok = blocker == nil
-        return HStack(alignment: .top, spacing: 14) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 20).fill(RadialGradient(colors: [Color.amber.opacity(ok ? 0.45 : 0.15), Color.black.opacity(0.4)], center: .center, startRadius: 4, endRadius: 70))
-                Ellipse().fill(Color.black.opacity(0.35)).frame(width: 80, height: 14).offset(y: 44)
-                ItemArt(recipe: r).padding(20)
-                    .scaleEffect(pop ? 1.25 : 1)
-                    .shadow(color: Color.amber.opacity(ok ? 0.6 : 0), radius: 10)
-                    .saturation(ok ? 1 : 0.35)
-                RoundedRectangle(cornerRadius: 20).fill(Color.white.opacity(flash)).allowsHitTesting(false)
-            }
-            .frame(width: 124, height: 124)
-            .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.amber.opacity(ok ? 0.6 : 0.2), lineWidth: ok ? 1.5 : 1))
-            VStack(alignment: .leading, spacing: 7) {
-                HStack(spacing: 6) {
-                    Text(r.name).font(.avenir(18, "Bold")).foregroundStyle(Color.cream).lineLimit(1).minimumScaleFactor(0.75)
-                    if !r.bench { tag("FIELD", Color.amber) }
+        let place = outputItem(r)
+        let have = place.map { g.inv.count($0) + (g.atHome ? g.storage.count($0) : 0) } ?? 0
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 14) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 18).fill(RadialGradient(colors: [Color.amber.opacity(ok ? 0.3 : 0.1), Color.black.opacity(0.25)], center: .center, startRadius: 2, endRadius: 60))
+                    ItemArt(recipe: r).padding(18)
+                        .scaleEffect(pop ? 1.2 : 1)
+                        .saturation(ok ? 1 : 0.4)
+                    RoundedRectangle(cornerRadius: 18).fill(Color.white.opacity(flash)).allowsHitTesting(false)
                 }
-                Text(r.note).font(.avenir(12)).foregroundStyle(Color.cream.opacity(0.72)).lineLimit(3).fixedSize(horizontal: false, vertical: true)
-                HStack(spacing: 6) {
-                    if r.wood > 0 { slot(AnyView(WoodIcon()), have: g.woodAvailable, need: r.wood) }
-                    ForEach(r.inputs, id: \.self) { s in
-                        slot(AnyView(Image(systemName: s.id.symbol).resizable().scaledToFit().foregroundStyle(s.id.tint)), have: g.available(s.id), need: s.count)
+                .frame(width: 92, height: 92)
+                VStack(alignment: .leading, spacing: 5) {
+                    HStack(spacing: 6) {
+                        Text(r.name).font(.avenir(18, "Bold")).foregroundStyle(Color.cream).lineLimit(1).minimumScaleFactor(0.75)
+                        if !r.bench { tag("FIELD", Color.amber) }
                     }
+                    Text(r.note).font(.avenir(13)).foregroundStyle(Color.cream.opacity(0.65)).lineLimit(3).fixedSize(horizontal: false, vertical: true)
                 }
+            }
+            HStack(spacing: 8) {
+                if r.wood > 0 { slot(AnyView(WoodIcon()), "Wood", have: g.woodAvailable, need: r.wood) }
+                ForEach(r.inputs, id: \.self) { s in
+                    slot(AnyView(Image(systemName: s.id.symbol).resizable().scaledToFit().foregroundStyle(s.id.tint)), s.id.name, have: g.available(s.id), need: s.count)
+                }
+                Spacer(minLength: 0)
+            }
+            HStack(spacing: 8) {
                 Button { build(r, g) } label: {
-                    Text(ok ? "BUILD" : (blocker ?? "")).font(.avenir(ok ? 16 : 13, "Bold")).tracking(ok ? 2 : 0)
+                    Text(ok ? "Build" : (blocker ?? "")).font(.avenir(ok ? 16 : 13, "Bold"))
                         .foregroundStyle(ok ? Color.black : Color(red: 0.95, green: 0.6, blue: 0.5))
-                        .frame(maxWidth: .infinity).frame(height: 42)
-                        .background(Capsule().fill(ok ? AnyShapeStyle(LinearGradient(colors: [Color(red: 1, green: 0.86, blue: 0.6), Color.amber], startPoint: .top, endPoint: .bottom)) : AnyShapeStyle(Color.white.opacity(0.06))))
-                        .shadow(color: Color.amber.opacity(ok ? 0.5 : 0), radius: 8)
+                        .frame(maxWidth: .infinity).frame(height: 44)
+                        .background(RoundedRectangle(cornerRadius: 14).fill(ok ? Color.amber : Color.white.opacity(0.06)))
                 }
                 .buttonStyle(.plain).disabled(!ok)
                 .accessibilityIdentifier("build.\(r.id)")
+                if let place, have > 0 {
+                    Button { g.beginPlacing(place); model.haptics.tap(); model.sheet = nil } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "mappin.and.ellipse").font(.system(size: 13, weight: .bold))
+                            Text("Set (\(have))").font(.avenir(16, "Bold"))
+                        }
+                        .foregroundStyle(Color.cream)
+                        .frame(maxWidth: .infinity).frame(height: 44)
+                        .background(RoundedRectangle(cornerRadius: 14).stroke(Color.amber, lineWidth: 1.5))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("set.\(r.id)")
+                }
             }
         }
-        .padding(12)
-        .background(RoundedRectangle(cornerRadius: 22).fill(Color.white.opacity(0.04)))
+        .padding(14)
+        .background(RoundedRectangle(cornerRadius: 20).fill(Color.white.opacity(0.04)))
     }
 
     private func build(_ r: Recipe, _ g: Game) {
@@ -1511,37 +1545,37 @@ struct BuildSheet: View {
         let ok = b == nil
         let owned = b == "Already made" || b == "Already built"
         return Button { withAnimation(.spring(duration: 0.25)) { selected = r.id }; model.haptics.tap() } label: {
-            ZStack(alignment: .topTrailing) {
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(on ? Color.amber.opacity(0.22) : Color(red: 0.2, green: 0.14, blue: 0.11))
-                ItemArt(recipe: r).padding(12)
-                    .saturation(ok || owned ? 1 : 0.15).opacity(ok || owned ? 1 : 0.5)
-                if owned {
-                    Image(systemName: "checkmark.circle.fill").font(.system(size: 15)).foregroundStyle(Color.green, Color.black).padding(4)
-                } else if ok {
-                    Circle().fill(Color.amber).frame(width: 9, height: 9).padding(6).shadow(color: Color.amber, radius: 4)
-                } else if b == "Needs a workbench" {
-                    Image(systemName: "lock.fill").font(.system(size: 10)).foregroundStyle(Color.cream.opacity(0.6)).padding(6)
+            VStack(spacing: 5) {
+                ZStack(alignment: .topTrailing) {
+                    RoundedRectangle(cornerRadius: 14).fill(on ? Color.amber.opacity(0.18) : Color.white.opacity(0.05))
+                    ItemArt(recipe: r).padding(16)
+                        .opacity(ok || owned ? 1 : 0.4).saturation(ok || owned ? 1 : 0.2)
+                    Group {
+                        if owned { Image(systemName: "checkmark").font(.system(size: 9, weight: .heavy)).foregroundStyle(.black).frame(width: 16, height: 16).background(Circle().fill(Color.green.opacity(0.85))) }
+                        else if ok { Circle().fill(Color.amber).frame(width: 8, height: 8) }
+                    }
+                    .padding(7)
                 }
+                .aspectRatio(1, contentMode: .fit)
+                .overlay(RoundedRectangle(cornerRadius: 14).stroke(on ? Color.amber : Color.clear, lineWidth: 1.5))
+                Text(r.name).font(.avenir(10, "DemiBold")).foregroundStyle(Color.cream.opacity(ok || owned ? 0.85 : 0.45))
+                    .lineLimit(1).minimumScaleFactor(0.75)
             }
-            .aspectRatio(1, contentMode: .fit)
-            .overlay(RoundedRectangle(cornerRadius: 14).stroke(on ? Color.amber : Color.white.opacity(ok ? 0.25 : 0.08), lineWidth: on ? 2 : 1))
-            .scaleEffect(on ? 1.04 : 1)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(r.name)
     }
 
-    private func slot(_ icon: AnyView, have: Int, need: Int) -> some View {
+    private func slot(_ icon: AnyView, _ name: String, have: Int, need: Int) -> some View {
         let enough = have >= need
-        return VStack(spacing: 2) {
-            icon.frame(width: 20, height: 20)
-            Text("\(min(have, need))/\(need)").font(.avenir(10, "Bold")).monospacedDigit()
+        return HStack(spacing: 6) {
+            icon.frame(width: 16, height: 16)
+            Text("\(min(have, need))/\(need)").font(.avenir(12, "Bold")).monospacedDigit()
                 .foregroundStyle(enough ? Color.cream : Color(red: 0.95, green: 0.55, blue: 0.45))
         }
-        .frame(width: 42, height: 44)
-        .background(RoundedRectangle(cornerRadius: 10).fill(Color.black.opacity(0.35)))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(enough ? Color.green.opacity(0.5) : Color.red.opacity(0.4)))
+        .padding(.horizontal, 10).frame(height: 32)
+        .background(Capsule().fill(enough ? Color.white.opacity(0.07) : Color.red.opacity(0.12)))
+        .accessibilityLabel("\(name) \(have) of \(need)")
     }
 
     private func tag(_ s: String, _ c: Color) -> some View {

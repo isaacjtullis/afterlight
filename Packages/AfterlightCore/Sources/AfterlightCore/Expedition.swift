@@ -72,14 +72,53 @@ extension Game {
         return nil
     }
 
+    /// Things Max can set down in the world.
+    public static let placeables: Set<ItemID> = [.torch, .lamp, .workbenchKit, .cotKit, .woodLadder, .campCrate]
+
+    /// Pick something to set down: the bag closes and the spot shows where it would go.
+    public func beginPlacing(_ item: ItemID) {
+        guard Game.placeables.contains(item), inv.count(item) > 0 || (atHome && storage.count(item) > 0) else { return }
+        if inv.count(item) == 0 { take(item, 1) }
+        guard inv.count(item) > 0 else { think("No room in the bag to carry it.", 2.4); return }
+        placing = item
+    }
+    public func cancelPlacing() { placing = nil }
+
+    /// Where the thing being placed would go, and why not if it can't.
+    public func placementCheck(_ item: ItemID) -> (pos: V2, reason: String?) {
+        let p = max.pos
+        switch item {
+        case .campCrate: return (p, campObstruction())
+        case .woodLadder:
+            if let s = ladderSpot() { return (V2(s.x, s.top), nil) }
+            return (p, "Face a ledge to lean it on")
+        case .torch:
+            guard max.ground else { return (p, "Feet on the ground first") }
+            return (p, nil)
+        case .lamp:
+            guard max.ground else { return (p, "Feet on the ground first") }
+            if world.props(of: .lamp).contains(where: { $0.pos.dist(p) < 2.5 && !$0.flags.contains("torch") }) { return (p, "There’s a lantern right here") }
+            return (p, nil)
+        default: return (p, placeObstruction())
+        }
+    }
+
     func expeditionContext() -> ContextAction? {
         let p = max.pos
         let f = story.flags
         func act(_ id: String, _ label: String, _ at: V2, _ big: Bool = false) -> ContextAction { ContextAction(id: id, label: label, anchor: at, prominent: big) }
-        // Pitch a camp
-        if inv.count(.campCrate) > 0 && max.ground {
-            if campObstruction() == nil { return act("pitchCamp", "Pitch camp here", V2(p.x, p.y - 2.4), true) }
-            if !atHome { return act("campSpot", "Camp here?", V2(p.x, p.y - 2.4)) }
+        // Setting something down: only while placing it (chosen from Build or the bag).
+        if let item = placing {
+            guard inv.count(item) > 0 else { placing = nil; return nil }
+            let spot = placementCheck(item)
+            if let why = spot.reason { return act("placeNo", why, V2(spot.pos.x, spot.pos.y - 2.4)) }
+            switch item {
+            case .campCrate: return act("pitchCamp", "Set camp here", V2(p.x, p.y - 2.4), true)
+            case .woodLadder: return act("setLadder", "Set the ladder", V2(spot.pos.x, spot.pos.y - 0.8), true)
+            case .torch: return act("placeTorch", "Set the torch", V2(p.x, p.y - 2.2), true)
+            case .lamp: return act("placeLamp", "Set the lantern", V2(p.x, p.y - 2.4), true)
+            default: return act("place:\(item.rawValue)", "Set the \(item.name.lowercased())", V2(p.x, p.y - 2.4), true)
+            }
         }
         for pr in world.props where abs(pr.pos.x - p.x) < 1.5 && abs(pr.pos.y - p.y) < 1.3 {
             switch pr.kind {
@@ -100,12 +139,6 @@ extension Game {
             if !f.contains("genFreed") { return act("genFree", "Hammer it loose", V2(gen.pos.x, 27.4), true) }
             if available(.batteryCell) > 0 { return act("genPower", "Fit the battery cell", V2(gen.pos.x, 27.4), true) }
             return act("genLook", "Generator", V2(gen.pos.x, 27.4))
-        }
-        if let spot = ladderSpot() { return act("setLadder", "Lean the ladder here", V2(spot.x, spot.top - 0.8), true) }
-        if inv.count(.torch) > 0 && max.ground && !atHome { return act("placeTorch", "Set a torch here", V2(p.x, p.y - 2.2)) }
-        // Placing things you've built
-        for (item, label) in [(ItemID.workbenchKit, "Set up the workbench"), (.cotKit, "Set up the cot")] where inv.count(item) > 0 && max.ground {
-            if placeObstruction() == nil { return act("place:\(item.rawValue)", label + " here", V2(p.x, p.y - 2.4), true) }
         }
         for pr in world.props where (pr.kind == .fieldBench || pr.kind == .cot) && abs(pr.pos.x - p.x) < 1.2 && abs(pr.pos.y - p.y) < 1.0 {
             return pr.kind == .fieldBench ? act("fieldBench", "Workbench", V2(pr.pos.x, pr.pos.y - 1.8)) : act("cotRest", "Rest", V2(pr.pos.x, pr.pos.y - 1.4))
@@ -131,6 +164,7 @@ extension Game {
     func performExpedition(_ id: String) -> Bool {
         switch id {
         case "pitchCamp":
+            placing = nil
             guard campObstruction() == nil else { return true }
             inv.remove(.campCrate, 1)
             let name = campName(at: max.pos)
@@ -176,6 +210,7 @@ extension Game {
             }
             _ = gen
         case "setLadder":
+            placing = nil
             guard let spot = ladderSpot() else { return true }
             inv.remove(.woodLadder, 1)
             world.climbs.append(Climb(id: "wladder.\(Int(time * 1000))", x: spot.x, top: spot.top, bottom: max.pos.y, kind: .ladder))
@@ -183,6 +218,7 @@ extension Game {
             emit(.placed("ladder"))
             emit(.saveNow)
         case "placeTorch":
+            placing = nil
             inv.remove(.torch, 1)
             var pr = Prop(id: "torch.\(Int(time * 1000))", kind: .lamp, pos: max.pos)
             pr.flags = ["torch"]
@@ -193,10 +229,13 @@ extension Game {
             emit(.openSheet(.workbench))
         case "cotRest":
             recover(stamina: 100, health: 35)
-            think("A short rest. Better.", 1.8)
+            emit(.sleep)
+            later(3.8) { $0.think("A short rest. Better.", 1.8) }
             emit(.saveNow)
         case "campSpot":
             think(campObstruction() ?? "This’ll do.", 2.4)
+        case "placeNo":
+            if let item = placing, let why = placementCheck(item).reason { think(why + ".", 2) }
         case "signal":
             guard let i = world.propIndex("signal"), available(.batteryCell) > 0 else { return true }
             consume(.batteryCell, 1)
@@ -222,6 +261,7 @@ extension Game {
         default:
             if id.hasPrefix("place:"), let item = ItemID(rawValue: String(id.dropFirst(6))) {
                 guard placeObstruction() == nil, inv.count(item) > 0 else { return true }
+                placing = nil
                 inv.remove(item, 1)
                 world.props.append(Prop(id: "\(item.rawValue).\(Int(time * 1000))", kind: item == .workbenchKit ? .fieldBench : .cot, pos: max.pos))
                 hammer(at: V2(max.pos.x + Double(max.face) * 0.6, max.pos.y - 0.4), for: 0.9)

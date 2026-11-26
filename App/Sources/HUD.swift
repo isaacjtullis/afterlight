@@ -273,13 +273,17 @@ struct HUDView: View {
                 meter("heart.fill", ui.health, Color(red: 0.95, green: 0.42, blue: 0.4), id: "meter.health")
                 meter("bolt.fill", ui.stamina, Color.amber, id: "meter.stamina")
                 meter("fork.knife", ui.hunger, Color(red: 0.7, green: 0.85, blue: 0.45), id: "meter.hunger")
-                Text(ui.depth).font(.avenir(11, "DemiBold")).monospacedDigit().foregroundStyle(Color.cream.opacity(0.75))
                 if ui.hasFlashlight {
                     Button { model.game.swapCell(); model.haptics.tap() } label: {
                         meter("battery.75", ui.battery, Color(red: 0.6, green: 0.85, blue: 1), id: "meter.battery")
                     }
                     .buttonStyle(.plain)
                 }
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.down.to.line").font(.system(size: 9, weight: .bold)).foregroundStyle(Color.cream.opacity(0.6)).frame(width: 14)
+                    Text(ui.depth).font(.avenir(11, "DemiBold")).monospacedDigit().foregroundStyle(Color.cream.opacity(0.75))
+                }
+                .padding(.top, 2)
             }
             .padding(.horizontal, 10).padding(.vertical, 8)
             .background(RoundedRectangle(cornerRadius: 12).fill(Color.black.opacity(0.38)))
@@ -343,6 +347,18 @@ struct HUDView: View {
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 14) {
+                    if let what = ui.placing {
+                        Button { model.game.cancelPlacing(); model.haptics.tap() } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "xmark").font(.system(size: 11, weight: .bold))
+                                Text("Cancel \(what.lowercased())").font(.avenir(13, "DemiBold"))
+                            }
+                            .foregroundStyle(Color.cream.opacity(0.85))
+                            .padding(.horizontal, 14).frame(height: 34)
+                            .background(Capsule().fill(Color.black.opacity(0.5)))
+                        }
+                        .transition(.opacity)
+                    }
                     if let c = ui.context {
                         Button { model.performContext() } label: {
                             Text(c.label).font(.avenir(c.prominent ? 17 : 15, "DemiBold")).foregroundStyle(Color.cream)

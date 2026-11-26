@@ -36,6 +36,7 @@ struct UIState: Equatable {
     var speech: String? = nil
     var speaker = ""
     var coopStatus: String? = nil
+    var placing: String? = nil
 }
 
 @MainActor
@@ -57,6 +58,8 @@ final class GameModel: ObservableObject {
     @Published var banner: String? = nil
     /// Checkpoint cards waiting to slide in, one at a time.
     @Published var cards: [Checkpoint] = []
+    /// The sleep scene is playing.
+    @Published var sleeping = false
     @Published var report: JobReport? = nil
     @Published var panel: Panel? = nil
     @Published var confirming: PanelRow? = nil
@@ -200,7 +203,7 @@ final class GameModel: ObservableObject {
         clock += dt
         frames += 1
         guard !showTitle else { return }
-        let paused = conversation != nil || sheet != nil || banner != nil || game.activeJob != nil || panel != nil || showQuarters
+        let paused = sleeping || conversation != nil || sheet != nil || banner != nil || game.activeJob != nil || panel != nil || showQuarters
         game.update(dt: dt, input: paused ? GameInput() : input)
         for e in game.drainEvents() { handle(e) }
         if let d = saveDue, clock >= d { saveDue = nil; saveNow(cloud: false) }
@@ -228,6 +231,7 @@ final class GameModel: ObservableObject {
         if g.thoughtT > 0, !g.thoughtText.isEmpty, thoughtLog.last != g.thoughtText { thoughtLog.append(g.thoughtText); if thoughtLog.count > 8 { thoughtLog.removeFirst() } }
         u.depth = Depth.label(atY: g.max.pos.y)
         g.lootUI = true
+        u.placing = g.placing?.name
         u.canGoInside = g.atHome && g.max.pos.y > 25 && g.max.mode == .walk
         u.staminaMax = Int(g.max.staminaMax)
         u.showStamina = g.story.flags.contains("dug") && (g.max.stamina < g.max.staminaMax - 0.5 || g.planning != nil || g.order != nil)
@@ -322,7 +326,17 @@ final class GameModel: ObservableObject {
                     self.saveNow(cloud: false)
                 }
             }
+        case .sleep: playSleep()
         case .saveNow: if saveDue == nil { saveDue = clock + 1.5 }
+        }
+    }
+
+    func playSleep() {
+        guard !sleeping else { return }
+        withAnimation(.easeInOut(duration: 0.6)) { sleeping = true }
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(3.6))
+            withAnimation(.easeInOut(duration: 0.6)) { self.sleeping = false }
         }
     }
 

@@ -509,10 +509,19 @@ extension Game {
         oneShotTick(dt)
         if world.solid(max.pos.x, ny - Tuning.height) && v < 0 { ny = max.pos.y }
         max.pos.y = clampD(ny, c.top, c.bottom)
-        // hand over to the next climbable above (ladder -> rungs)
+        // Hand over to the next climbable above (ladder -> rungs): Max can reach about an arm's
+        // length up to grab it, so a short gap between two climbs never strands him.
         if max.pos.y <= c.top + 0.05 && input.up,
-           let next = world.climbs.first(where: { $0.id != c.id && abs($0.x - c.x) < 0.6 && $0.bottom >= max.pos.y - 0.3 && $0.top < max.pos.y - 0.05 }) {
+           let next = world.climbs.first(where: { $0.id != c.id && abs($0.x - c.x) < 0.9 && $0.bottom >= max.pos.y - 1.3 && $0.top < max.pos.y - 0.05 }) {
             max.climbID = next.id
+            max.pos.y = Swift.min(max.pos.y, next.bottom)
+            return
+        }
+        // ...and down onto the one below (rungs -> ladder).
+        if max.pos.y >= c.bottom - 0.05 && input.down,
+           let next = world.climbs.first(where: { $0.id != c.id && abs($0.x - c.x) < 0.9 && $0.top <= max.pos.y + 1.3 && $0.bottom > max.pos.y + 0.05 }) {
+            max.climbID = next.id
+            max.pos.y = Swift.max(max.pos.y, next.top)
             return
         }
         // Step off near the top onto whichever side has floor: by pushing on up, or by pushing

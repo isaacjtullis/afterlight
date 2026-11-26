@@ -42,6 +42,7 @@ struct RootView: View {
                         .transition(.asymmetric(insertion: .move(edge: .top).combined(with: .opacity), removal: .scale(scale: 0.9).combined(with: .opacity)))
                         .zIndex(5)
                 }
+                if model.sleeping { SleepView().transition(.opacity).zIndex(6) }
                 if model.showThoughts { ThoughtsCard().transition(.scale(scale: 0.95).combined(with: .opacity)) }
                 if model.showQuarters { QuartersView().transition(.opacity) }
                 if let b = model.banner { ChapterBanner(text: b).transition(.opacity) }
@@ -266,5 +267,82 @@ struct CheckShape: Shape {
         p.addLine(to: CGPoint(x: r.minX + r.width * 0.38, y: r.maxY))
         p.addLine(to: CGPoint(x: r.maxX, y: r.minY))
         return p
+    }
+}
+
+
+/// Max turns in: the room dims, Zs drift up from his sleepy head, the clock races round, and he wakes rested.
+struct SleepView: View {
+    @EnvironmentObject var model: GameModel
+    @State private var start = Date()
+    var body: some View {
+        TimelineView(.animation) { tl in
+            let e = tl.date.timeIntervalSince(start)
+            let k = min(1, max(0, (e - 0.4) / 2.6))          // how far through the night
+            ZStack {
+                Color(red: 0.03, green: 0.02, blue: 0.05).opacity(0.94).ignoresSafeArea()
+                VStack(spacing: 26) {
+                    // the clock, hands racing
+                    ZStack {
+                        Circle().fill(Color(red: 0.98, green: 0.93, blue: 0.83)).frame(width: 96, height: 96)
+                        Circle().stroke(Color(red: 0.78, green: 0.6, blue: 0.4), lineWidth: 5).frame(width: 96, height: 96)
+                        ForEach(0..<12) { i in
+                            Capsule().fill(Ink.main.opacity(0.5)).frame(width: 2, height: 7).offset(y: -38).rotationEffect(.degrees(Double(i) * 30))
+                        }
+                        Capsule().fill(Ink.main).frame(width: 4, height: 26).offset(y: -11).rotationEffect(.degrees(k * 720))
+                        Capsule().fill(Ink.accent).frame(width: 2.5, height: 36).offset(y: -16).rotationEffect(.degrees(k * 720 * 12))
+                        Circle().fill(Ink.main).frame(width: 8, height: 8)
+                    }
+                    // Max asleep in bed, Zs rising
+                    ZStack {
+                        Canvas { ctx, size in
+                            let w = size.width, h = size.height
+                            let breathe = CGFloat(sin(e * 2.2)) * 2
+                            ctx.fill(Path(roundedRect: CGRect(x: 10, y: h * 0.45, width: w - 20, height: h * 0.45), cornerRadius: 14), with: .color(Color(red: 0.48, green: 0.3, blue: 0.18)))
+                            ctx.fill(Path(roundedRect: CGRect(x: 18, y: h * 0.38, width: w - 36, height: h * 0.3), cornerRadius: 12), with: .color(Color(red: 0.96, green: 0.93, blue: 0.88)))
+                            ctx.fill(Path(roundedRect: CGRect(x: 24, y: h * 0.3, width: 70, height: 34), cornerRadius: 12), with: .color(.white))
+                            // head with the beanie
+                            ctx.fill(Path(ellipseIn: CGRect(x: 40, y: h * 0.22, width: 44, height: 40)), with: .color(Color(red: 0.95, green: 0.82, blue: 0.7)))
+                            ctx.fill(Path(ellipseIn: CGRect(x: 36, y: h * 0.18, width: 50, height: 28)), with: .color(Color(red: 0.29, green: 0.23, blue: 0.36)))
+                            ctx.fill(Path(ellipseIn: CGRect(x: 30, y: h * 0.16, width: 14, height: 14)), with: .color(Color(red: 0.91, green: 0.64, blue: 0.23)))
+                            var lid = Path(); lid.move(to: CGPoint(x: 66, y: h * 0.22 + 24)); lid.addQuadCurve(to: CGPoint(x: 76, y: h * 0.22 + 24), control: CGPoint(x: 71, y: h * 0.22 + 28))
+                            ctx.stroke(lid, with: .color(Color(red: 0.2, green: 0.12, blue: 0.1)), lineWidth: 1.6)
+                            // quilt over him, rising and falling
+                            ctx.fill(Path(roundedRect: CGRect(x: 80, y: h * 0.36 - breathe, width: w - 104, height: h * 0.34 + breathe), cornerRadius: 14), with: .color(Color(red: 0.31, green: 0.48, blue: 0.63)))
+                            ctx.fill(Path(CGRect(x: 80, y: h * 0.36 - breathe, width: w - 104, height: 6)), with: .color(Color(red: 0.95, green: 0.84, blue: 0.62)))
+                            // Zs
+                            for i in 0..<3 {
+                                let ph = (e * 0.55 + Double(i) / 3).truncatingRemainder(dividingBy: 1)
+                                let zx = 76 + CGFloat(ph) * 70 + CGFloat(sin(ph * 6 + Double(i))) * 8
+                                let zy = h * 0.2 - CGFloat(ph) * h * 0.55
+                                ctx.draw(Text("z").font(.system(size: 14 + CGFloat(ph) * 16, weight: .heavy, design: .rounded)).foregroundColor(Color(red: 0.98, green: 0.93, blue: 0.83).opacity(1 - ph)), at: CGPoint(x: zx, y: zy))
+                            }
+                        }
+                    }
+                    .frame(width: 260, height: 150)
+                    // strength coming back
+                    VStack(spacing: 8) {
+                        bar("heart.fill", Color(red: 0.95, green: 0.42, blue: 0.4), 0.3 + 0.7 * k * (model.game.max.health / 100))
+                        bar("bolt.fill", Color.amber, 0.2 + 0.8 * k)
+                    }
+                    .frame(width: 220)
+                    Text(k < 1 ? "Sleeping…" : "Rested").font(.avenir(18, "DemiBold")).foregroundStyle(Color.cream)
+                }
+            }
+        }
+        .onAppear { start = Date() }
+        .onTapGesture { }   // swallow taps while asleep
+    }
+    private func bar(_ icon: String, _ c: Color, _ v: Double) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon).font(.system(size: 12, weight: .bold)).foregroundStyle(c).frame(width: 16)
+            GeometryReader { g in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.white.opacity(0.1))
+                    Capsule().fill(c).frame(width: g.size.width * CGFloat(min(1, max(0, v))))
+                }
+            }
+            .frame(height: 8)
+        }
     }
 }

@@ -536,9 +536,6 @@ extension Game {
         if inv.count(.waterTank) > 0 && p.x > 20 && p.x < 31.5 && abs(p.y - 30) < 0.5 && world.props(of: .waterTank).isEmpty {
             return act("placeTank", "Place water tank", V2(p.x, p.y - 2.4), true)
         }
-        if inv.count(.lamp) > 0 && max.ground && !world.props(of: .lamp).contains(where: { $0.pos.dist(p) < 2.5 }) {
-            return act("placeLamp", "Place lantern", V2(p.x, p.y - 2.4))
-        }
         return nil
     }
 
@@ -616,6 +613,7 @@ extension Game {
             emit(.placed("tank"))
             emit(.saveNow)
         case "placeLamp":
+            placing = nil
             inv.remove(.lamp, 1)
             world.props.append(Prop(id: "lamp.\(Int(time * 1000))", kind: .lamp, pos: V2(p.x, p.y)))
             emit(.placed("lamp"))
@@ -648,7 +646,8 @@ extension Game {
             }
         case "rest":
             recover(stamina: 100, health: 50)
-            emit(.openSheet(.mission))
+            emit(.sleep)
+            later(3.8) { $0.emit(.openSheet(.mission)) }
         case "pantry":
             emit(.openSheet(.pantry))
         case "plank":
