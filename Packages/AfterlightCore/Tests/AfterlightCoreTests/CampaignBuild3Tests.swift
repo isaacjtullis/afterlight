@@ -138,7 +138,7 @@ final class CampaignBuild3Tests: XCTestCase {
         let b = Bot(g)
         place(g, V2(247.6, 52))
         b.hold(GameInput(up: true), until: { g.max.pos.y < 28.4 && g.max.mode == .walk }, timeout: 40, "up the exit stair")
-        XCTAssertTrue(b.go(172.9, timeout: 120), b.trail)
+        XCTAssertTrue(b.go(170.9, timeout: 120), b.trail)
         XCTAssertEqual(g.context?.id, "unbar", b.trail)
         g.performContext()
         XCTAssertTrue(g.hotelHatchOpen)

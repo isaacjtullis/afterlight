@@ -274,7 +274,7 @@ final class MaraTests: XCTestCase {
         deliverValve(g)
         let t0 = clock.now
         clock.now = t0.addingTimeInterval(10)
-        place(g, V2(85.6, 9))
+        place(g, V2(85.6, 14))
         XCTAssertEqual(g.context?.id, "panel:sump.hatch")
         g.mara.pos = Landmarks.maraHome
         g.choosePanel("sump.hatch", "hatch.bar")

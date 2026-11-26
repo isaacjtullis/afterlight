@@ -84,7 +84,7 @@ final class CampaignPlaythroughTests: XCTestCase {
         XCTAssertTrue(b.go(228.7), b.trail)
         b.hold(GameInput(climbDown: true), until: { g.max.pos.y > 27.6 && g.max.mode == .walk }, timeout: 30, "down from the landing")
         if g.max.mode == .climb { b.hold(GameInput(dx: -1), until: { g.max.mode == .walk }, timeout: 3, "step off") }
-        XCTAssertTrue(b.go(172.9, timeout: 120), b.trail)
+        XCTAssertTrue(b.go(170.9, timeout: 120), b.trail)
         XCTAssertTrue(b.use("unbar"), b.trail)
         b.hold(GameInput(climbDown: true), until: { g.max.pos.y > 39.5 }, timeout: 30, "down the upper stair")
         if g.max.mode == .climb { b.hold(GameInput(dx: 1), until: { g.max.mode == .walk }, timeout: 3, "step off") }
@@ -101,7 +101,7 @@ final class CampaignPlaythroughTests: XCTestCase {
         // Back up to the gallery by the stairs he opened.
         XCTAssertTrue(b.go(Landmarks.luggageX - 0.3, timeout: 60), b.trail)
         b.hold(GameInput(up: true), until: { g.max.pos.y < 40.4 && g.max.mode == .walk }, timeout: 30, "up the luggage stair")
-        XCTAssertTrue(b.go(172.9, timeout: 60), b.trail)
+        XCTAssertTrue(b.go(170.9, timeout: 60), b.trail)
         b.hold(GameInput(up: true), until: { g.max.pos.y < 28.4 && g.max.mode == .walk }, timeout: 30, "up the upper stair")
         XCTAssertTrue(b.go(228.7, timeout: 120), b.trail)
         b.hold(GameInput(up: true), until: { g.max.pos.y < 12.6 && g.max.mode == .walk }, timeout: 40, "up to the gallery")

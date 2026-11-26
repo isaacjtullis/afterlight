@@ -17,7 +17,7 @@ extension Landmarks {
     public static let upper = (x0: 170, x1: 248, top: 23, floor: 28)
     public static let exitWell = (x0: 247, x1: 248)
     public static let luggageX = 199.0
-    public static let fireHatch = (c0: 172, c1: 173, r: 28)
+    public static let fireHatch = (c0: 170, c1: 171, r: 28)
     public static let galleryWell = (x0: 228, x1: 229)
     public static let gallery = (x0: 228, x1: 326, top: 5, floor: 12)
     public static let hotelLift = V2(171.6, 52)
@@ -82,7 +82,7 @@ extension WorldGen {
 
     static func hotelProps() -> [Prop] {
         let lf = 52.0, gf = 40.0, uf = 28.0
-        var hatch = Prop(id: "fire.hatch", kind: .thing, pos: V2(172.9, uf), look: "hatch"); hatch.flags = ["barred"]
+        var hatch = Prop(id: "fire.hatch", kind: .thing, pos: V2(170.9, uf), look: "hatch"); hatch.flags = ["barred"]
         var lift = Prop(id: "hotel.lift", kind: .serviceLift, pos: Landmarks.hotelLift)
         lift.flags = []
         return [
